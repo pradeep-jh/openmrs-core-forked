@@ -15,27 +15,28 @@ import java.util.Set;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.TermQuery;
 import org.hibernate.search.annotations.Factory;
 import org.hibernate.search.annotations.Key;
 import org.hibernate.search.filter.FilterKey;
 import org.hibernate.search.filter.StandardFilterKey;
-import org.hibernate.search.filter.impl.CachingWrapperQuery;
+import org.hibernate.search.filter.impl.CachingWrapperFilter;
 
 public class TermsFilterFactory {
 	
-	private Set<Set<Term>> includeTerms = new HashSet<>();
+	private Set<Set<Term>> includeTerms = new HashSet<Set<Term>>();
 	
-	private Set<Term> excludeTerms = new HashSet<>();
+	private Set<Term> excludeTerms = new HashSet<Term>();
 	
 	public void setIncludeTerms(Set<Set<Term>> terms) {
-		this.includeTerms = new HashSet<>(terms);
+		this.includeTerms = new HashSet<Set<Term>>(terms);
 	}
 	
 	public void setExcludeTerms(Set<Term> terms) {
-		this.excludeTerms = new HashSet<>(terms);
+		this.excludeTerms = new HashSet<Term>(terms);
 	}
 
 	@Key
@@ -47,7 +48,7 @@ public class TermsFilterFactory {
 	}
 	
 	@Factory
-	public Query getQuery() {
+	public Filter getFilter() {
 		BooleanQuery query = new BooleanQuery();
 
 		if (includeTerms.isEmpty()) {
@@ -71,6 +72,6 @@ public class TermsFilterFactory {
 			query.add(new TermQuery(term), Occur.MUST_NOT);
 		}
 		
-		return new CachingWrapperQuery(query);
+		return new CachingWrapperFilter(new QueryWrapperFilter(query));
 	}
 }

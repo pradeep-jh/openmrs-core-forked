@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.openmrs.Encounter;
 import org.openmrs.EncounterType;
 import org.openmrs.GlobalProperty;
@@ -50,9 +50,9 @@ public class ExistingOrNewVisitAssignmentHandler extends ExistingVisitAssignment
 	
 	/**
 	 * @see org.openmrs.api.handler.ExistingVisitAssignmentHandler#beforeCreateEncounter(org.openmrs.Encounter)
-	 * <strong>Should</strong> assign existing visit if match found
-	 * <strong>Should</strong> assign new visit if no match found
-	 * <strong>Should</strong> resolve encounter and visit type uuids as global property values
+	 * @should assign existing visit if match found
+	 * @should assign new visit if no match found
+	 * @should resolve encounter and visit type uuids as global property values
 	 */
 	@Override
 	public void beforeCreateEncounter(Encounter encounter) {
@@ -72,7 +72,7 @@ public class ExistingOrNewVisitAssignmentHandler extends ExistingVisitAssignment
 		
 		if (encounterVisitMapping == null) {
 			//initial one-time setup
-			setEncounterVisitMapping(new HashMap<>());
+			setEncounterVisitMapping(new HashMap<EncounterType, VisitType>());
 			Context.getAdministrationService().addGlobalPropertyListener(this);
 		}
 		
@@ -81,7 +81,7 @@ public class ExistingOrNewVisitAssignmentHandler extends ExistingVisitAssignment
 			visitType = loadVisitType(encounter.getEncounterType());
 			
 			//replace reference instead of synchronizing
-			Map<EncounterType, VisitType> newMap = new HashMap<>(encounterVisitMapping);
+			Map<EncounterType, VisitType> newMap = new HashMap<EncounterType, VisitType>(encounterVisitMapping);
 			newMap.put(encounter.getEncounterType(), visitType);
 			
 			setEncounterVisitMapping(newMap);
@@ -121,7 +121,7 @@ public class ExistingOrNewVisitAssignmentHandler extends ExistingVisitAssignment
 					if (targetEncounterTypeId.equals(encounterTypeIdOrUuid)
 					        || encounterType.getUuid().equals(encounterTypeIdOrUuid)) {
 						String visitTypeIdOrUuid = mapping.substring(index + 1).trim();
-						VisitType visitType;
+						VisitType visitType = null;
 						if (StringUtils.isNumeric(visitTypeIdOrUuid)) {
 							visitType = visitService.getVisitType(Integer.parseInt(visitTypeIdOrUuid));
 						} else {
@@ -148,12 +148,12 @@ public class ExistingOrNewVisitAssignmentHandler extends ExistingVisitAssignment
 	
 	@Override
 	public void globalPropertyChanged(GlobalProperty newValue) {
-		setEncounterVisitMapping(new HashMap<>());
+		setEncounterVisitMapping(new HashMap<EncounterType, VisitType>());
 	}
 	
 	@Override
 	public void globalPropertyDeleted(String propertyName) {
-		setEncounterVisitMapping(new HashMap<>());
+		setEncounterVisitMapping(new HashMap<EncounterType, VisitType>());
 	}
 	
 }

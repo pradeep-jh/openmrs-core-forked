@@ -9,41 +9,39 @@
  */
 package org.openmrs.customdatatype.datatype;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 public class DateDatatypeTest {
 	
 	DateDatatype datatype;
 	
-	@BeforeEach
+	@Before
 	public void before() {
 		datatype = new DateDatatype();
 	}
 	
 	/**
-	 * @throws ParseException
 	 * @see Date#deserialize(String)
+	 * @verifies reconstruct a date serialized by this handler
 	 */
 	@Test
-	public void deserialize_shouldReconstructADateSerializedByThisHandler() throws ParseException {
+	public void deserialize_shouldReconstructADateSerializedByThisHandler() throws Exception {
 		Date date = new SimpleDateFormat("yyyy-MM-dd").parse("2011-04-25");
-		assertEquals(date, datatype.deserialize(datatype.serialize(date)));
+		Assert.assertEquals(date, datatype.deserialize(datatype.serialize(date)));
 	}
 	
 	/**
-	 * @throws ParseException
 	 * @see Date#serialize(java.util.Date)
+	 * @verifies convert a date into a ymd string representation
 	 */
 	@Test
-	public void serialize_shouldConvertADateIntoAYmdStringRepresentation() throws ParseException {
+	public void serialize_shouldConvertADateIntoAYmdStringRepresentation() throws Exception {
 		Date date = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse("2011-04-25 01:02:03");
-		assertEquals("2011-04-25", datatype.serialize(date));
+		Assert.assertEquals("2011-04-25", datatype.serialize(date));
 	}
 }

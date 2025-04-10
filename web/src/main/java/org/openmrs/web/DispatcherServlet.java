@@ -12,6 +12,8 @@ package org.openmrs.web;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.module.Module;
 import org.openmrs.module.ModuleFactory;
 import org.openmrs.module.web.WebModuleUtil;
@@ -19,8 +21,6 @@ import org.openmrs.util.DatabaseUpdater;
 import org.openmrs.util.OpenmrsClassLoader;
 import org.openmrs.web.filter.initialization.InitializationFilter;
 import org.openmrs.web.filter.update.UpdateFilter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.web.context.support.XmlWebApplicationContext;
 
@@ -36,7 +36,7 @@ public class DispatcherServlet extends org.springframework.web.servlet.Dispatche
 	
 	private static final long serialVersionUID = -6925172744402818729L;
 	
-	private static final Logger log = LoggerFactory.getLogger(DispatcherServlet.class);
+	private Log log = LogFactory.getLog(this.getClass());
 	
 	/**
 	 * @see org.springframework.web.servlet.FrameworkServlet#initFrameworkServlet()
@@ -45,7 +45,9 @@ public class DispatcherServlet extends org.springframework.web.servlet.Dispatche
 	protected void initFrameworkServlet() throws ServletException, BeansException {
 		// refresh the application context to look for module xml config files as well
 		
+		//XmlWebApplicationContext wac = ((XmlWebApplicationContext)getWebApplicationContext());
 		Thread.currentThread().setContextClassLoader(OpenmrsClassLoader.getInstance());
+		//wac.refresh();
 		
 		log.debug("Framework being initialized");
 		WebModuleUtil.setDispatcherServlet(this);
@@ -65,7 +67,7 @@ public class DispatcherServlet extends org.springframework.web.servlet.Dispatche
 		Thread.currentThread().setContextClassLoader(OpenmrsClassLoader.getInstance());
 		((XmlWebApplicationContext) getWebApplicationContext()).setClassLoader(OpenmrsClassLoader.getInstance());
 		
-		init();
+		refresh();
 		
 		// the spring context gets reset by the framework servlet, so we need to 
 		// reload the advice points that were lost when refreshing Spring

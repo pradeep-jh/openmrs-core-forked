@@ -9,43 +9,31 @@
  */
 package org.openmrs.module.web;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServlet;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.openmrs.module.Module;
-import org.openmrs.module.ModuleClassLoader;
 import org.openmrs.module.ModuleException;
 import org.openmrs.module.ModuleFactory;
 import org.openmrs.web.DispatcherServlet;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -53,23 +41,21 @@ import org.w3c.dom.Element;
 /**
  *
  */
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(WebModuleUtil.class)
 public class WebModuleUtilTest {
+	
+	private Properties propertiesWritten;
 	
 	private static final String REAL_PATH = "/usr/local/apache-tomcat-7.0.27/webapps/openmrs";
 	
-	@AfterEach
-	public void tearDown() {
-		ModuleFactory.getLoadedModules().clear();
-		ModuleFactory.getStartedModulesMap().clear();
-		ModuleFactory.getModuleClassLoaderMap().clear();
-	}
-	
 	/**
-	 * @see WebModuleUtil#isModulePackageNameInTaskClass(String, String)
+	 * @see WebModuleUtil#isModulePackageNameInTaskClass(String, String) 
+	 * @verifies return false for different package names
 	 * @throws Exception
 	 */
 	@Test
-	public void isModulePackageNameInTaskClass_shouldReturnFalseForDifferentPackageName() {
+	public void isModulePackageNameInTaskClass_shouldReturnFalseForDifferentPackageName() throws Exception {
 		String modulePackageName = "org.openmrs.logic.task";
 		String taskClass = "org.openmrs.logic.TaskInitializeLogicRuleProvidersTask";
 		boolean result = WebModuleUtil.isModulePackageNameInTaskClass(modulePackageName, taskClass);
@@ -77,11 +63,12 @@ public class WebModuleUtilTest {
 	}
 	
 	/**
-	 * @see WebModuleUtil#isModulePackageNameInTaskClass(String, String)
+	 * @see WebModuleUtil#isModulePackageNameInTaskClass(String, String) 
+	 * @verifies return false if module has longer package name
 	 * @throws Exception
 	 */
 	@Test
-	public void isModulePackageNameInTaskClass_shouldReturnFalseIfModuleHasLongerPackageName() {
+	public void isModulePackageNameInTaskClass_shouldReturnFalseIfModuleHasLongerPackageName() throws Exception {
 		String modulePackageName = "org.openmrs.logic.task";
 		String taskClass = "org.openmrs.logic.TaskInitializeLogicRuleProvidersTask";
 		boolean result = WebModuleUtil.isModulePackageNameInTaskClass(modulePackageName, taskClass);
@@ -89,11 +76,12 @@ public class WebModuleUtilTest {
 	}
 	
 	/**
-	 * @see WebModuleUtil#isModulePackageNameInTaskClass(String, String)
+	 * @see WebModuleUtil#isModulePackageNameInTaskClass(String, String) 
+	 * @verifies properly match subpackages
 	 * @throws Exception
 	 */
 	@Test
-	public void isModulePackageNameInTaskClass_shouldProperlyMatchSubpackages() {
+	public void isModulePackageNameInTaskClass_shouldProperlyMatchSubpackages() throws Exception {
 		String modulePackageName = "org.openmrs.module.xforms";
 		String taskClass = "org.openmrs.module.xforms.ProcessXformsQueueTask";
 		boolean result = WebModuleUtil.isModulePackageNameInTaskClass(modulePackageName, taskClass);
@@ -102,10 +90,11 @@ public class WebModuleUtilTest {
 	
 	/**
 	 * @see WebModuleUtil#isModulePackageNameInTaskClass(String, String)
+	 * @verifies return false for empty package names
 	 * @throws Exception
 	 */
 	@Test
-	public void isModulePackageNameInTaskClass_shouldReturnFalseForEmptyPackageNames() {
+	public void isModulePackageNameInTaskClass_shouldReturnFalseForEmptyPackageNames() throws Exception {
 		String modulePackageName = "";
 		String taskClass = "";
 		boolean result = WebModuleUtil.isModulePackageNameInTaskClass(modulePackageName, taskClass);
@@ -113,13 +102,13 @@ public class WebModuleUtilTest {
 	}
 	
 	/**
-	 * @throws ParserConfigurationException
 	 * @see WebModuleUtil#startModule(Module, ServletContext, boolean)
+	 * @verifies creates dwr-modules.xml if not found
 	 */
 	@Test
-	public void startModule_shouldCreateDwrModulesXmlIfNotExists() throws ParserConfigurationException {
+	public void startModule_shouldCreateDwrModulesXmlIfNotExists() throws Exception {
 		// create dummy module and start it
-		Module mod = buildModuleForMessageTest(buildModuleConfig());
+		Module mod = buildModuleForMessageTest();
 		ModuleFactory.getStartedModulesMap().put(mod.getModuleId(), mod);
 		
 		ServletContext servletContext = mock(ServletContext.class);
@@ -136,18 +125,18 @@ public class WebModuleUtilTest {
 		
 		// test if dwr-modules.xml is created
 		assertTrue(f.exists());
+		
+		ModuleFactory.getStartedModulesMap().clear();
 	}
 	
 	/**
-	 * @throws ParserConfigurationException
-	 * @throws FileNotFoundException
 	 * @see WebModuleUtil#startModule(Module, ServletContext, boolean)
+	 * @verifies dwr-modules.xml has dwr tag of module started
 	 */
 	@Test
-	public void startModule_dwrModuleXmlshouldContainModuleInfo()
-	        throws ParserConfigurationException, FileNotFoundException {
+	public void startModule_dwrModuleXmlshouldContainModuleInfo() throws Exception {		
 		// create dummy module and start it
-		Module mod = buildModuleForMessageTest(buildModuleConfig());
+		Module mod = buildModuleForMessageTest();
 		ModuleFactory.getStartedModulesMap().put(mod.getModuleId(), mod);
 		
 		ServletContext servletContext = mock(ServletContext.class);
@@ -172,104 +161,20 @@ public class WebModuleUtilTest {
 			scanner.close();
 		
 		assertTrue(found);
-	}
-
-	@Test
-	public void loadServlets_AddsServletsWithoutInitParams()
-		throws ParserConfigurationException, ClassNotFoundException {
-		String servletClassName1 = "servletClass1";
-		String servletClassName2 = "servletClass2";
-
-		Map<String, String> initParams1 = new HashMap<>();
-		ServletInfo servletInfo1 = new ServletInfo("servletName1", servletClassName1, initParams1);
-
-		Map<String, String> initParams2 = new HashMap<>();
-		ServletInfo servletInfo2 = new ServletInfo("servletName2", servletClassName2, initParams2);
-
-		List<ServletInfo> servletInfos = Arrays.asList(servletInfo1, servletInfo2);
-
-		Module mod = buildModuleForMessageTest(buildModuleConfigWithServlets(servletInfos));
-		ServletContext servletContext = mock(ServletContext.class);
-		ModuleClassLoader moduleClassLoader = mock(ModuleClassLoader.class);
-
-		when(moduleClassLoader.loadClass(eq(servletClassName1))).thenAnswer((Answer<Class<?>>) invocation -> ServletClass1.class);
-		when(moduleClassLoader.loadClass(eq(servletClassName2))).thenAnswer((Answer<Class<?>>) invocation -> ServletClass2.class);
-
-		ModuleFactory.getModuleClassLoaderMap().put(mod, moduleClassLoader);
-
-		WebModuleUtil.loadServlets(mod, servletContext);
-
-		HttpServlet servlet1 = WebModuleUtil.getServlet("servletName1");
-		assertNotNull(servlet1);
-		ServletConfig servletConfig1 = servlet1.getServletConfig();
-		assertFalse(servletConfig1.getInitParameterNames().hasMoreElements());
-		assertNull(servletConfig1.getInitParameter("param1"));
-
-		HttpServlet servlet2 = WebModuleUtil.getServlet("servletName2");
-		assertNotNull(servlet2);
-		ServletConfig servletConfig2 = servlet2.getServletConfig();
-		assertFalse(servletConfig2.getInitParameterNames().hasMoreElements());
-		assertNull(servletConfig2.getInitParameter("paramA"));
-
-		WebModuleUtil.unloadServlets(mod);
-	}
-
-	@Test
-	public void loadServlets_AddsCorrectInitParamsToConfig()
-		throws ParserConfigurationException, ClassNotFoundException {
-		String servletClassName1 = "servletClass1";
-		String servletClassName2 = "servletClass2";
 		
-		Map<String, String> initParams1 = new HashMap<>();
-		initParams1.put("param1", "value1");
-		initParams1.put("param2", "value2");
-		ServletInfo servletInfo1 = new ServletInfo("servletName1", servletClassName1, initParams1);
-
-		Map<String, String> initParams2 = new HashMap<>();
-		initParams2.put("paramA", "valueA");
-		initParams2.put("paramB", "valueB");
-		ServletInfo servletInfo2 = new ServletInfo("servletName2", servletClassName2, initParams2);
-
-		List<ServletInfo> servletInfos = Arrays.asList(servletInfo1, servletInfo2);
-
-		Module mod = buildModuleForMessageTest(buildModuleConfigWithServlets(servletInfos));
-		ServletContext servletContext = mock(ServletContext.class);
-		ModuleClassLoader moduleClassLoader = mock(ModuleClassLoader.class);
-
-		when(moduleClassLoader.loadClass(eq(servletClassName1))).thenAnswer((Answer<Class<?>>) invocation -> ServletClass1.class);
-		when(moduleClassLoader.loadClass(eq(servletClassName2))).thenAnswer((Answer<Class<?>>) invocation -> ServletClass2.class);
-
-		ModuleFactory.getModuleClassLoaderMap().put(mod, moduleClassLoader);
-
-		WebModuleUtil.loadServlets(mod, servletContext);
-
-		HttpServlet servlet1 = WebModuleUtil.getServlet("servletName1");
-		assertNotNull(servlet1);
-		ServletConfig servletConfig1 = servlet1.getServletConfig();
-		assertTrue(servletConfig1.getInitParameterNames().hasMoreElements());
-		assertEquals("value1", servletConfig1.getInitParameter("param1"));
-		assertEquals("value2", servletConfig1.getInitParameter("param2"));
-
-		HttpServlet servlet2 = WebModuleUtil.getServlet("servletName2");
-		assertNotNull(servlet2);
-		ServletConfig servletConfig2 = servlet2.getServletConfig();
-		assertTrue(servletConfig2.getInitParameterNames().hasMoreElements());
-		assertEquals("valueA", servletConfig2.getInitParameter("paramA"));
-		assertEquals("valueB", servletConfig2.getInitParameter("paramB"));
-
-		WebModuleUtil.unloadServlets(mod);
+		ModuleFactory.getStartedModulesMap().clear();
 	}
 	
-	private Module buildModuleForMessageTest(Document moduleConfig) throws ParserConfigurationException {
+	private Module buildModuleForMessageTest() throws ParserConfigurationException {
 		Properties englishMessages = new Properties();
 		englishMessages.put("withoutPrefix", "Without prefix");
 		
 		Module mod = new Module("My Module");
 		mod.setModuleId("mymodule");
-		mod.setMessages(new HashMap<>());
+		mod.setMessages(new HashMap<String, Properties>());
 		mod.getMessages().put("en", englishMessages);
 		mod.setFile(new File("sampleFile.jar"));
-		mod.setConfig(moduleConfig);
+		mod.setConfig(buildModuleConfig());
 		
 		return mod;
 	}
@@ -298,59 +203,27 @@ public class WebModuleUtilTest {
 		
 		return doc;
 	}
-
-	private Document buildModuleConfigWithServlets(List<ServletInfo> servlets) throws ParserConfigurationException {
-		Document doc = buildModuleConfig();
-		Element rootElement = doc.getDocumentElement();
-
-		for (ServletInfo servletInfo : servlets) {
-			Element servletElement = doc.createElement("servlet");
-
-			Element servletNameElement = doc.createElement("servlet-name");
-			servletNameElement.setTextContent(servletInfo.getServletName());
-			servletElement.appendChild(servletNameElement);
-
-			Element servletClassElement = doc.createElement("servlet-class");
-			servletClassElement.setTextContent(servletInfo.getServletClass());
-			servletElement.appendChild(servletClassElement);
-
-			for (Map.Entry<String, String> initParam : servletInfo.getInitParams().entrySet()) {
-				Element initParamElement = doc.createElement("init-param");
-
-				Element paramNameElement = doc.createElement("param-name");
-				paramNameElement.setTextContent(initParam.getKey());
-				initParamElement.appendChild(paramNameElement);
-
-				Element paramValueElement = doc.createElement("param-value");
-				paramValueElement.setTextContent(initParam.getValue());
-				initParamElement.appendChild(paramValueElement);
-
-				servletElement.appendChild(initParamElement);
-			}
-			rootElement.appendChild(servletElement);
-		}
-		return doc;
-	}
 	
 	/**
 	 * @see WebModuleUtil#getModuleWebFolder(String)
+	 * @verifies return null if the dispatcher servlet is not yet set
 	 */
-	@Test
-	public void getModuleWebFolder_shouldReturnNullIfTheDispatcherServletIsNotYetSet() {
+	@Test(expected = ModuleException.class)
+	public void getModuleWebFolder_shouldReturnNullIfTheDispatcherServletIsNotYetSet() throws Exception {
 		//We need to do this in case it is run after getModuleWebFolder_shouldReturnTheCorrectModuleFolder 
 		WebModuleUtil.setDispatcherServlet(null);
-		assertThrows(ModuleException.class, () -> WebModuleUtil.getModuleWebFolder(""));
+		WebModuleUtil.getModuleWebFolder("");
 	}
 	
 	/**
 	 * @see WebModuleUtil#getModuleWebFolder(String)
+	 * @verifies return the correct module folder
 	 */
 	@Test
-	public void getModuleWebFolder_shouldReturnTheCorrectModuleFolder() {
+	public void getModuleWebFolder_shouldReturnTheCorrectModuleFolder() throws Exception {
 		setupMocks(false);
 		String moduleId = "basicmodule";
-		String expectedPath = Paths.get(REAL_PATH, "WEB-INF", "view", "module", moduleId).toString();
-		
+		String expectedPath = (REAL_PATH + "/WEB-INF/view/module/" + moduleId).replace("/", File.separator);
 		String actualPath = WebModuleUtil.getModuleWebFolder(moduleId);
 		
 		assertEquals(expectedPath, actualPath);
@@ -358,12 +231,13 @@ public class WebModuleUtilTest {
 	
 	/**
 	 * @see WebModuleUtil#getModuleWebFolder(String)
+	 * @verifies return the correct module folder if real path has a trailing slash
 	 */
 	@Test
-	public void getModuleWebFolder_shouldReturnTheCorrectModuleFolderIfRealPathHasATrailingSlash() {
+	public void getModuleWebFolder_shouldReturnTheCorrectModuleFolderIfRealPathHasATrailingSlash() throws Exception {
 		setupMocks(true);
 		String moduleId = "basicmodule";
-		String expectedPath = Paths.get(REAL_PATH, "WEB-INF", "view", "module", moduleId).toString();
+		String expectedPath = (REAL_PATH + "/WEB-INF/view/module/" + moduleId).replace("/", File.separator);
 		String actualPath = WebModuleUtil.getModuleWebFolder(moduleId);
 		
 		assertEquals(expectedPath, actualPath);
@@ -382,43 +256,5 @@ public class WebModuleUtilTest {
 		
 		WebModuleUtil.setDispatcherServlet(dispatcherServlet);
 	}
-
-	public class ServletInfo {
-		private String servletName;
-		private String servletClass;
-		private Map<String, String> initParams;
-
-		public ServletInfo(String servletName, String servletClass, Map<String, String> initParams) {
-			this.servletName = servletName;
-			this.servletClass = servletClass;
-			this.initParams = initParams;
-		}
-
-		public String getServletName() {
-			return servletName;
-		}
-
-		public void setServletName(String servletName) {
-			this.servletName = servletName;
-		}
-
-		public String getServletClass() {
-			return servletClass;
-		}
-
-		public void setServletClass(String servletClass) {
-			this.servletClass = servletClass;
-		}
-
-		public Map<String, String> getInitParams() {
-			return initParams;
-		}
-
-		public void setInitParams(Map<String, String> initParams) {
-			this.initParams = initParams;
-		}
-	}
-
-	static class ServletClass1 extends HttpServlet {}
-	static class ServletClass2 extends HttpServlet {}
+	
 }

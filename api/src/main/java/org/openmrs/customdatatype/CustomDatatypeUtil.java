@@ -15,7 +15,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.ConceptDatatype;
 import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
@@ -23,19 +25,14 @@ import org.openmrs.attribute.Attribute;
 import org.openmrs.attribute.AttributeType;
 import org.openmrs.serialization.SerializationException;
 import org.openmrs.util.OpenmrsConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Helper methods for dealing with custom datatypes and their handlers
  * @since 1.9
  */
 public class CustomDatatypeUtil {
-
-	private CustomDatatypeUtil() {
-	}
 	
-	private static final Logger log = LoggerFactory.getLogger(CustomDatatypeUtil.class);
+	private static Log log = LogFactory.getLog(CustomDatatypeUtil.class);
 	
 	/**
 	 * @param descriptor
@@ -141,7 +138,7 @@ public class CustomDatatypeUtil {
 	 *
 	 * @param serializedConfig
 	 * @return deserialized configuration
-	 * <strong>Should</strong> deserialize a configuration serialized by the corresponding serialize method
+	 * @should deserialize a configuration serialized by the corresponding serialize method
 	 */
 	@SuppressWarnings("unchecked")
 	public static Map<String, String> deserializeSimpleConfiguration(String serializedConfig) {
@@ -166,7 +163,7 @@ public class CustomDatatypeUtil {
 	public static <T extends AttributeType<?>, U> Map<T, String> getValueReferences(Map<T, U> datatypeValues) {
 		Map<T, String> serializedAttributeValues = null;
 		if (datatypeValues != null) {
-			serializedAttributeValues = new HashMap<>();
+			serializedAttributeValues = new HashMap<T, String>();
 			for (Map.Entry<T, U> e : datatypeValues.entrySet()) {
 				T vat = e.getKey();
 				CustomDatatype<U> customDatatype = (CustomDatatype<U>) getDatatype(vat);
@@ -187,7 +184,7 @@ public class CustomDatatypeUtil {
 	 * @return fully-qualified classnames of all registered datatypes
 	 */
 	public static List<String> getDatatypeClassnames() {
-		List<String> ret = new ArrayList<>();
+		List<String> ret = new ArrayList<String>();
 		for (Class<?> c : Context.getDatatypeService().getAllDatatypeClasses()) {
 			ret.add(c.getName());
 		}
@@ -198,7 +195,7 @@ public class CustomDatatypeUtil {
 	 * @return full-qualified classnames of all registered handlers
 	 */
 	public static List<String> getHandlerClassnames() {
-		List<String> ret = new ArrayList<>();
+		List<String> ret = new ArrayList<String>();
 		for (Class<?> c : Context.getDatatypeService().getAllHandlerClasses()) {
 			ret.add(c.getName());
 		}

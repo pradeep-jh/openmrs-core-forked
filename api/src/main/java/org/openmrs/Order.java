@@ -9,7 +9,6 @@
  */
 package org.openmrs;
 
-import org.hibernate.envers.Audited;
 import org.openmrs.api.APIException;
 import org.openmrs.api.db.hibernate.HibernateUtil;
 import org.openmrs.order.OrderUtil;
@@ -31,11 +30,11 @@ import java.util.Date;
  * 
  * @version 1.0
  */
-@Audited
-public class Order extends BaseCustomizableData<OrderAttribute> implements FormRecordable {
-
+public class Order extends BaseOpenmrsData {
+	
+	
 	public static final long serialVersionUID = 4334343L;
-
+	
 	/**
 	 * @since 1.9.2, 1.10
 	 */
@@ -53,20 +52,6 @@ public class Order extends BaseCustomizableData<OrderAttribute> implements FormR
 		REVISE,
 		DISCONTINUE,
 		RENEW
-	}
-	
-	/**
-	 * Valid values for the status of an order that is received from a filler
-	 * @since 2.2.0
-	 * @since 2.6.1 added ON_HOLD & DECLINED
-	 */
-	public enum FulfillerStatus {
-		RECEIVED,
-		IN_PROGRESS,
-		EXCEPTION,
-		ON_HOLD,
-		DECLINED,
-		COMPLETED
 	}
 	
 	private Integer orderId;
@@ -105,8 +90,6 @@ public class Order extends BaseCustomizableData<OrderAttribute> implements FormR
 	
 	private Date scheduledDate;
 	
-	private String formNamespaceAndPath;
-	
 	/**
 	 * Allows the orders if ordered as an orderGroup, to maintain a sequence of how members are
 	 * added in the group ex - for two orders of isoniazid and ampicillin, the sequence of 1 and 2
@@ -132,17 +115,6 @@ public class Order extends BaseCustomizableData<OrderAttribute> implements FormR
 	 */
 	private OrderGroup orderGroup;
 	
-	/**
-	 * Represents the status of an order received from a fulfiller 
-	 * @see FulfillerStatus
-	 */
-	private FulfillerStatus fulfillerStatus;
-	
-	/**
-	 * Represents the comment that goes along with with fulfiller status
-	 */	
-	private String fulfillerComment;
-
 	// Constructors
 	
 	/** default constructor */
@@ -158,7 +130,7 @@ public class Order extends BaseCustomizableData<OrderAttribute> implements FormR
 	 * Performs a shallow copy of this Order. Does NOT copy orderId.
 	 * 
 	 * @return a shallow copy of this Order
-	 * <strong>Should</strong> copy all fields
+	 * @should copy all fields
 	 */
 	public Order copy() {
 		return copyHelper(new Order());
@@ -201,9 +173,6 @@ public class Order extends BaseCustomizableData<OrderAttribute> implements FormR
 		target.setScheduledDate(getScheduledDate());
 		target.setOrderGroup(getOrderGroup());
 		target.setSortWeight(getSortWeight());
-		target.setFulfillerComment(getFulfillerComment());
-		target.setFulfillerStatus(getFulfillerStatus());
-		target.setFormNamespaceAndPath(getFormNamespaceAndPath());
 		return target;
 	}
 	
@@ -406,10 +375,10 @@ public class Order extends BaseCustomizableData<OrderAttribute> implements FormR
 	 * @param checkDate - the date on which to check order. if null, will use current date
 	 * @return boolean indicating whether the order was activated before or on the check date
 	 * @since 2.0
-	 * <strong>Should</strong> return true if an order was activated on the check date
-	 * <strong>Should</strong> return true if an order was activated before the check date
-	 * <strong>Should</strong> return false if dateActivated is null
-	 * <strong>Should</strong> return false for an order activated after the check date
+	 * @should return true if an order was activated on the check date
+	 * @should return true if an order was activated before the check date
+	 * @should return false if dateActivated is null
+	 * @should return false for an order activated after the check date
 	 */
 	public boolean isActivated(Date checkDate) {
 		if (dateActivated == null) {
@@ -434,18 +403,18 @@ public class Order extends BaseCustomizableData<OrderAttribute> implements FormR
 	/**
 	 * Convenience method to determine if the order is active as of the specified date
 	 * 
-	 * @param aCheckDate - the date on which to check order. if null, will use current date
+	 * @param checkDate - the date on which to check order. if null, will use current date
 	 * @return boolean indicating whether the order was active on the check date
 	 * @since 1.10.1
-	 * <strong>Should</strong> return true if an order expired on the check date
-	 * <strong>Should</strong> return true if an order was discontinued on the check date
-	 * <strong>Should</strong> return true if an order was activated on the check date
-	 * <strong>Should</strong> return true if an order was activated on the check date but scheduled for the future
-	 * <strong>Should</strong> return false for a voided order
-	 * <strong>Should</strong> return false for a discontinued order
-	 * <strong>Should</strong> return false for an expired order
-	 * <strong>Should</strong> return false for an order activated after the check date
-	 * <strong>Should</strong> return false for a discontinuation order
+	 * @should return true if an order expired on the check date
+	 * @should return true if an order was discontinued on the check date
+	 * @should return true if an order was activated on the check date
+	 * @should return true if an order was activated on the check date but scheduled for the future
+	 * @should return false for a voided order
+	 * @should return false for a discontinued order
+	 * @should return false for an expired order
+	 * @should return false for an order activated after the check date
+	 * @should return false for a discontinuation order
 	 */
 	public boolean isActive(Date aCheckDate) {
 		if (getVoided() || action == Action.DISCONTINUE) {
@@ -471,16 +440,16 @@ public class Order extends BaseCustomizableData<OrderAttribute> implements FormR
 	 * true only if the order has been activated. In case of scheduled orders, the scheduledDate
 	 * becomes the effective start date that gets used to determined if it is started.
 	 * 
-	 * @param aCheckDate - the date on which to check order. if null, will use current date
+	 * @param checkDate - the date on which to check order. if null, will use current date
 	 * @return boolean indicating whether the order is started as of the check date
 	 * @since 1.10.1
-	 * <strong>Should</strong> return false for a voided order
-	 * <strong>Should</strong> return false if dateActivated is null
-	 * <strong>Should</strong> return false if the order is not yet activated as of the check date
-	 * <strong>Should</strong> return false if the order was scheduled to start after the check date
-	 * <strong>Should</strong> return true if the order was scheduled to start on the check date
-	 * <strong>Should</strong> return true if the order was scheduled to start before the check date
-	 * <strong>Should</strong> return true if the order is started and not scheduled
+	 * @should return false for a voided order
+	 * @should return false if dateActivated is null
+	 * @should return false if the order is not yet activated as of the check date
+	 * @should return false if the order was scheduled to start after the check date
+	 * @should return true if the order was scheduled to start on the check date
+	 * @should return true if the order was scheduled to start before the check date
+	 * @should return true if the order is started and not scheduled
 	 */
 	public boolean isStarted(Date aCheckDate) {
 		if (getVoided()) {
@@ -496,18 +465,18 @@ public class Order extends BaseCustomizableData<OrderAttribute> implements FormR
 	/**
 	 * Convenience method to determine if the order is discontinued as of the specified date
 	 * 
-	 * @param aCheckDate - the date on which to check order. if null, will use current date
+	 * @param checkDate - the date on which to check order. if null, will use current date
 	 * @return boolean indicating whether the order was discontinued on the input date
-	 * <strong>Should</strong> return false for a voided order
-	 * <strong>Should</strong> return false if date stopped and auto expire date are both null
-	 * <strong>Should</strong> return false if auto expire date is null and date stopped is equal to check date
-	 * <strong>Should</strong> return false if auto expire date is null and date stopped is after check date
-	 * <strong>Should</strong> return false if dateActivated is after check date
-	 * <strong>Should</strong> return true if auto expire date is null and date stopped is before check date
-	 * <strong>Should</strong> fail if date stopped is after auto expire date
-	 * <strong>Should</strong> return true if check date is after date stopped but before auto expire date
-	 * <strong>Should</strong> return true if check date is after both date stopped auto expire date
-	 * <strong>Should</strong> return true if the order is scheduled for the future and activated on check date but
+	 * @should return false for a voided order
+	 * @should return false if date stopped and auto expire date are both null
+	 * @should return false if auto expire date is null and date stopped is equal to check date
+	 * @should return false if auto expire date is null and date stopped is after check date
+	 * @should return false if dateActivated is after check date
+	 * @should return true if auto expire date is null and date stopped is before check date
+	 * @should fail if date stopped is after auto expire date
+	 * @should return true if check date is after date stopped but before auto expire date
+	 * @should return true if check date is after both date stopped auto expire date
+	 * @should return true if the order is scheduled for the future and activated on check date but
 	 *         the check date is after date stopped
 	 */
 	public boolean isDiscontinued(Date aCheckDate) {
@@ -537,17 +506,17 @@ public class Order extends BaseCustomizableData<OrderAttribute> implements FormR
 	/**
 	 * Convenience method to determine if order was expired at a given time
 	 * 
-	 * @param aCheckDate - the date on which to check order. if null, will use current date
+	 * @param checkDate - the date on which to check order. if null, will use current date
 	 * @return boolean indicating whether the order was expired on the input date
-	 * <strong>Should</strong> return false for a voided order
-	 * <strong>Should</strong> return false if date stopped and auto expire date are both null
-	 * <strong>Should</strong> return false if date stopped is null and auto expire date is equal to check date
-	 * <strong>Should</strong> return false if date stopped is null and auto expire date is after check date
-	 * <strong>Should</strong> return false if check date is after both date stopped auto expire date
-	 * <strong>Should</strong> return false if dateActivated is after check date
-	 * <strong>Should</strong> return false if check date is after date stopped but before auto expire date
-	 * <strong>Should</strong> fail if date stopped is after auto expire date
-	 * <strong>Should</strong> return true if date stopped is null and auto expire date is before check date
+	 * @should return false for a voided order
+	 * @should return false if date stopped and auto expire date are both null
+	 * @should return false if date stopped is null and auto expire date is equal to check date
+	 * @should return false if date stopped is null and auto expire date is after check date
+	 * @should return false if check date is after both date stopped auto expire date
+	 * @should return false if dateActivated is after check date
+	 * @should return false if check date is after date stopped but before auto expire date
+	 * @should fail if date stopped is after auto expire date
+	 * @should return true if date stopped is null and auto expire date is before check date
 	 * @since 1.10.1
 	 */
 	public boolean isExpired(Date aCheckDate) {
@@ -718,7 +687,7 @@ public class Order extends BaseCustomizableData<OrderAttribute> implements FormR
 	 * 
 	 * @return the newly created order
 	 * @since 1.10
-	 * <strong>Should</strong> set all the relevant fields
+	 * @should set all the relevant fields
 	 */
 	public Order cloneForDiscontinuing() {
 		Order newOrder = new Order();
@@ -737,8 +706,8 @@ public class Order extends BaseCustomizableData<OrderAttribute> implements FormR
 	 * 
 	 * @return the newly created order
 	 * @since 1.10
-	 * <strong>Should</strong> set all the relevant fields
-	 * <strong>Should</strong> set the relevant fields for a DC order
+	 * @should set all the relevant fields
+	 * @should set the relevant fields for a DC order
 	 */
 	public Order cloneForRevision() {
 		return cloneForRevisionHelper(new Order());
@@ -774,9 +743,6 @@ public class Order extends BaseCustomizableData<OrderAttribute> implements FormR
 		target.setOrderReasonNonCoded(getOrderReasonNonCoded());
 		target.setOrderGroup(getOrderGroup());
 		target.setSortWeight(getSortWeight());
-		target.setFulfillerStatus(getFulfillerStatus());
-		target.setFulfillerComment(getFulfillerComment());
-		target.setFormNamespaceAndPath(getFormNamespaceAndPath());
 		
 		return target;
 	}
@@ -787,8 +753,8 @@ public class Order extends BaseCustomizableData<OrderAttribute> implements FormR
 	 * @since 1.10
 	 * @param orderType the orderType to match on
 	 * @return true if the type of the order matches or is a sub type of the other order
-	 * <strong>Should</strong> true if it is the same or is a subtype
-	 * <strong>Should</strong> false if it neither the same nor a subtype
+	 * @should true if it is the same or is a subtype
+	 * @should false if it neither the same nor a subtype
 	 */
 	public boolean isType(OrderType orderType) {
 		return OrderUtil.isType(orderType, this.orderType);
@@ -801,9 +767,9 @@ public class Order extends BaseCustomizableData<OrderAttribute> implements FormR
 	 * @since 1.10
 	 * @param otherOrder the other order to match on
 	 * @return true if the concept of the orders match
-	 * <strong>Should</strong> return false if the concept of the orders do not match
-	 * <strong>Should</strong> return false if other order is null
-	 * <strong>Should</strong> return true if the orders have the same concept
+	 * @should return false if the concept of the orders do not match
+	 * @should return false if other order is null
+	 * @should return true if the orders have the same concept
 	 */
 	public boolean hasSameOrderableAs(Order otherOrder) {
 		if (otherOrder == null) {
@@ -816,8 +782,8 @@ public class Order extends BaseCustomizableData<OrderAttribute> implements FormR
 	 * A convenience method to return start of the schedule for order.
 	 * 
 	 * @since 1.10
-	 * <strong>Should</strong> return scheduledDate if Urgency is Scheduled
-	 * <strong>Should</strong> return dateActivated if Urgency is not Scheduled
+	 * @should return scheduledDate if Urgency is Scheduled
+	 * @should return dateActivated if Urgency is not Scheduled
 	 */
 	public Date getEffectiveStartDate() {
 		return this.urgency == Urgency.ON_SCHEDULED_DATE ? this.getScheduledDate() : this.getDateActivated();
@@ -827,8 +793,8 @@ public class Order extends BaseCustomizableData<OrderAttribute> implements FormR
 	 * A convenience method to return end of the schedule for order.
 	 * 
 	 * @since 1.10
-	 * <strong>Should</strong> return dateStopped if dateStopped is not null
-	 * <strong>Should</strong> return autoExpireDate if dateStopped is null
+	 * @should return dateStopped if dateStopped is not null
+	 * @should return autoExpireDate if dateStopped is null
 	 */
 	public Date getEffectiveStopDate() {
 		return this.getDateStopped() != null ? this.getDateStopped() : this.getAutoExpireDate();
@@ -876,79 +842,5 @@ public class Order extends BaseCustomizableData<OrderAttribute> implements FormR
 	 */
 	public void setSortWeight(Double sortWeight) {
 		this.sortWeight = sortWeight;
-	}
-	
-	/**
-	 * Returns the current status that was received from a fulfiller for this order. It can either be RECEIVED, IN_PROGRESS,
-	 * EXCEPTION or COMPLETED.  
-	 * 
-	 * @since 2.2.0
-	 * @return the status that was received from a fulfiller
-	 */
-	public FulfillerStatus getFulfillerStatus() {
-		return fulfillerStatus;
-	}
-
-	/**
-	 * Sets the status of this order according to the value that was received from a fulfiller. 
-	 * 
-	 * @param fulfillerStatus the status that was received from a fulfiller. 
-	 * @since 2.2.0
-	*/
-	public void setFulfillerStatus(FulfillerStatus fulfillerStatus) {
-		this.fulfillerStatus = fulfillerStatus;
-	}
-	
-	/**
-	 * Returns the comment received from the fulfiller regarding this order.
-	 * 
-	 * @since 2.2.0
-	 * @return the comment of the fulfiller  
-	 */
-	public String getFulfillerComment() {
-		return fulfillerComment;
-	}
-	
-	/**
-	 * Sets the comment received from the fulfiller for this order.
-	 * 
-	 * @param fulfillerComment the comment received from the fulfiller
-	 * @since 2.2.0
-	 */
-	public void setFulfillerComment(String fulfillerComment) {
-		this.fulfillerComment = fulfillerComment;		
-	}
-	
-	/**
-	 * @return Returns the formNamespaceAndPath.
-	 * @since 2.5.0
-	 */
-	public String getFormNamespaceAndPath() {
-		return formNamespaceAndPath;
-	}
-
-	/**
-	 * Sets the form namespace and path
-	 * 
-	 * @param formNamespaceAndPath the form namespace and path to set
-	 * @since 2.5.0
-	 */
-	public void setFormNamespaceAndPath(String formNamespaceAndPath) {
-		this.formNamespaceAndPath = formNamespaceAndPath;
-	}
-
-	@Override
-	public String getFormFieldNamespace() {
-		return BaseFormRecordableOpenmrsData.getFormFieldNamespace(formNamespaceAndPath);
-	}
-
-	@Override
-	public String getFormFieldPath() {
-		return BaseFormRecordableOpenmrsData.getFormFieldPath(formNamespaceAndPath);
-	}
-
-	@Override
-	public void setFormField(String namespace, String formFieldPath) {
-		formNamespaceAndPath = BaseFormRecordableOpenmrsData.getFormNamespaceAndPath(namespace, formFieldPath);
 	}
 }

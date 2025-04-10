@@ -20,7 +20,7 @@ import org.openmrs.aop.RequiredDataAdvice;
  * This is the super interface for all void* actions that take place on all services. The
  * {@link RequiredDataAdvice} class uses AOP around each method in every service to check to see if
  * its a void* method. If it is a void* method, this class is called to handle setting the
- * {@link Voidable#getVoided()}, {@link Voidable#setVoidReason(String)},
+ * {@link Voidable#isVoided()}, {@link Voidable#setVoidReason(String)},
  * {@link Voidable#setVoidedBy(User)}, and {@link Voidable#setDateVoided(Date)}. <br>
  * <br>
  * Child collections on this {@link Voidable} that are themselves a {@link Voidable} are looped over
@@ -43,20 +43,19 @@ public class BaseVoidHandler implements VoidHandler<Voidable> {
 	 * 
 	 * @see org.openmrs.api.handler.RequiredDataHandler#handle(org.openmrs.OpenmrsObject,
 	 *      org.openmrs.User, java.util.Date, java.lang.String)
-	 * <strong>Should</strong> set the voided bit
-	 * <strong>Should</strong> set the voidReason
-	 * <strong>Should</strong> set voidedBy
-	 * <strong>Should</strong> not set voidedBy if non null
-	 * <strong>Should</strong> set dateVoided
-	 * <strong>Should</strong> not set dateVoided if non null
-	 * <strong>Should</strong> not set the voidReason if already voided
-	 * <strong>Should</strong> set voidedBy even if voided bit is set but voidedBy is null
+	 * @should set the voided bit
+	 * @should set the voidReason
+	 * @should set voidedBy
+	 * @should not set voidedBy if non null
+	 * @should set dateVoided
+	 * @should not set dateVoided if non null
+	 * @should not set the voidReason if already voided
+	 * @should set voidedBy even if voided bit is set but voidedBy is null
 	 */
-	@Override
 	public void handle(Voidable voidableObject, User voidingUser, Date voidedDate, String voidReason) {
 		
 		// skip over all work if the object is already voided
-		if (!voidableObject.getVoided() || voidableObject.getVoidedBy() == null) {
+		if (!voidableObject.isVoided() || voidableObject.getVoidedBy() == null) {
 			
 			voidableObject.setVoided(true);
 			voidableObject.setVoidReason(voidReason);

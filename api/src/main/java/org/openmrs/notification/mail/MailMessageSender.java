@@ -16,19 +16,17 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.api.context.Context;
 import org.openmrs.notification.Message;
 import org.openmrs.notification.MessageException;
 import org.openmrs.notification.MessageSender;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
-
-import java.util.Properties;
 
 public class MailMessageSender implements MessageSender {
 	
-	private static final Logger log = LoggerFactory.getLogger(MailMessageSender.class);
+	protected static final Log log = LogFactory.getLog(MailMessageSender.class);
 	
 	/**
 	 * JavaMail session
@@ -64,7 +62,6 @@ public class MailMessageSender implements MessageSender {
 	 *
 	 * @param message the message to be sent
 	 */
-	@Override
 	public void send(Message message) throws MessageException {
 		try {
 			MimeMessage mimeMessage = createMimeMessage(message);
@@ -89,29 +86,23 @@ public class MailMessageSender implements MessageSender {
 		if (message.getRecipients() == null) {
 			throw new MessageException("Message must contain at least one recipient");
 		}
-
-		Properties mailProperties = Context.getMailProperties();
 		
 		// set the content-type to the default if it isn't defined in Message
 		if (!StringUtils.hasText(message.getContentType())) {
-			String contentType = mailProperties.getProperty("mail.default_content_type", "text/plain");
-			message.setContentType(contentType);
+			String contentType = Context.getAdministrationService().getGlobalProperty("mail.default_content_type");
+			message.setContentType(StringUtils.hasText(contentType) ? contentType : "text/plain");
 		}
 		
 		MimeMessage mimeMessage = new MimeMessage(session);
 		
-		String sender = message.getSender();
-		if (!StringUtils.hasText(sender)) {
-			sender = mailProperties.getProperty("mail.from");
-		}
-		if (StringUtils.hasText(sender)) {
-			InternetAddress senderAddress = new InternetAddress(sender);
-			mimeMessage.setFrom(senderAddress);
-			mimeMessage.setSender(senderAddress);
+		// TODO Need to test the null case.  
+		// Transport should use default mail.from value defined in properties.
+		if (message.getSender() != null) {
+			mimeMessage.setSender(new InternetAddress(message.getSender()));
 		}
 		
-		mimeMessage.setRecipients(javax.mail.Message.RecipientType.TO,
-		    InternetAddress.parse(message.getRecipients(), false));
+		mimeMessage
+		        .setRecipients(javax.mail.Message.RecipientType.TO, InternetAddress.parse(message.getRecipients(), false));
 		mimeMessage.setSubject(message.getSubject());
 		
 		if (!message.hasAttachment()) {

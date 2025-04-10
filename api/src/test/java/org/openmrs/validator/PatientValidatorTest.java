@@ -9,14 +9,11 @@
  */
 package org.openmrs.validator;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.Date;
 import java.util.Set;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.Location;
 import org.openmrs.Patient;
 import org.openmrs.PatientIdentifier;
@@ -24,6 +21,7 @@ import org.openmrs.PatientIdentifierType;
 import org.openmrs.PersonAddress;
 import org.openmrs.PersonName;
 import org.openmrs.api.context.Context;
+import org.openmrs.test.Verifies;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.validation.BindException;
@@ -46,37 +44,40 @@ public class PatientValidatorTest extends PersonValidatorTest {
 	 * @see PatientValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfAPreferredPatientIdentifierIsNotChosen() {
+	@Verifies(value = "should fail validation if a preferred patient identifier is not chosen", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfAPreferredPatientIdentifierIsNotChosen() throws Exception {
 		Patient pa = Context.getPatientService().getPatient(2);
-		assertNotNull(pa.getPatientIdentifier());
+		Assert.assertNotNull(pa.getPatientIdentifier());
 		//set all identifiers to be non-preferred
 		for (PatientIdentifier id : pa.getIdentifiers())
 			id.setPreferred(false);
 		
 		Errors errors = new BindException(pa, "patient");
 		validator.validate(pa, errors);
-		assertTrue(errors.hasErrors());
+		Assert.assertTrue(errors.hasErrors());
 	}
 	
 	/**
 	 * @see PatientValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfAPreferredPatientIdentifierIsNotChosenForVoidedPatients() {
+	@Verifies(value = "should fail validation if a preferred patient identifier is not chosen for voided patients", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfAPreferredPatientIdentifierIsNotChosenForVoidedPatients() throws Exception {
 		Patient pa = Context.getPatientService().getPatient(432);
 		
-		assertTrue(pa.getVoided());//sanity check
-		assertNotNull(pa.getPatientIdentifier());
+		Assert.assertTrue(pa.getVoided());//sanity check
+		Assert.assertNotNull(pa.getPatientIdentifier());
 		for (PatientIdentifier id : pa.getIdentifiers())
 			id.setPreferred(false);
 		
 		Errors errors = new BindException(pa, "patient");
 		validator.validate(pa, errors);
-		assertTrue(errors.hasErrors());
+		Assert.assertTrue(errors.hasErrors());
 	}
 	
 	@Test
-	public void validate_shouldNotFailWhenPatientHasOnlyOneIdentifierAndItsNotPreferred() {
+	@Verifies(value = "should not fail validation if patient that is not preferred only has one identifier", method = "validate(Object,Errors)")
+	public void validate_shouldNotFailWhenPatientHasOnlyOneIdentifierAndItsNotPreferred() throws Exception {
 		PatientIdentifierType patientIdentifierType = Context.getPatientService().getAllPatientIdentifierTypes(false).get(0);
 		Patient patient = new Patient();
 		PersonName pName = new PersonName();
@@ -104,19 +105,21 @@ public class PatientValidatorTest extends PersonValidatorTest {
 		Errors errors = new BindException(patient, "patient");
 		validator.validate(patient, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see org.openmrs.validator.PatientValidator#validate(Object,Errors)
+	 * @verifies fail validation if gender is blank
 	 */
 	@Test
-	public void validate_shouldFailValidationIfGenderIsBlank() {
+	@Verifies(value = "should fail validation if gender is blank", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfGenderIsBlank() throws Exception {
 		Patient pa = new Patient(1);
 		Errors errors = new BindException(pa, "patient");
 		validator.validate(pa, errors);
 		
-		assertTrue(errors.hasFieldErrors("gender"));
+		Assert.assertTrue(errors.hasFieldErrors("gender"));
 	}
 	
 	/**
@@ -124,7 +127,8 @@ public class PatientValidatorTest extends PersonValidatorTest {
 	 */
 	@Override
 	@Test
-	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() {
+	@Verifies(value = "should pass validation if field lengths are correct", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() throws Exception {
 		PatientIdentifierType patientIdentifierType = Context.getPatientService().getAllPatientIdentifierTypes(false).get(0);
 		Patient patient = new Patient();
 		PersonName pName = new PersonName();
@@ -154,7 +158,7 @@ public class PatientValidatorTest extends PersonValidatorTest {
 		Errors errors = new BindException(patient, "patient");
 		validator.validate(patient, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
@@ -162,7 +166,8 @@ public class PatientValidatorTest extends PersonValidatorTest {
 	 */
 	@Override
 	@Test
-	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() {
+	@Verifies(value = "should fail validation if field lengths are not correct", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() throws Exception {
 		PatientIdentifierType patientIdentifierType = Context.getPatientService().getAllPatientIdentifierTypes(false).get(0);
 		Patient patient = new Patient();
 		PersonName pName = new PersonName();
@@ -193,6 +198,6 @@ public class PatientValidatorTest extends PersonValidatorTest {
 		Errors errors = new BindException(patient, "patient");
 		validator.validate(patient, errors);
 		
-		assertTrue(errors.hasFieldErrors("voidReason"));
+		Assert.assertTrue(errors.hasFieldErrors("voidReason"));
 	}
 }

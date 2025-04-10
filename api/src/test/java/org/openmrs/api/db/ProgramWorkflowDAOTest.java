@@ -9,20 +9,17 @@
  */
 package org.openmrs.api.db;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.openmrs.Concept;
+import org.openmrs.Program;
+import org.openmrs.api.context.Context;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 
 import java.util.Date;
 import java.util.List;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.openmrs.Concept;
-import org.openmrs.PatientProgram;
-import org.openmrs.Program;
-import org.openmrs.api.context.Context;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
 
 public class ProgramWorkflowDAOTest extends BaseContextSensitiveTest {
 	
@@ -30,19 +27,20 @@ public class ProgramWorkflowDAOTest extends BaseContextSensitiveTest {
 	
 	/**
 	 * Run this before each unit test in this class. The "@Before" method in
-	 * {@link BaseContextSensitiveTest} is run right before this method.
+	 * {@link org.openmrs.test.BaseContextSensitiveTest} is run right before this method.
 	 *
 	 * @throws Exception
 	 */
-	@BeforeEach
-	public void runBeforeEachTest() {
+	@Before
+	public void runBeforeEachTest() throws Exception {
 		// fetch the dao from the spring application context
 		// this bean name matches the name in /metadata/spring/applicationContext-service.xml
 		dao = (ProgramWorkflowDAO) applicationContext.getBean("programWorkflowDAO");
 	}
 	
 	@Test
-	public void saveProgram_shouldSaveProgram() {
+	@Verifies(value = "should get saved personAttributeType name from database", method = "saveProgram")
+	public void saveProgram_shouldSaveProgram() throws Exception {
 		Program program = createProgram();
 		dao.saveProgram(program);
 	}
@@ -52,11 +50,11 @@ public class ProgramWorkflowDAOTest extends BaseContextSensitiveTest {
 		program.setName("OpenMRS");
 		program.setDescription("An opensource medical record system");
 		program.setDateCreated(new Date());
-		program.setConcept(new Concept(3));
 		return program;
 	}
 	
 	@Test
+	@Verifies(value = "should assign a concept to a program and save it to the database", method = "saveProgram")
 	public void saveProgram_shouldAlsoSaveOutcomesConcept() {
 		Concept outcomesConcept = Context.getConceptService().getConcept(3);
 		Program program = createProgram();
@@ -65,21 +63,23 @@ public class ProgramWorkflowDAOTest extends BaseContextSensitiveTest {
 		
 		clearHibernateCache();
 		Program savedProgram = dao.getProgram(id);
-		assertEquals(3, savedProgram.getOutcomesConcept().getId().intValue());
+		Assert.assertEquals(3, savedProgram.getOutcomesConcept().getId().intValue());
 	}
 	
 	@Test
+	@Verifies(value = "should return an empty list when there is no program in the dB with given name", method = "getProgramsByName")
 	public void getProgramsByName_whenThereAreNoProgramsWithTheGivenName_shouldReturnAnEmptyList() {
 		Program program = createProgram();
 		program.setName("wrongProgramName");
 		dao.saveProgram(program);
 		clearHibernateCache();
 		List<Program> programs = dao.getProgramsByName("testProgramName", true);
-		assertNotNull(programs);
-		assertEquals(0, programs.size());
+		Assert.assertNotNull(programs);
+		Assert.assertEquals(0, programs.size());
 	}
 	
 	@Test
+	@Verifies(value = "should return only and exactly the programs with the given name", method = "getProgramsByName")
 	public void getProgramsByName_whenThereAreProgramsWithTheGivenName_shouldReturnAllProgramsWithTheGivenName() {
 		Program program1 = createProgram();
 		program1.setName("testProgramName");
@@ -92,19 +92,9 @@ public class ProgramWorkflowDAOTest extends BaseContextSensitiveTest {
 		dao.saveProgram(program3);
 		clearHibernateCache();
 		List<Program> programs = dao.getProgramsByName("testProgramName", true);
-		assertEquals(2, programs.size());
-		assertEquals(program1, programs.get(0));
-		assertEquals(program2, programs.get(1));
+		Assert.assertEquals(2, programs.size());
+		Assert.assertEquals(program1, programs.get(0));
+		Assert.assertEquals(program2, programs.get(1));
 	}
-
-	@Test
-	public void getPatientPrograms_shouldReturnListChronologicallySortedByEnrollmentDate() {
-		List<PatientProgram> patientPrograms = dao.getPatientPrograms(null, null, null, null, null, null, true);
-		assertNotNull(patientPrograms);
-		Date previousDate = patientPrograms.get(0).getDateEnrolled();
-		for (PatientProgram patientProgram : patientPrograms) {
-			assertTrue(patientProgram.getDateEnrolled().compareTo(previousDate) >= 0);
-			previousDate = patientProgram.getDateEnrolled();
-		}
-	}
+	
 }

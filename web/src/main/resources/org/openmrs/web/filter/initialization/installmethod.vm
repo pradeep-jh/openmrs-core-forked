@@ -1,4 +1,4 @@
-#parse($HEADER_TEMPLATE)
+#parse($headerTemplate)
 
 	#if( $canCreate != true )
 		<br/>
@@ -61,4 +61,4 @@
             </form>
 		#end
 	#end
-#parse($FOOTER_TEMPLATE)
+#parse($footerTemplate)

@@ -13,15 +13,15 @@ import java.beans.PropertyEditorSupport;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.ArrayList;
+import java.util.Vector;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.Concept;
 import org.openmrs.ConceptAnswer;
 import org.openmrs.Drug;
 import org.openmrs.api.ConceptService;
 import org.openmrs.api.context.Context;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
 /**
@@ -29,9 +29,9 @@ import org.springframework.util.StringUtils;
  */
 public class ConceptAnswersEditor extends PropertyEditorSupport {
 	
-	private static final Logger log = LoggerFactory.getLogger(ConceptAnswersEditor.class);
+	private Log log = LogFactory.getLog(this.getClass());
 	
-	private Collection<ConceptAnswer> originalConceptAnswers;
+	private Collection<ConceptAnswer> originalConceptAnswers = null;
 	
 	/**
 	 * Default constructor taking in the original answers. This should be the actual list on the
@@ -41,7 +41,7 @@ public class ConceptAnswersEditor extends PropertyEditorSupport {
 	 */
 	public ConceptAnswersEditor(Collection<ConceptAnswer> originalAnswers) {
 		if (originalAnswers == null) {
-			originalConceptAnswers = new HashSet<>();
+			originalConceptAnswers = new HashSet<ConceptAnswer>();
 		} else {
 			originalConceptAnswers = originalAnswers;
 		}
@@ -52,14 +52,13 @@ public class ConceptAnswersEditor extends PropertyEditorSupport {
 	 * conceptIds^drugIds separated by spaces.
 	 * 
 	 * @param text list of conceptIds (not conceptAnswerIds)
-	 * <strong>Should</strong> set the sort weights with the least possible changes
+	 * @should set the sort weights with the least possible changes
 	 */
-	@Override
 	public void setAsText(String text) throws IllegalArgumentException {
 		if (StringUtils.hasText(text)) {
 			ConceptService cs = Context.getConceptService();
 			String[] conceptIds = text.split(" ");
-			List<String> requestConceptIds = new ArrayList<>();
+			List<String> requestConceptIds = new Vector<String>();
 			//set up parameter answer Set for easier add/delete functions and removal of duplicates
 			for (String id : conceptIds) {
 				id = id.trim();
@@ -68,7 +67,7 @@ public class ConceptAnswersEditor extends PropertyEditorSupport {
 				}
 			}
 			
-			Collection<ConceptAnswer> deletedConceptAnswers = new HashSet<>();
+			Collection<ConceptAnswer> deletedConceptAnswers = new HashSet<ConceptAnswer>();
 			
 			// loop over original concept answers to find any deleted answers
 			for (ConceptAnswer origConceptAnswer : originalConceptAnswers) {
@@ -220,7 +219,7 @@ public class ConceptAnswersEditor extends PropertyEditorSupport {
 	 */
 	private Integer getDrugId(String conceptId) {
 		if (conceptId.contains("^")) {
-			return Integer.valueOf(conceptId.substring(conceptId.indexOf("^") + 1));
+			return Integer.valueOf(conceptId.substring(conceptId.indexOf("^") + 1, conceptId.length()));
 		}
 		
 		return null;

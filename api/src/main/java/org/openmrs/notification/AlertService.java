@@ -43,9 +43,9 @@ public interface AlertService extends OpenmrsService {
 	 * @param alert the Alert object to save
 	 * @return The saved alert object
 	 * @throws APIException
-	 * <strong>Should</strong> save simple alert with one user
-	 * <strong>Should</strong> save alerts by role
-	 * <strong>Should</strong> assign uuid to alert
+	 * @should save simple alert with one user
+	 * @should save alerts by role
+	 * @should assign uuid to alert
 	 */
 	@Authorized(PrivilegeConstants.MANAGE_ALERTS)
 	public Alert saveAlert(Alert alert) throws APIException;
@@ -57,7 +57,6 @@ public interface AlertService extends OpenmrsService {
 	 * @return alert with given internal identifier
 	 * @throws APIException
 	 */
-	@Authorized
 	public Alert getAlert(Integer alertId) throws APIException;
 	
 	/**
@@ -77,7 +76,6 @@ public interface AlertService extends OpenmrsService {
 	 * @see #getAlerts(User, boolean, boolean)
 	 * @throws APIException
 	 */
-	@Authorized
 	public List<Alert> getAllActiveAlerts(User user) throws APIException;
 	
 	/**
@@ -90,7 +88,6 @@ public interface AlertService extends OpenmrsService {
 	 * @return alerts that are unread and not expired
 	 * @throws APIException
 	 */
-	@Authorized
 	public List<Alert> getAlertsByUser(User user) throws APIException;
 	
 	/**
@@ -102,7 +99,6 @@ public interface AlertService extends OpenmrsService {
 	 * @return alerts for this user with these options
 	 * @throws APIException
 	 */
-	@Authorized
 	public List<Alert> getAlerts(User user, boolean includeRead, boolean includeExpired) throws APIException;
 	
 	/**
@@ -111,7 +107,6 @@ public interface AlertService extends OpenmrsService {
 	 * @return list of unexpired alerts
 	 * @throws APIException
 	 */
-	@Authorized
 	public List<Alert> getAllAlerts() throws APIException;
 	
 	/**
@@ -121,7 +116,6 @@ public interface AlertService extends OpenmrsService {
 	 * @return list of alerts
 	 * @throws APIException
 	 */
-	@Authorized
 	public List<Alert> getAllAlerts(boolean includeExpired) throws APIException;
 	
 	/**
@@ -130,9 +124,9 @@ public interface AlertService extends OpenmrsService {
 	 * @param messageCode The alert message code from messages.properties
 	 * @param cause The exception that was thrown, method will work if cause is null
 	 * @param messageArguments The arguments for the coded message
-	 * <strong>Should</strong> add an alert with message of length equals Text Max Length
-	 * <strong>Should</strong> add an alert with message text if cause is null
-	 * <strong>Should</strong> add an alert to the database
+	 * @should add an alert with message of length equals Text Max Length
+	 * @should add an alert with message text if cause is null
+	 * @should add an alert to the database
 	 */
 	@Authorized(PrivilegeConstants.MANAGE_ALERTS)
 	public void notifySuperUsers(String messageCode, Exception cause, Object... messageArguments);

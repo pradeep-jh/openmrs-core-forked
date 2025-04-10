@@ -13,15 +13,14 @@ import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.beanutils.PropertyUtils;
-import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.PersonAddress;
-import org.openmrs.annotation.Handler;
 import org.openmrs.api.context.Context;
-import org.openmrs.layout.address.AddressTemplate;
+import org.openmrs.annotation.Handler;
+import org.openmrs.layout.address.*;
 import org.openmrs.util.OpenmrsUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
@@ -33,7 +32,7 @@ import org.springframework.validation.Validator;
 @Handler(supports = { PersonAddress.class }, order = 50)
 public class PersonAddressValidator implements Validator {
 	
-	private static final Logger log = LoggerFactory.getLogger(PersonAddressValidator.class);
+	private static Log log = LogFactory.getLog(PersonAddressValidator.class);
 	
 	/**
 	 * @see org.springframework.validation.Validator#supports(java.lang.Class)
@@ -46,21 +45,23 @@ public class PersonAddressValidator implements Validator {
 	/**
 	 * @see org.springframework.validation.Validator#validate(java.lang.Object,
 	 *      org.springframework.validation.Errors)
-	 * <strong>Should</strong> pass if all the dates are valid
-	 * <strong>Should</strong> fail if the startDate is in the future
-	 * <strong>Should</strong> fail if the endDate is before the startDate
-	 * <strong>Should</strong> pass if startDate and endDate are both null
-	 * <strong>Should</strong> pass if startDate is null
-	 * <strong>Should</strong> pass if endDate is null
-	 * <strong>Should</strong> fail if required fields are empty
-	 * <strong>Should</strong> pass if required fields are not empty
-	 * <strong>Should</strong> pass validation if field lengths are correct
-	 * <strong>Should</strong> fail validation if field lengths are not correct
+	 * @should pass if all the dates are valid
+	 * @should fail if the startDate is in the future
+	 * @should fail if the endDate is before the startDate
+	 * @should pass if startDate and endDate are both null
+	 * @should pass if startDate is null
+	 * @should pass if endDate is null
+	 * @should fail if required fields are empty
+	 * @should pass if required fields are not empty
+	 * @should pass validation if field lengths are correct
+	 * @should fail validation if field lengths are not correct
 	 */
 	@Override
 	public void validate(Object object, Errors errors) {
 		//TODO Validate other aspects of the personAddress object
-		log.debug("{}.validate...", this.getClass().getName());
+		if (log.isDebugEnabled()) {
+			log.debug(this.getClass().getName() + ".validate...");
+		}
 		
 		if (object == null) {
 			throw new IllegalArgumentException("The personAddress object should not be null");
@@ -69,7 +70,7 @@ public class PersonAddressValidator implements Validator {
 		PersonAddress personAddress = (PersonAddress) object;
 		
 		//resolve a shorter name to display along with the error message
-		String addressString;
+		String addressString = null;
 		if (StringUtils.isNotBlank(personAddress.getAddress1())) {
 			addressString = personAddress.getAddress1();
 		} else if (StringUtils.isNotBlank(personAddress.getAddress2())) {
@@ -95,7 +96,7 @@ public class PersonAddressValidator implements Validator {
 		List<String> requiredElements;
 		
 		try {
-			AddressTemplate addressTemplate = Context.getSerializationService().getDefaultSerializer().deserialize(StringEscapeUtils.unescapeXml(xml),
+			AddressTemplate addressTemplate = Context.getSerializationService().getDefaultSerializer().deserialize(xml,
 			    AddressTemplate.class);
 			requiredElements = addressTemplate.getRequiredElements();
 		}

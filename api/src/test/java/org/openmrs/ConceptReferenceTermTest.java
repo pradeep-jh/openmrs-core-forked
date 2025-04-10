@@ -9,10 +9,9 @@
  */
 package org.openmrs;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
+import org.openmrs.test.Verifies;
 
 /**
  * Contains test methods for concept reference terms
@@ -23,30 +22,33 @@ public class ConceptReferenceTermTest {
 	 * @see ConceptReferenceTerm#addConceptReferenceTermMap(ConceptReferenceTermMap)
 	 */
 	@Test
-	public void addConceptReferenceTermMap_shouldSetTermAAsTheTermToWhichAMappingIsBeingAdded() {
+	@Verifies(value = "should set termA as the term to which a mapping is being added", method = "addConceptReferenceTermMap(ConceptReferenceTermMap)")
+	public void addConceptReferenceTermMap_shouldSetTermAAsTheTermToWhichAMappingIsBeingAdded() throws Exception {
 		ConceptReferenceTerm term = new ConceptReferenceTerm(2);
 		term.addConceptReferenceTermMap(new ConceptReferenceTermMap(new ConceptReferenceTerm(1), new ConceptMapType(1)));
-		assertTrue(term.equals(term.getConceptReferenceTermMaps().iterator().next().getTermA()));
+		Assert.assertEquals(true, term.equals(term.getConceptReferenceTermMaps().iterator().next().getTermA()));
 	}
 	
 	/**
 	 * @see ConceptReferenceTerm#addConceptReferenceTermMap(ConceptReferenceTermMap)
 	 */
 	@Test
-	public void addConceptReferenceTermMap_shouldNotAddAMapWhereTermBIsItself() {
+	@Verifies(value = "should not add a map where termB is itself", method = "addConceptReferenceTermMap(ConceptReferenceTermMap)")
+	public void addConceptReferenceTermMap_shouldNotAddAMapWhereTermBIsItself() throws Exception {
 		ConceptReferenceTerm term = new ConceptReferenceTerm(2);
 		term.setUuid("test uuid");
 		term.addConceptReferenceTermMap(new ConceptReferenceTermMap(new ConceptReferenceTerm(1), new ConceptMapType(1)));
 		//add a mapping where termB is itself
 		term.addConceptReferenceTermMap(new ConceptReferenceTermMap(term, new ConceptMapType(1)));
-		assertEquals(1, term.getConceptReferenceTermMaps().size());
+		Assert.assertEquals(1, term.getConceptReferenceTermMaps().size());
 	}
 	
 	/**
 	 * @see ConceptReferenceTerm#addConceptReferenceTermMap(ConceptReferenceTermMap)
 	 */
 	@Test
-	public void addConceptReferenceTermMap_shouldNotAddDuplicateConceptReferenceTermMaps() {
+	@Verifies(value = "should not add duplicate concept reference term maps", method = "addConceptReferenceTermMap(ConceptReferenceTermMap)")
+	public void addConceptReferenceTermMap_shouldNotAddDuplicateConceptReferenceTermMaps() throws Exception {
 		ConceptReferenceTerm term = new ConceptReferenceTerm(5);
 		ConceptReferenceTermMap map1 = new ConceptReferenceTermMap(1);
 		map1.setTermB(new ConceptReferenceTerm(1));
@@ -60,6 +62,6 @@ public class ConceptReferenceTermTest {
 		term.addConceptReferenceTermMap(map2);
 		term.addConceptReferenceTermMap(map3);
 		
-		assertEquals(2, term.getConceptReferenceTermMaps().size());
+		Assert.assertEquals(2, term.getConceptReferenceTermMaps().size());
 	}
 }

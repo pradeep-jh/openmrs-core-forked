@@ -9,12 +9,12 @@
  */
 package org.openmrs.module;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 public class AdvicePoint {
 	
-	private static final Logger log = LoggerFactory.getLogger(AdvicePoint.class);
+	private Log log = LogFactory.getLog(this.getClass());
 	
 	private String point;
 	
@@ -33,7 +33,7 @@ public class AdvicePoint {
 			this.classInstance = clazz.newInstance();
 		}
 		catch (Exception e) {
-			log.error("Unable to get instance of: [{}]", clazz.getName(), e);
+			log.error("Unable to get instance of: " + clazz.getName(), e);
 		}
 	}
 	
@@ -60,8 +60,8 @@ public class AdvicePoint {
 			Class<?> c = ModuleFactory.getModuleClassLoader(getModule()).loadClass(getClassName());
 			o = c.newInstance();
 		}
-		catch (Exception | LinkageError e) {
-			log.warn("Could not get instance for advice point [{}]", point, e);
+		catch (Exception e) {
+			log.warn("Could not get instance for advice point: " + point, e);
 		}
 		classInstance = o;
 		return o;

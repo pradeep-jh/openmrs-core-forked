@@ -9,10 +9,10 @@
  */
 package org.openmrs.validator;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.Drug;
 import org.openmrs.annotation.Handler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.validation.Errors;
 import org.springframework.validation.ValidationUtils;
 import org.springframework.validation.Validator;
@@ -25,15 +25,15 @@ import org.springframework.validation.Validator;
 @Handler(supports = { Drug.class }, order = 50)
 public class ConceptDrugValidator implements Validator {
 	
-	// Logger for this class
-	private static final Logger log = LoggerFactory.getLogger(ConceptDrugValidator.class);
+	// Log for this class
+	private static final Log log = LogFactory.getLog(ConceptDrugValidator.class);
 	
 	/**
 	 * Determines if the command object being submitted is a valid type
 	 *
 	 * @see org.springframework.validation.Validator#supports(java.lang.Class)
-	 * <strong>Should</strong> support Drug class
-	 * <strong>Should</strong> reject classes not extending Drug
+	 * @should support Drug class
+	 * @should reject classes not extending Drug
 	 */
 	@Override
 	public boolean supports(Class<?> c) {
@@ -49,7 +49,7 @@ public class ConceptDrugValidator implements Validator {
 	 *         null or not of type <code>Drug</code>
 	 * @see org.springframework.validation.Validator#validate(java.lang.Object,
 	 *      org.springframework.validation.Errors)
-	 * <strong>Should</strong> fail if a concept is not specified
+	 * @should fail if a concept is not specified
 	 */
 	@Override
 	public void validate(Object obj, Errors errors) throws IllegalArgumentException {

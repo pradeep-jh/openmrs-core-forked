@@ -9,7 +9,7 @@
  */
 package org.openmrs.customdatatype.datatype;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.openmrs.Concept;
 import org.openmrs.api.context.Context;
 import org.openmrs.customdatatype.CustomDatatype;
@@ -27,7 +27,6 @@ public class ConceptDatatype extends BaseOpenmrsDatatype<Concept> {
 	 * @see org.openmrs.customdatatype.SerializingCustomDatatype#deserialize(String)
 	 * @override
 	 */
-	@Override
 	public Concept deserialize(String uuid) {
 		if (StringUtils.isBlank(uuid)) {
 			return null;
@@ -36,14 +35,16 @@ public class ConceptDatatype extends BaseOpenmrsDatatype<Concept> {
 	}
 	
 	/**
-	 * @see org.openmrs.customdatatype.SerializingCustomDatatype#doGetTextSummary(Object)
-	 * <strong>Should</strong> use the name in summary instance
+	 * @see BaseOpenmrsDatatype#doGetTextSummary(Object)
+	 * @should use the name in summary instance
 	 */
 	@Override
 	public Summary doGetTextSummary(Concept concept) {
 		String name = "";
-		if (concept != null && concept.getName() != null) {
-			name = concept.getName().getName();
+		if (concept != null) {
+			if (concept.getName() != null) {
+				name = concept.getName().getName();
+			}
 		}
 		return new CustomDatatype.Summary(name, true);
 	}

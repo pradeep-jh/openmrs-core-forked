@@ -9,41 +9,6 @@
  */
 package org.openmrs.web.filter.update;
 
-import liquibase.changelog.ChangeSet;
-import liquibase.exception.LockException;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.openmrs.liquibase.ChangeLogDetective;
-import org.openmrs.util.DatabaseUpdateException;
-import org.openmrs.util.DatabaseUpdater;
-import org.openmrs.liquibase.ChangeSetExecutorCallback;
-import org.openmrs.util.DatabaseUpdaterLiquibaseProvider;
-import org.openmrs.util.InputRequiredException;
-import org.openmrs.liquibase.ChangeLogVersionFinder;
-import org.openmrs.util.OpenmrsThreadPoolHolder;
-import org.openmrs.util.OpenmrsUtil;
-import org.openmrs.util.RoleConstants;
-import org.openmrs.util.Security;
-import org.openmrs.web.Listener;
-import org.openmrs.web.WebDaemon;
-import org.openmrs.web.filter.StartupFilter;
-import org.openmrs.web.filter.initialization.InitializationFilter;
-import org.openmrs.web.filter.util.CustomResourceLoader;
-import org.openmrs.web.filter.util.ErrorMessageConstants;
-import org.openmrs.web.filter.util.FilterUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.web.context.ContextLoader;
-
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -56,7 +21,42 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.Future;
+
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import liquibase.changelog.ChangeSet;
+import liquibase.exception.LockException;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.log4j.Appender;
+import org.apache.log4j.Logger;
+import org.openmrs.util.DatabaseUpdateException;
+import org.openmrs.util.DatabaseUpdater;
+import org.openmrs.util.DatabaseUpdater.ChangeSetExecutorCallback;
+import org.openmrs.util.InputRequiredException;
+import org.openmrs.util.MemoryAppender;
+import org.openmrs.util.OpenmrsConstants;
+import org.openmrs.util.OpenmrsUtil;
+import org.openmrs.util.RoleConstants;
+import org.openmrs.util.Security;
+import org.openmrs.web.Listener;
+import org.openmrs.web.WebDaemon;
+import org.openmrs.web.filter.StartupFilter;
+import org.openmrs.web.filter.initialization.InitializationFilter;
+import org.openmrs.web.filter.util.CustomResourceLoader;
+import org.openmrs.web.filter.util.ErrorMessageConstants;
+import org.openmrs.web.filter.util.FilterUtil;
+import org.springframework.web.context.ContextLoader;
 
 /**
  * This is the second filter that is processed. It is only active when OpenMRS has some liquibase
@@ -65,7 +65,7 @@ import java.util.concurrent.Future;
  */
 public class UpdateFilter extends StartupFilter {
 	
-	protected final Logger log = LoggerFactory.getLogger(UpdateFilter.class);
+	protected final Log log = LogFactory.getLog(getClass());
 	
 	/**
 	 * The velocity macro page to redirect to if an error occurs or on initial startup
@@ -82,7 +82,7 @@ public class UpdateFilter extends StartupFilter {
 	/**
 	 * The model object behind this set of screens
 	 */
-	private UpdateFilterModel updateFilterModel = null;
+	private UpdateFilterModel model = null;
 	
 	/**
 	 * Variable set as soon as the update is done or verified to not be needed so that future calls
@@ -99,14 +99,15 @@ public class UpdateFilter extends StartupFilter {
 	private UpdateFilterCompletion updateJob;
 	
 	/**
-	 * Variable set to true as soon as the update begins and set to false when the process ends. This
-	 * thread should only be accesses through the synchronized method.
+	 * Variable set to true as soon as the update begins and set to false when the process ends.
+	 * This thread should only be accesses through the synchronized method.
 	 */
 	private static boolean isDatabaseUpdateInProgress = false;
 	
 	/**
-	 * Variable set to true when the db lock is released. It's needed to prevent repeatedly releasing
-	 * this lock by other threads. This var should only be accessed through the synchronized method.
+	 * Variable set to true when the db lock is released. It's needed to prevent repeatedly
+	 * releasing this lock by other threads. This var should only be accessed through
+	 * the synchronized method.
 	 */
 	private static Boolean lockReleased = false;
 	
@@ -117,16 +118,16 @@ public class UpdateFilter extends StartupFilter {
 	 * @param httpResponse
 	 */
 	@Override
-	protected void doGet(HttpServletRequest httpRequest, HttpServletResponse httpResponse)
-	        throws IOException, ServletException {
+	protected void doGet(HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException,
+	        ServletException {
 		
-		Map<String, Object> referenceMap = new HashMap<>();
+		Map<String, Object> referenceMap = new HashMap<String, Object>();
 		checkLocaleAttributesForFirstTime(httpRequest);
 		// we need to save current user language in references map since it will be used when template
 		// will be rendered
 		if (httpRequest.getSession().getAttribute(FilterUtil.LOCALE_ATTRIBUTE) != null) {
-			referenceMap.put(FilterUtil.LOCALE_ATTRIBUTE,
-			    httpRequest.getSession().getAttribute(FilterUtil.LOCALE_ATTRIBUTE));
+			referenceMap
+			        .put(FilterUtil.LOCALE_ATTRIBUTE, httpRequest.getSession().getAttribute(FilterUtil.LOCALE_ATTRIBUTE));
 		}
 		// do step one of the wizard
 		renderTemplate(DEFAULT_PAGE, referenceMap, httpResponse);
@@ -139,15 +140,15 @@ public class UpdateFilter extends StartupFilter {
 	 *      javax.servlet.http.HttpServletResponse)
 	 */
 	@Override
-	protected synchronized void doPost(HttpServletRequest httpRequest, HttpServletResponse httpResponse)
-	        throws IOException, ServletException {
-		
-		final String updJobStatus = "updateJobStarted";
+	protected synchronized void doPost(HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException,
+	        ServletException {
+
+        final String updJobStatus = "updateJobStarted";
 		String page = httpRequest.getParameter("page");
-		Map<String, Object> referenceMap = new HashMap<>();
+		Map<String, Object> referenceMap = new HashMap<String, Object>();
 		if (httpRequest.getSession().getAttribute(FilterUtil.LOCALE_ATTRIBUTE) != null) {
-			referenceMap.put(FilterUtil.LOCALE_ATTRIBUTE,
-			    httpRequest.getSession().getAttribute(FilterUtil.LOCALE_ATTRIBUTE));
+			referenceMap
+			        .put(FilterUtil.LOCALE_ATTRIBUTE, httpRequest.getSession().getAttribute(FilterUtil.LOCALE_ATTRIBUTE));
 		}
 		
 		// step one
@@ -188,7 +189,7 @@ public class UpdateFilter extends StartupFilter {
 						// do nothing
 					}
 					// if lock was released successfully we need to get unrun changes
-					updateFilterModel.updateChanges();
+					model.updateChanges();
 				}
 				
 				// need to configure velocity tool box for using user's preferred locale
@@ -245,7 +246,7 @@ public class UpdateFilter extends StartupFilter {
 			
 			httpResponse.setContentType("text/json");
 			httpResponse.setHeader("Cache-Control", "no-cache");
-			Map<String, Object> result = new HashMap<>();
+			Map<String, Object> result = new HashMap<String, Object>();
 			if (updateJob != null) {
 				result.put("hasErrors", updateJob.hasErrors());
 				if (updateJob.hasErrors()) {
@@ -257,15 +258,13 @@ public class UpdateFilter extends StartupFilter {
 					StringBuilder sb = new StringBuilder("<ul>");
 					
 					for (String warning : updateJob.getUpdateWarnings()) {
-						sb.append("<li>").append(warning).append("</li>");
+						sb.append("<li>" + warning + "</li>");
 					}
 					
 					sb.append("</ul>");
 					result.put("updateWarnings", sb.toString());
-					result.put("updateLogFile",
-					    StringUtils.replace(
-					        OpenmrsUtil.getApplicationDataDirectory() + DatabaseUpdater.DATABASE_UPDATES_LOG_FILE, "\\",
-					        "\\\\"));
+					result.put("updateLogFile", StringUtils.replace(OpenmrsUtil.getApplicationDataDirectory()
+					        + DatabaseUpdater.DATABASE_UPDATES_LOG_FILE, "\\", "\\\\"));
 					updateJob.hasUpdateWarnings = false;
 					updateJob.getUpdateWarnings().clear();
 				}
@@ -274,8 +273,18 @@ public class UpdateFilter extends StartupFilter {
 				result.put("message", updateJob.getMessage());
 				result.put("changesetIds", updateJob.getChangesetIds());
 				result.put("executingChangesetId", updateJob.getExecutingChangesetId());
-				
-				addLogLinesToResponse(result);
+				Appender appender = Logger.getRootLogger().getAppender("MEMORY_APPENDER");
+				if (appender instanceof MemoryAppender) {
+					MemoryAppender memoryAppender = (MemoryAppender) appender;
+					List<String> logLines = memoryAppender.getLogLines();
+					// truncate the list to the last five so we don't overwhelm jquery
+					if (logLines.size() > 5) {
+						logLines = logLines.subList(logLines.size() - 5, logLines.size());
+					}
+					result.put("logLines", logLines);
+				} else {
+					result.put("logLines", new ArrayList<String>());
+				}
 			}
 			
 			String jsonText = toJSONString(result);
@@ -284,10 +293,10 @@ public class UpdateFilter extends StartupFilter {
 	}
 	
 	/**
-	 * It sets locale attribute for current session when user is making first GET http request to
-	 * application. It retrieves user locale from request object and checks if this locale is supported
-	 * by application. If not, it tries to load system default locale. If it's not specified it uses
-	 * {@link Locale#ENGLISH} by default
+	 * It sets locale attribute for current session when user is making first GET http request
+	 * to application. It retrieves user locale from request object and checks if this locale is
+	 * supported by application. If not, it tries to load system default locale. If it's not specified it 
+	 * uses {@link Locale#ENGLISH} by default
 	 *
 	 * @param httpRequest the http request object
 	 */
@@ -307,16 +316,18 @@ public class UpdateFilter extends StartupFilter {
 	}
 	
 	/**
-	 * Look in the users table for a user with this username and password and see if they have a role of
-	 * {@link RoleConstants#SUPERUSER}.
+	 * Look in the users table for a user with this username and password and see if they have a
+	 * role of {@link OpenmrsConstants#SUPERUSER_ROLE}.
 	 *
 	 * @param usernameOrSystemId user entered username
 	 * @param password user entered password
 	 * @return true if this user has the super user role
-	 * @see #isSuperUser(Connection, Integer) <strong>Should</strong> return false if given invalid
-	 *      credentials <strong>Should</strong> return false if given user is not superuser
-	 *      <strong>Should</strong> return true if given user is superuser <strong>Should</strong> not
-	 *      authorize retired superusers <strong>Should</strong> authenticate with systemId
+	 * @see #isSuperUser(Connection, Integer)
+	 * @should return false if given invalid credentials
+	 * @should return false if given user is not superuser
+	 * @should return true if given user is superuser
+	 * @should not authorize retired superusers
+	 * @should authenticate with systemId
 	 */
 	protected boolean authenticateAsSuperUser(String usernameOrSystemId, String password) throws ServletException {
 		Connection connection = null;
@@ -340,7 +351,9 @@ public class UpdateFilter extends StartupFilter {
 							String storedPassword = results.getString(2);
 							String salt = results.getString(3);
 							String passwordToHash = password + salt;
-							return Security.hashMatches(storedPassword, passwordToHash) && isSuperUser(connection, userId);
+							boolean result = Security.hashMatches(storedPassword, passwordToHash)
+							        && isSuperUser(connection, userId);
+							return result;
 						}
 					}
 					finally {
@@ -367,9 +380,10 @@ public class UpdateFilter extends StartupFilter {
 			}
 		}
 		catch (Exception connectionEx) {
-			log.error(
-			    "Error while trying to authenticate as super user. Ignore this if you are upgrading from OpenMRS 1.5 to 1.6",
-			    connectionEx);
+			log
+			        .error(
+			            "Error while trying to authenticate as super user. Ignore this if you are upgrading from OpenMRS 1.5 to 1.6",
+			            connectionEx);
 			
 			// we may not have upgraded User to have retired instead of voided yet, so if the query above fails, we try
 			// again the old way
@@ -390,8 +404,9 @@ public class UpdateFilter extends StartupFilter {
 								String storedPassword = results.getString(2);
 								String salt = results.getString(3);
 								String passwordToHash = password + salt;
-								return Security.hashMatches(storedPassword, passwordToHash)
+								boolean result = Security.hashMatches(storedPassword, passwordToHash)
 								        && isSuperUser(connection, userId);
+								return result;
 							}
 						}
 						finally {
@@ -436,16 +451,16 @@ public class UpdateFilter extends StartupFilter {
 	}
 	
 	/**
-	 * Checks the given user to see if they have been given the {@link RoleConstants#SUPERUSER}
-	 * role. This method does not look at child roles.
+	 * Checks the given user to see if they have been given the
+	 * {@link OpenmrsConstants#SUPERUSER_ROLE} role. This method does not look at child roles.
 	 *
 	 * @param connection the java sql connection to use
 	 * @param userId the user id to look at
 	 * @return true if the given user is a super user
-	 * @throws SQLException <strong>Should</strong> return true if given user has superuser role
-	 *             <strong>Should</strong> return false if given user does not have the super user role
+	 * @should return true if given user has superuser role
+	 * @should return false if given user does not have the super user role
 	 */
-	protected boolean isSuperUser(Connection connection, Integer userId) throws SQLException {
+	protected boolean isSuperUser(Connection connection, Integer userId) throws Exception {
 		// the 'Administrator' part of this string is necessary because if the database was upgraded
 		// by OpenMRS 1.6 alpha then System Developer was renamed to that. This has to be here so we
 		// can roll back that change in 1.6 beta+
@@ -463,8 +478,8 @@ public class UpdateFilter extends StartupFilter {
 		return false;
 	}
 	
-	/**
-	 * `` Do everything to get openmrs going.
+	/**``
+	 * Do everything to get openmrs going.
 	 *
 	 * @param servletContext the servletContext from the filterconfig
 	 * @see Listener#startOpenmrs(ServletContext)
@@ -494,9 +509,8 @@ public class UpdateFilter extends StartupFilter {
 		
 		log.debug("Initializing the UpdateFilter");
 		
-		if (!InitializationFilter.initializationRequired()
-		        || (Listener.isSetupNeeded() && Listener.runtimePropertiesFound())) {
-			updateFilterModel = new UpdateFilterModel();
+		if (!InitializationFilter.initializationRequired() || (Listener.isSetupNeeded() && Listener.runtimePropertiesFound())) {
+			model = new UpdateFilterModel();
 			/*
 			 * In this case, Listener#runtimePropertiesFound == true and InitializationFilter Wizard is skipped,
 			 * so no need to reset Context's RuntimeProperties again, because of Listener.contextInitialized has set it.
@@ -504,13 +518,16 @@ public class UpdateFilter extends StartupFilter {
 			try {
 				// this pings the DatabaseUpdater.updatesRequired which also
 				// considers a db lock to be a 'required update'
-				if (updateFilterModel.updateRequired) {
+				if (model.updateRequired) {
 					setUpdatesRequired(true);
-				} else if (updateFilterModel.changes == null) {
+				} else if (model.changes == null) {
 					setUpdatesRequired(false);
 				} else {
-					log.debug("Setting updates required to {} because of the size of unrun changes", (!updateFilterModel.changes.isEmpty()));
-					setUpdatesRequired(!updateFilterModel.changes.isEmpty());
+					if (log.isDebugEnabled()) {
+						log.debug("Setting updates required to " + (!model.changes.isEmpty())
+						        + " because of the size of unrun changes");
+					}
+					setUpdatesRequired(!model.changes.isEmpty());
 				}
 			}
 			catch (Exception e) {
@@ -521,19 +538,19 @@ public class UpdateFilter extends StartupFilter {
 			 * The initialization wizard will update the database to the latest version, so the user will not need any updates here.
 			 * See end of InitializationFilter#InitializationCompletion
 			 */
-			log.debug(
-			    "Setting updates required to false because the user doesn't have any runtime properties yet or database is empty");
+			log
+			        .debug("Setting updates required to false because the user doesn't have any runtime properties yet or database is empty");
 			setUpdatesRequired(false);
 		}
 	}
 	
 	/**
-	 * @see org.openmrs.web.filter.StartupFilter#getUpdateFilterModel()
+	 * @see org.openmrs.web.filter.StartupFilter#getModel()
 	 */
 	@Override
-	protected Object getUpdateFilterModel() {
+	protected Object getModel() {
 		// this object was initialized in the #init(FilterConfig) method
-		return updateFilterModel;
+		return model;
 	}
 	
 	/**
@@ -549,8 +566,7 @@ public class UpdateFilter extends StartupFilter {
 	 *
 	 * @return true if updates have been determined to be required
 	 * @see #init(FilterConfig)
-	 * @see Listener#isSetupNeeded()
-	 * @see Listener#contextInitialized(ServletContextEvent)
+	 * @see Listener#setupNeeded
 	 */
 	public static synchronized boolean updatesRequired() {
 		return updatesRequired;
@@ -564,9 +580,9 @@ public class UpdateFilter extends StartupFilter {
 	}
 	
 	/**
-	 * Indicates if database lock was released. It will also used to prevent releasing existing lock of
-	 * liquibasechangeloglock table by another user, when he also tries to run database update when
-	 * another user is currently running it
+	 * Indicates if database lock was released. It will also used to prevent releasing
+	 * existing lock of liquibasechangeloglock table by another user, when he also tries
+	 * to run database update when another user is currently running it
 	 */
 	public static Boolean isLockReleased() {
 		return lockReleased;
@@ -585,18 +601,18 @@ public class UpdateFilter extends StartupFilter {
 	}
 	
 	/**
-	 * This class controls the final steps and is used by the ajax calls to know what updates have been
-	 * executed. TODO: Break this out into a separate (non-inner) class
+	 * This class controls the final steps and is used by the ajax calls to know what updates have
+	 * been executed. TODO: Break this out into a separate (non-inner) class
 	 */
 	private class UpdateFilterCompletion {
-
-		private Runnable r;
-
+		
+		private Thread thread;
+		
 		private String executingChangesetId = null;
 		
-		private List<String> changesetIds = new ArrayList<>();
+		private List<String> changesetIds = new ArrayList<String>();
 		
-		private Map<String, Object[]> errors = new HashMap<>();
+		private Map<String, Object[]> errors = new HashMap<String, Object[]>();
 		
 		private String message = null;
 		
@@ -604,23 +620,23 @@ public class UpdateFilter extends StartupFilter {
 		
 		private boolean hasUpdateWarnings = false;
 		
-		private List<String> updateWarnings = new LinkedList<>();
+		private List<String> updateWarnings = new LinkedList<String>();
 		
 		public synchronized void reportError(String error, Object... params) {
-			Map<String, Object[]> reportedErrors = new HashMap<>();
-			reportedErrors.put(error, params);
-			reportErrors(reportedErrors);
+			Map<String, Object[]> errors = new HashMap<String, Object[]>();
+			errors.put(error, params);
+			reportErrors(errors);
 		}
-		
+
 		public synchronized void reportErrors(Map<String, Object[]> errs) {
 			errors.putAll(errs);
 			erroneous = true;
 		}
-		
+
 		public synchronized boolean hasErrors() {
 			return erroneous;
 		}
-		
+
 		public synchronized Map<String, Object[]> getErrors() {
 			return errors;
 		}
@@ -630,7 +646,17 @@ public class UpdateFilter extends StartupFilter {
 		 */
 		public void start() {
 			setUpdatesRequired(true);
-			OpenmrsThreadPoolHolder.threadExecutor.submit(r);
+			thread.start();
+		}
+		
+		@SuppressWarnings("unused")
+		public void waitForCompletion() {
+			try {
+				thread.join();
+			}
+			catch (InterruptedException e) {
+				log.error("Error generated", e);
+			}
 		}
 		
 		public synchronized void setMessage(String message) {
@@ -674,14 +700,13 @@ public class UpdateFilter extends StartupFilter {
 		 * This class does all the work of creating the desired database, user, updates, etc
 		 */
 		public UpdateFilterCompletion() {
-			 r = new Runnable() {
+			Runnable r = new Runnable() {
 				
 				/**
 				 * TODO split this up into multiple testable methods
 				 *
 				 * @see java.lang.Runnable#run()
 				 */
-				@Override
 				public void run() {
 					try {
 						/**
@@ -696,7 +721,8 @@ public class UpdateFilter extends StartupFilter {
 							}
 							
 							/**
-							 * @see ChangeSetExecutorCallback#executing(liquibase.changelog.ChangeSet, int)
+							 * @see org.openmrs.util.DatabaseUpdater.ChangeSetExecutorCallback#executing(liquibase.ChangeSet,
+							 *      int)
 							 */
 							@Override
 							public void executing(ChangeSet changeSet, int numChangeSetsToRun) {
@@ -708,62 +734,31 @@ public class UpdateFilter extends StartupFilter {
 						
 						try {
 							setMessage("Updating the database to the latest version");
-							
-							ChangeLogDetective changeLogDetective = ChangeLogDetective.getInstance();
-							ChangeLogVersionFinder changeLogVersionFinder = new ChangeLogVersionFinder();
-							
-							List<String> changelogs = new ArrayList<>();
-							List<String> warnings = new ArrayList<>();
-							
-							String version = changeLogDetective.getInitialLiquibaseSnapshotVersion(DatabaseUpdater.CONTEXT,
-							    new DatabaseUpdaterLiquibaseProvider());
-							
-							log.debug(
-							    "updating the database with versions of liquibase-update-to-latest files greater than '{}'",
-							    version);
-							
-							changelogs.addAll(changeLogVersionFinder
-							        .getUpdateFileNames(changeLogVersionFinder.getUpdateVersionsGreaterThan(version)));
-							
-							log.debug("found applicable Liquibase update change logs: {}", changelogs);
-							
-							for (String changelog : changelogs) {
-								log.debug("applying Liquibase changelog '{}'", changelog);
-								
-								List<String> currentWarnings = DatabaseUpdater.executeChangelog(changelog,
-								    new PrintingChangeSetExecutorCallback("executing Liquibase changelog :" + changelog));
-								
-								if (currentWarnings != null) {
-									warnings.addAll(currentWarnings);
-								}
-							}
+							List<String> warnings = DatabaseUpdater.executeChangelog(null, null,
+							    new PrintingChangeSetExecutorCallback("Updating database tables to latest version "));
 							executingChangesetId = null; // clear out the last changeset
 							
 							if (CollectionUtils.isNotEmpty(warnings)) {
 								reportWarnings(warnings);
+								warnings = null;
 							}
 						}
 						catch (InputRequiredException inputRequired) {
 							// the user would be stepped through the questions returned here.
 							log.error("Not implemented", inputRequired);
-							updateFilterModel.updateChanges();
-							reportError(ErrorMessageConstants.UPDATE_ERROR_INPUT_NOT_IMPLEMENTED,
-							    inputRequired.getMessage());
+							model.updateChanges();
+							reportError(ErrorMessageConstants.UPDATE_ERROR_INPUT_NOT_IMPLEMENTED, inputRequired.getMessage());
 							return;
 						}
 						catch (DatabaseUpdateException e) {
 							log.error("Unable to update the database", e);
-							Map<String, Object[]> databaseUpdateErrors = new HashMap<>();
-							databaseUpdateErrors.put(ErrorMessageConstants.UPDATE_ERROR_UNABLE, null);
-							for (String errorMessage : Arrays.asList(e.getMessage().split("\n"))) {
-								databaseUpdateErrors.put(errorMessage, null);
+							Map<String, Object[]> errors = new HashMap<String, Object[]>();
+							errors.put(ErrorMessageConstants.UPDATE_ERROR_UNABLE, null);
+							for (String message : Arrays.asList(e.getMessage().split("\n"))) {
+								errors.put(message, null);
 							}
-							updateFilterModel.updateChanges();
-							reportErrors(databaseUpdateErrors);
-							return;
-						}
-						catch (Exception e) {
-							log.error("Unable to update the database", e);
+							model.updateChanges();
+							reportErrors(errors);
 							return;
 						}
 						
@@ -789,6 +784,8 @@ public class UpdateFilter extends StartupFilter {
 					}
 				}
 			};
+			
+			thread = new Thread(r);
 		}
 	}
 }

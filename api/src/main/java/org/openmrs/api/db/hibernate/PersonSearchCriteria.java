@@ -9,47 +9,60 @@
  */
 package org.openmrs.api.db.hibernate;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.Join;
-import javax.persistence.criteria.JoinType;
-import javax.persistence.criteria.Predicate;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import org.openmrs.Encounter;
-import org.openmrs.Patient;
+import org.hibernate.Criteria;
+import org.hibernate.criterion.CriteriaSpecification;
+import org.hibernate.criterion.Criterion;
+import org.hibernate.criterion.MatchMode;
+import org.hibernate.criterion.Restrictions;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.context.Context;
-import org.openmrs.attribute.Attribute;
-import org.openmrs.attribute.AttributeType;
 import org.openmrs.util.OpenmrsConstants;
 
 public class PersonSearchCriteria {
-
-	Predicate preparePredicateForAttribute(CriteriaBuilder cb, Join<Patient, Attribute> attributeJoin, 
-			Join<Attribute, AttributeType> attributeTypeJoin, String value, Boolean voided, MatchMode matchMode) {
-		List<Predicate> predicates = new ArrayList<>();
-		predicates.add(cb.isTrue(attributeTypeJoin.get("searchable")));
-
-		predicates.add(cb.like(cb.lower(attributeJoin.get("value")), matchMode.toLowerCasePattern(value)));
-
-		if (voided == null || !voided) {
-			predicates.add(cb.isFalse(attributeJoin.get("voided")));
-		}
-
-		return cb.and(predicates.toArray(new Predicate[]{}));
+	
+	Criterion prepareCriterionForAttribute(String value, MatchMode matchMode) {
+		return (prepareCriterionForAttribute(value, null, matchMode));
 	}
 	
-	Join<Patient, Attribute> addAliasForAttribute(Join<Encounter, Patient> patientJoin) {
-		return patientJoin.join("attributes", JoinType.LEFT);
+	Criterion prepareCriterionForName(String value) {
+		return prepareCriterionForName(value, null);
 	}
-
-
-	Join<Attribute, AttributeType> addAliasForAttributeType(Join<Patient, Attribute> attributeJoin) {
-		return attributeJoin.join("attributeType", JoinType.LEFT);
+	
+	Criterion prepareCriterionForAttribute(String value, Boolean voided, MatchMode matchMode) {
+		if (voided == null || !voided) {
+			return Restrictions.conjunction().add(Restrictions.eq("attributeType.searchable", true)).add(
+			    Restrictions.eq("attribute.voided", false)).add(Restrictions.ilike("attribute.value", value, matchMode));
+		} else {
+			return Restrictions.conjunction().add(Restrictions.eq("attributeType.searchable", true)).add(
+			    Restrictions.ilike("attribute.value", value, matchMode));
+		}
 	}
-
+	
+	Criterion prepareCriterionForName(String value, Boolean voided) {
+		if (voided == null || !voided) {
+			return Restrictions.conjunction().add(Restrictions.eq("name.voided", false)).add(
+			    Restrictions.disjunction().add(Restrictions.ilike("name.givenName", value, MatchMode.START)).add(
+			        Restrictions.ilike("name.middleName", value, MatchMode.START)).add(
+			        Restrictions.ilike("name.familyName", value, MatchMode.START)).add(
+			        Restrictions.ilike("name.familyName2", value, MatchMode.START)));
+		} else {
+			return Restrictions.conjunction().add(
+			    Restrictions.disjunction().add(Restrictions.ilike("name.givenName", value, MatchMode.START)).add(
+			        Restrictions.ilike("name.middleName", value, MatchMode.START)).add(
+			        Restrictions.ilike("name.familyName", value, MatchMode.START)).add(
+			        Restrictions.ilike("name.familyName2", value, MatchMode.START)));
+		}
+	}
+	
+	void addAliasForName(Criteria criteria) {
+		criteria.createAlias("names", "name");
+	}
+	
+	void addAliasForAttribute(Criteria criteria) {
+		criteria.createAlias("attributes", "attribute", CriteriaSpecification.LEFT_JOIN);
+		criteria.createAlias("attribute.attributeType", "attributeType", CriteriaSpecification.LEFT_JOIN);
+	}
+	
 	MatchMode getAttributeMatchMode() {
 		AdministrationService adminService = Context.getAdministrationService();
 		String matchModeProperty = adminService.getGlobalProperty(

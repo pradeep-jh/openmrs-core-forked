@@ -20,7 +20,7 @@ import org.openmrs.aop.RequiredDataAdvice;
  * This is the default class for all retire* actions that take place on all services. The
  * {@link RequiredDataAdvice} class uses AOP around each method in every service to check to see if
  * its a retire* method. If it is a retire* method, this class is called to handle setting the
- * {@link Retireable#getRetired()}, {@link Retireable#setRetireReason(String)},
+ * {@link Retireable#isRetired()}, {@link Retireable#setRetireReason(String)},
  * {@link Retireable#setRetiredBy(User)}, and {@link Retireable#setDateRetired(Date)}. <br>
  * <br>
  * Child collections on this {@link Retireable} that are themselves a {@link Retireable} are looped
@@ -43,20 +43,19 @@ public class BaseRetireHandler implements RetireHandler<Retireable> {
 	 * 
 	 * @see org.openmrs.api.handler.RequiredDataHandler#handle(org.openmrs.OpenmrsObject,
 	 *      org.openmrs.User, java.util.Date, java.lang.String)
-	 * <strong>Should</strong> set the retired bit
-	 * <strong>Should</strong> set the retireReason
-	 * <strong>Should</strong> set retired by
-	 * <strong>Should</strong> not set retired by if non null
-	 * <strong>Should</strong> set dateRetired
-	 * <strong>Should</strong> not set dateRetired if non null
-	 * <strong>Should</strong> not set the retireReason if already voided
-	 * <strong>Should</strong> set retiredBy even if retired bit is set but retiredBy is null
+	 * @should set the retired bit
+	 * @should set the retireReason
+	 * @should set retired by
+	 * @should not set retired by if non null
+	 * @should set dateRetired
+	 * @should not set dateRetired if non null
+	 * @should not set the retireReason if already voided
+	 * @should set retiredBy even if retired bit is set but retiredBy is null
 	 */
-	@Override
 	public void handle(Retireable retireableObject, User retiringUser, Date retireDate, String retireReason) {
 		
 		// skip over doing retire stuff if already retired
-		if (!retireableObject.getRetired() || retireableObject.getRetiredBy() == null) {
+		if (!retireableObject.isRetired() || retireableObject.getRetiredBy() == null) {
 			
 			retireableObject.setRetired(true);
 			retireableObject.setRetireReason(retireReason);

@@ -9,20 +9,13 @@
  */
 package org.openmrs.validator;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.Arrays;
-import java.util.List;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import org.openmrs.ConceptAttributeType;
 import org.openmrs.api.context.Context;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 
@@ -32,13 +25,7 @@ import org.springframework.validation.Errors;
 public class ConceptAttributeTypeValidatorTest extends BaseContextSensitiveTest {
 
 	protected static final String CONCEPT_ATTRIBUTE_TYPE_XML = "org/openmrs/api/include/ConceptServiceTest-conceptAttributeType.xml";
-	
-	private ConceptAttributeTypeValidator validator;
 
-	private ConceptAttributeType type;
-	
-	private Errors errors;
-	
 	/**
 	 * Run this before each unit test in this class. This adds a bit more data to the base data that
 	 * is done in the "@Before" method in {@link BaseContextSensitiveTest} (which is run right
@@ -46,129 +33,128 @@ public class ConceptAttributeTypeValidatorTest extends BaseContextSensitiveTest 
 	 *
 	 * @throws Exception
 	 */
-	@BeforeEach
-	public void setUp() {
+	@Before
+	public void runBeforeEachTest() throws Exception {
 		executeDataSet(CONCEPT_ATTRIBUTE_TYPE_XML);
-		
-		validator = new ConceptAttributeTypeValidator();
-		type = new ConceptAttributeType();
-		errors = new BindException(type, "type");
-	}
-	
-	@Test
-	public void shouldFailValidationIfNameIsNull() {
-		
-		type.setName(null);
-		type.setDescription("description");
-		
-		validator.validate(type, errors);
-		
-		assertTrue(errors.hasFieldErrors("name"));
-		assertThat(errors.getFieldErrors("name").get(0).getCode(), is("error.name"));
-	}
-	
-	@Test
-	public void validate_shouldFailValidationIfNameIsEmpty() {
-		
-		type.setName("");
-		type.setDescription("description");
-		
-		validator.validate(type, errors);
-		
-		assertTrue(errors.hasFieldErrors("name"));
-		assertThat(errors.getFieldErrors("name").get(0).getCode(), is("error.name"));
-	}
-	
-	@Test
-	public void shouldFailValidationIfNameIsOnlyWhitespace() {
-		
-		type.setName(" ");
-		type.setDescription("description");
-		
-		validator.validate(type, errors);
-		
-		assertTrue(errors.hasFieldErrors("name"));
-		assertThat(errors.getFieldErrors("name").get(0).getCode(), is("error.name"));
-	}
-	
-	/**
-	 * @see ConceptAttributeTypeValidator#validate(Object, Errors)
-	 */
-	@Test
-	public void validate_shouldFailIfConceptAttributeTypeNameIsDuplicate() {
-		
-		assertNotNull(Context.getConceptService().getConceptAttributeTypeByName("Audit Date"));
-		type.setName("Audit Date");
-		type.setDatatypeClassname("org.openmrs.customdatatype.datatype.FreeTextDatatype");
-		
-		validator.validate(type, errors);
-		
-		assertTrue(errors.hasFieldErrors("name"));
-		assertThat(errors.getFieldErrors("name").get(0).getCode(), is("ConceptAttributeType.error.nameAlreadyInUse"));
-	}
-	
-	/**
-	 * @see ConceptAttributeTypeValidator#validate(Object, Errors)
-	 */
-	@Test
-	public void validate_shouldPassEditingConceptAttributeTypeName() {
-		
-		ConceptAttributeType et = Context.getConceptService().getConceptAttributeTypeByName("Audit Date");
-		assertNotNull(et);
-		Errors errors = new BindException(et, "conceptAttributeType");
-		
-		validator.validate(et, errors);
-		
-		assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see ConceptAttributeTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() {
+	@Verifies(value = "should fail validation if name is null or empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfNameIsNullOrEmptyOrWhitespace() throws Exception {
+		ConceptAttributeType type = new ConceptAttributeType();
+		type.setName(null);
+		type.setDescription("description");
 		
-		final String stringOf256 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-		final String stringOf1025 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-		type.setName(stringOf256);
-		type.setDatatypeClassname(stringOf256);
-		type.setDescription(stringOf1025);
-		type.setPreferredHandlerClassname(stringOf256);
-		type.setRetireReason(stringOf256);
+		Errors errors = new BindException(type, "type");
+		new ConceptAttributeTypeValidator().validate(type, errors);
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 		
-		validator.validate(type, errors);
+		type.setName("");
+		errors = new BindException(type, "type");
+		new ConceptAttributeTypeValidator().validate(type, errors);
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 		
-		List<String> errorFields = Arrays.asList("name", "datatypeClassname", "description", "preferredHandlerClassname",
-		    "retireReason");
-		errorFields.forEach(this::assertThatFieldExceedsMaxLength);
+		type.setName(" ");
+		errors = new BindException(type, "type");
+		new ConceptAttributeTypeValidator().validate(type, errors);
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 	}
 	
+	/**
+	 * @see ConceptAttributeTypeValidator#validate(Object,Errors)
+	 */
 	@Test
-	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() {
+	@Verifies(value = "should pass validation if all required fields have proper values", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfAllRequiredFieldsHaveProperValues() throws Exception {
+		ConceptAttributeType type = new ConceptAttributeType();
+		type.setName("name");
+		type.setDatatypeClassname("org.openmrs.customdatatype.datatype.FreeTextDatatype");
 		
+		Errors errors = new BindException(type, "type");
+		new ConceptAttributeTypeValidator().validate(type, errors);
+		
+		Assert.assertFalse(errors.hasErrors());
+	}
+	
+	/**
+	 * @see ConceptAttributeTypeValidator#validate(Object, Errors)
+	 */
+	@Test
+	@Verifies(value = "should fail if concept attribute type name is duplicate", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfConceptAttributeTypeNameIsDuplicate() throws Exception {
+		
+		Assert.assertNotNull(Context.getConceptService().getConceptAttributeTypeByName("Audit Date"));
+		
+		ConceptAttributeType type = new ConceptAttributeType();
+		type.setName("Audit Date");
+		type.setDatatypeClassname("org.openmrs.customdatatype.datatype.FreeTextDatatype");
+		Errors errors = new BindException(type, "conceptAttributeType");
+		new ConceptAttributeTypeValidator().validate(type, errors);
+		Assert.assertTrue(errors.hasFieldErrors("name"));
+		
+	}
+	
+	/**
+	 * @see ConceptAttributeTypeValidator#validate(Object, Errors)
+	 */
+	@Test
+	@Verifies(value = "should pass editing concept attribute type name", method = "validate(Object,Errors)")
+	public void validate_shouldPassEditingConceptAttributeTypeName() throws Exception {
+		
+		ConceptAttributeType et = Context.getConceptService().getConceptAttributeTypeByName("Audit Date");
+		Assert.assertNotNull(et);
+		Errors errors = new BindException(et, "conceptAttributeType");
+		new ConceptAttributeTypeValidator().validate(et, errors);
+		Assert.assertFalse(errors.hasErrors());
+		
+	}
+	
+	/**
+	 * @see ConceptAttributeTypeValidator#validate(Object,Errors)
+	 */
+	@Test
+	@Verifies(value = "should pass validation if field lengths are correct", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() throws Exception {
+		ConceptAttributeType type = new ConceptAttributeType();
 		type.setName("name");
 		type.setDatatypeClassname("org.openmrs.customdatatype.datatype.FreeTextDatatype");
 		type.setDescription("description");
 		type.setRetireReason("retireReason");
 		
-		validator.validate(type, errors);
+		Errors errors = new BindException(type, "type");
+		new ConceptAttributeTypeValidator().validate(type, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
+	/**
+	 * @see ConceptAttributeTypeValidator#validate(Object,Errors)
+	 */
 	@Test
-	public void validate_shouldPassValidationIfAllRequiredFieldsHaveProperValues() {
+	@Verifies(value = "should fail validation if field lengths are not correct", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() throws Exception {
+		ConceptAttributeType type = new ConceptAttributeType();
+		type
+		        .setName("too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text");
+		type
+		        .setDatatypeClassname("too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text");
+		type
+		        .setDescription("too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text");
+		type
+		        .setPreferredHandlerClassname("too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text");
+		type
+		        .setRetireReason("too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text");
 		
-		type.setName("name");
-		type.setDatatypeClassname("org.openmrs.customdatatype.datatype.FreeTextDatatype");
+		Errors errors = new BindException(type, "type");
+		new ConceptAttributeTypeValidator().validate(type, errors);
 		
-		validator.validate(type, errors);
-		
-		assertFalse(errors.hasErrors());
-	}
-	
-	private void assertThatFieldExceedsMaxLength(String field) {
-		assertTrue(errors.hasFieldErrors(field), String.format("Field '%s' has error(s)", field));
-		assertThat(errors.getFieldErrors(field).get(0).getCode(), is("error.exceededMaxLengthOfField"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("datatypeClassname"));
+		Assert.assertTrue(errors.hasFieldErrors("description"));
+		Assert.assertTrue(errors.hasFieldErrors("preferredHandlerClassname"));
+		Assert.assertTrue(errors.hasFieldErrors("retireReason"));
 	}
 }

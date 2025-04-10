@@ -11,9 +11,9 @@ package org.openmrs.scheduler.tasks;
 
 import java.util.Date;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.scheduler.TaskDefinition;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of a simple task that throws an exception every 10 executions.
@@ -23,12 +23,11 @@ public class TestTask extends AbstractTask {
 	private static int executionCount = 0;
 	
 	// Logger 
-	private static final Logger log = LoggerFactory.getLogger(TestTask.class);
+	private Log log = LogFactory.getLog(TestTask.class);
 	
 	/**
 	 * @see org.openmrs.scheduler.tasks.AbstractTask#initialize(TaskDefinition)
 	 */
-	@Override
 	public void initialize(TaskDefinition taskDefinition) {
 		log.info("Initializing task " + taskDefinition);
 	}
@@ -55,7 +54,6 @@ public class TestTask extends AbstractTask {
 	/**
 	 * @see org.openmrs.scheduler.tasks.AbstractTask#shutdown()
 	 */
-	@Override
 	public void shutdown() {
 		log.info("Shutting down task ...");
 		super.shutdown();

@@ -23,10 +23,10 @@ import org.openmrs.web.WebConstants;
 public class InitializationWizardModel {
 	
 	// automatically given to the .vm files and used there
-	public static final String HEADER_TEMPLATE = "org/openmrs/web/filter/initialization/header.vm";
+	public static final String headerTemplate = "org/openmrs/web/filter/initialization/header.vm";
 	
 	// automatically given to the .vm files and used there
-	public static final String FOOTER_TEMPLATE = "org/openmrs/web/filter/initialization/footer.vm";
+	public static final String footerTemplate = "org/openmrs/web/filter/initialization/footer.vm";
 	
 	// Values for installMethod field.
 	public static final String INSTALL_METHOD_SIMPLE = "simple";
@@ -51,7 +51,7 @@ public class InitializationWizardModel {
 	/**
 	 * Records completed tasks and are displayed at the top of the page upon error
 	 */
-	public List<String> workLog = new ArrayList<>();
+	public List<String> workLog = new ArrayList<String>();
 	
 	/**
 	 * Whether the runtime properties file could possible be created. (only read by the velocity

@@ -9,7 +9,12 @@
  */
 package org.openmrs.web.filter.startuperror;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.web.filter.StartupFilter;
 import org.openmrs.web.filter.update.UpdateFilter;
 
@@ -20,9 +25,17 @@ import org.openmrs.web.filter.update.UpdateFilter;
  */
 public class StartupErrorFilterModel {
 	
-	public Throwable errorAtStartup;
+	protected static final Log log = LogFactory.getLog(StartupErrorFilterModel.class);
 	
-	public String stacktrace;
+	// automatically given to the .vm files and used there
+	public String headerTemplate = "org/openmrs/web/filter/startuperror/header.vm";
+	
+	// automatically given to the .vm files and used there
+	public String footerTemplate = "org/openmrs/web/filter/startuperror/footer.vm";
+	
+	public Throwable errorAtStartup = null;
+	
+	public String stacktrace = null;
 	
 	/**
 	 * Default constructor that sets up some of the properties

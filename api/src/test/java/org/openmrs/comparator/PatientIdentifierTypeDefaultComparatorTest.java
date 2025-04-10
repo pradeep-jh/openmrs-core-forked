@@ -9,12 +9,12 @@
  */
 package org.openmrs.comparator;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.PatientIdentifierType;
 
 public class PatientIdentifierTypeDefaultComparatorTest {
@@ -23,9 +23,10 @@ public class PatientIdentifierTypeDefaultComparatorTest {
 	 * Simplified test.
 	 * 
 	 * @see PatientIdentifierTypeDefaultComparator#compare(PatientIdentifierType,PatientIdentifierType)
+	 * @verifies order properly
 	 */
 	@Test
-	public void compare_shouldOrderProperly() {
+	public void compare_shouldOrderProperly() throws Exception {
 		PatientIdentifierType requiredNotRetired = new PatientIdentifierType();
 		requiredNotRetired.setRequired(true);
 		requiredNotRetired.setRetired(null);
@@ -54,9 +55,9 @@ public class PatientIdentifierTypeDefaultComparatorTest {
 		
 		List<PatientIdentifierType> list = Arrays.asList(notRequiredRetired, requiredRetired2a, notRequiredNotRetiredA,
 		    requiredNotRetired, notRequiredNotRetiredB, requiredRetired1A);
-		list.sort(new PatientIdentifierTypeDefaultComparator());
+		Collections.sort(list, new PatientIdentifierTypeDefaultComparator());
 		
-		assertEquals(Arrays.asList(requiredNotRetired, notRequiredNotRetiredA, notRequiredNotRetiredB,
+		Assert.assertEquals(Arrays.asList(requiredNotRetired, notRequiredNotRetiredA, notRequiredNotRetiredB,
 		    requiredRetired1A, requiredRetired2a, notRequiredRetired), list);
 	}
 }

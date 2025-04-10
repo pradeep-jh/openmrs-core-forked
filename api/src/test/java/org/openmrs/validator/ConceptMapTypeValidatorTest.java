@@ -9,13 +9,11 @@
  */
 package org.openmrs.validator;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.ConceptMapType;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 
@@ -28,89 +26,97 @@ public class ConceptMapTypeValidatorTest extends BaseContextSensitiveTest {
 	 * @see ConceptMapTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfTheConceptMapTypeNameIsADuplicate() {
+	@Verifies(value = "should fail if the concept map type name is a duplicate", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfTheConceptMapTypeNameIsADuplicate() throws Exception {
 		ConceptMapType mapType = new ConceptMapType();
 		mapType.setName("is a");
 		Errors errors = new BindException(mapType, "mapType");
 		new ConceptMapTypeValidator().validate(mapType, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertEquals(true, errors.hasFieldErrors("name"));
 	}
 	
 	/**
 	 * @see ConceptMapTypeValidator#validate(Object,Errors)
 	 */
-	@Test
-	public void validate_shouldFailIfTheConceptMapTypeObjectIsNull() {
+	@Test(expected = IllegalArgumentException.class)
+	@Verifies(value = "should fail if the concept map type object is null", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfTheConceptMapTypeObjectIsNull() throws Exception {
 		Errors errors = new BindException(new ConceptMapType(), "mapType");
-		assertThrows(IllegalArgumentException.class, () ->  new ConceptMapTypeValidator().validate(null, errors));
+		new ConceptMapTypeValidator().validate(null, errors);
 	}
 	
 	/**
 	 * @see ConceptMapTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfTheNameIsAWhiteSpaceCharacter() {
+	@Verifies(value = "should fail if the name is a white space character", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfTheNameIsAWhiteSpaceCharacter() throws Exception {
 		ConceptMapType mapType = new ConceptMapType();
 		mapType.setName(" ");
 		Errors errors = new BindException(mapType, "mapType");
 		new ConceptMapTypeValidator().validate(mapType, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertEquals(true, errors.hasFieldErrors("name"));
 	}
 	
 	/**
 	 * @see ConceptMapTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfTheNameIsAnEmptyString() {
+	@Verifies(value = "should fail if the name is an empty string", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfTheNameIsAnEmptyString() throws Exception {
 		ConceptMapType mapType = new ConceptMapType();
 		mapType.setName("");
 		Errors errors = new BindException(mapType, "mapType");
 		new ConceptMapTypeValidator().validate(mapType, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertEquals(true, errors.hasFieldErrors("name"));
 	}
 	
 	/**
 	 * @see ConceptMapTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfTheNameIsNull() {
+	@Verifies(value = "should fail if the name is null", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfTheNameIsNull() throws Exception {
 		ConceptMapType mapType = new ConceptMapType();
 		Errors errors = new BindException(mapType, "mapType");
 		new ConceptMapTypeValidator().validate(mapType, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertEquals(true, errors.hasFieldErrors("name"));
 	}
 	
 	/**
 	 * @see ConceptMapTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassIfTheNameIsUniqueAmongstAllConceptMapTypeNames() {
+	@Verifies(value = "pass if the name is unique amongst all concept map type names", method = "validate(Object,Errors)")
+	public void validate_shouldPassIfTheNameIsUniqueAmongstAllConceptMapTypeNames() throws Exception {
 		ConceptMapType mapType = new ConceptMapType();
 		mapType.setName("unique-name");
 		Errors errors = new BindException(mapType, "mapType");
 		new ConceptMapTypeValidator().validate(mapType, errors);
-		assertFalse(errors.hasErrors());
+		Assert.assertEquals(false, errors.hasErrors());
 	}
 	
 	/**
 	 * @see ConceptMapTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() {
+	@Verifies(value = "should pass validation if field lengths are correct", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() throws Exception {
 		ConceptMapType mapType = new ConceptMapType();
 		mapType.setName("unique-name");
 		mapType.setDescription("Description");
 		mapType.setRetireReason("RetireReason");
 		Errors errors = new BindException(mapType, "mapType");
 		new ConceptMapTypeValidator().validate(mapType, errors);
-		assertFalse(errors.hasErrors());
+		Assert.assertEquals(false, errors.hasErrors());
 	}
 	
 	/**
 	 * @see ConceptMapTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() {
+	@Verifies(value = "should fail validation if field lengths are not correct", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() throws Exception {
 		ConceptMapType mapType = new ConceptMapType();
 		mapType.setName("unique-name");
 		mapType
@@ -119,7 +125,7 @@ public class ConceptMapTypeValidatorTest extends BaseContextSensitiveTest {
 		        .setRetireReason("too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text");
 		Errors errors = new BindException(mapType, "mapType");
 		new ConceptMapTypeValidator().validate(mapType, errors);
-		assertTrue(errors.hasFieldErrors("description"));
-		assertTrue(errors.hasFieldErrors("retireReason"));
+		Assert.assertEquals(true, errors.hasFieldErrors("description"));
+		Assert.assertEquals(true, errors.hasFieldErrors("retireReason"));
 	}
 }

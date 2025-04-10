@@ -11,13 +11,11 @@ package org.openmrs;
 
 import java.util.Date;
 
-import org.hibernate.envers.Audited;
 import org.openmrs.util.OpenmrsUtil;
 
 /**
  * This represents a single concept within a concept set.
  */
-@Audited
 public class ConceptSet extends BaseOpenmrsObject implements Auditable, java.io.Serializable, Comparable<ConceptSet> {
 	
 	public static final long serialVersionUID = 3787L;
@@ -25,11 +23,9 @@ public class ConceptSet extends BaseOpenmrsObject implements Auditable, java.io.
 	// Fields
 	private Integer conceptSetId;
 	
-	// concept in the set
-	private Concept concept; 
+	private Concept concept; // concept in the set
 	
-	// parent concept that uses this set
-	private Concept conceptSet; 
+	private Concept conceptSet; // parent concept that uses this set
 	
 	private Double sortWeight;
 	
@@ -101,7 +97,6 @@ public class ConceptSet extends BaseOpenmrsObject implements Auditable, java.io.
 	/**
 	 * @return Returns the creator.
 	 */
-	@Override
 	public User getCreator() {
 		return creator;
 	}
@@ -109,7 +104,6 @@ public class ConceptSet extends BaseOpenmrsObject implements Auditable, java.io.
 	/**
 	 * @param creator The creator to set.
 	 */
-	@Override
 	public void setCreator(User creator) {
 		this.creator = creator;
 	}
@@ -117,7 +111,6 @@ public class ConceptSet extends BaseOpenmrsObject implements Auditable, java.io.
 	/**
 	 * @return Returns the dateCreated.
 	 */
-	@Override
 	public Date getDateCreated() {
 		return dateCreated;
 	}
@@ -125,7 +118,6 @@ public class ConceptSet extends BaseOpenmrsObject implements Auditable, java.io.
 	/**
 	 * @param dateCreated The dateCreated to set.
 	 */
-	@Override
 	public void setDateCreated(Date dateCreated) {
 		this.dateCreated = dateCreated;
 	}
@@ -134,7 +126,6 @@ public class ConceptSet extends BaseOpenmrsObject implements Auditable, java.io.
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		return getConceptSetId();
 	}
@@ -143,7 +134,6 @@ public class ConceptSet extends BaseOpenmrsObject implements Auditable, java.io.
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		this.setConceptSetId(id);
 	}
@@ -153,7 +143,6 @@ public class ConceptSet extends BaseOpenmrsObject implements Auditable, java.io.
 	 * 
 	 * @see org.openmrs.Auditable#getChangedBy()
 	 */
-	@Override
 	public User getChangedBy() {
 		return null;
 	}
@@ -163,7 +152,6 @@ public class ConceptSet extends BaseOpenmrsObject implements Auditable, java.io.
 	 * 
 	 * @see org.openmrs.Auditable#getDateChanged()
 	 */
-	@Override
 	public Date getDateChanged() {
 		return null;
 	}
@@ -173,7 +161,6 @@ public class ConceptSet extends BaseOpenmrsObject implements Auditable, java.io.
 	 * 
 	 * @see org.openmrs.Auditable#setChangedBy(org.openmrs.User)
 	 */
-	@Override
 	public void setChangedBy(User changedBy) {
 	}
 	
@@ -182,7 +169,6 @@ public class ConceptSet extends BaseOpenmrsObject implements Auditable, java.io.
 	 * 
 	 * @see org.openmrs.Auditable#setDateChanged(java.util.Date)
 	 */
-	@Override
 	public void setDateChanged(Date dateChanged) {
 	}
 	
@@ -190,10 +176,9 @@ public class ConceptSet extends BaseOpenmrsObject implements Auditable, java.io.
 	 * @see java.lang.Comparable#compareTo(java.lang.Object)
 	 * Note: this comparator imposes orderings that are inconsistent with equals.
 	 */
-	@Override
 	@SuppressWarnings("squid:S1210")
 	public int compareTo(ConceptSet cs) {
-		int value = OpenmrsUtil.compareWithNullAsLowest(concept.getRetired(), cs.concept.getRetired());
+		int value = OpenmrsUtil.compareWithNullAsLowest(concept.isRetired(), cs.concept.isRetired());
 		if (value == 0) {
 			value = OpenmrsUtil.compareWithNullAsLowest(this.getSortWeight(), cs.getSortWeight());
 		}

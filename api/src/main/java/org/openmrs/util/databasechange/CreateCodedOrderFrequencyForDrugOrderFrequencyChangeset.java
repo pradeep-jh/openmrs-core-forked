@@ -9,17 +9,6 @@
  */
 package org.openmrs.util.databasechange;
 
-import java.nio.charset.StandardCharsets;
-import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.Set;
-import java.util.UUID;
-
-import org.apache.commons.lang3.StringUtils;
-import org.openmrs.util.DatabaseUtil;
-import org.openmrs.util.UpgradeUtil;
-
 import liquibase.change.custom.CustomTaskChange;
 import liquibase.database.Database;
 import liquibase.database.jvm.JdbcConnection;
@@ -28,6 +17,16 @@ import liquibase.exception.DatabaseException;
 import liquibase.exception.SetupException;
 import liquibase.exception.ValidationErrors;
 import liquibase.resource.ResourceAccessor;
+
+import org.apache.commons.lang3.StringUtils;
+import org.openmrs.util.DatabaseUtil;
+import org.openmrs.util.UpgradeUtil;
+
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Set;
+import java.util.UUID;
 
 public class CreateCodedOrderFrequencyForDrugOrderFrequencyChangeset implements CustomTaskChange {
 	
@@ -77,7 +76,7 @@ public class CreateCodedOrderFrequencyForDrugOrderFrequencyChangeset implements 
 				//Generating UUID for order frequency. Generated UUIDs will be the same if concepts UUIDs are the same.
 				String uuid = UpgradeUtil.getConceptUuid(connection.getUnderlyingConnection(), conceptIdForFrequency);
 				uuid += "-6925ebb0-7c69-11e3-baa7-0800200c9a66"; //Adding random value for order frequency
-				uuid = UUID.nameUUIDFromBytes(uuid.getBytes(StandardCharsets.UTF_8)).toString();
+				uuid = UUID.nameUUIDFromBytes(uuid.getBytes()).toString();
 				
 				insertOrderFrequencyStatement.setInt(1, conceptIdForFrequency);
 				insertOrderFrequencyStatement.setInt(2, 1);
@@ -90,7 +89,10 @@ public class CreateCodedOrderFrequencyForDrugOrderFrequencyChangeset implements 
 			}
 			connection.commit();
 		}
-		catch (DatabaseException | SQLException e) {
+		catch (DatabaseException e) {
+			handleError(connection, e);
+		}
+		catch (SQLException e) {
 			handleError(connection, e);
 		}
 		finally {

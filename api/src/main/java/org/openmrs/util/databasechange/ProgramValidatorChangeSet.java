@@ -13,16 +13,18 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.openmrs.util.DatabaseUpdater;
-import org.openmrs.util.DatabaseUtil;
-
 import liquibase.change.custom.CustomTaskChange;
 import liquibase.database.Database;
 import liquibase.database.jvm.JdbcConnection;
 import liquibase.exception.CustomChangeException;
 import liquibase.exception.SetupException;
+
 import liquibase.exception.ValidationErrors;
 import liquibase.resource.ResourceAccessor;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.openmrs.util.DatabaseUpdater;
+import org.openmrs.util.DatabaseUtil;
 
 /**
  * This change set is executed in conjunction with a change made to Patient Programs which
@@ -31,14 +33,16 @@ import liquibase.resource.ResourceAccessor;
  * carefully review any States marked as final, particularly those also marked as initial
  */
 public class ProgramValidatorChangeSet implements CustomTaskChange {
-
+	
+	protected final static Log log = LogFactory.getLog(ProgramValidatorChangeSet.class);
+	
 	/**
 	 * @see CustomTaskChange#execute(Database)
 	 */
 	@Override
 	public void execute(Database database) throws CustomChangeException {
 		Connection conn = ((JdbcConnection) database.getConnection()).getUnderlyingConnection();
-		List<String> messages = new ArrayList<>();
+		List<String> messages = new ArrayList<String>();
 		
 		// Warn if any states are configured as both initial and terminal
 		StringBuilder message = new StringBuilder();
@@ -75,7 +79,7 @@ public class ProgramValidatorChangeSet implements CustomTaskChange {
 		query.append(" group by 	w.concept_id, s.initial ");
 		
 		results = DatabaseUtil.executeSQL(conn, query.toString(), true);
-		List<Integer> missingInitial = new ArrayList<>();
+		List<Integer> missingInitial = new ArrayList<Integer>();
 		for (List<Object> row : results) {
 			missingInitial.add(Integer.valueOf(row.get(0).toString()));
 		}

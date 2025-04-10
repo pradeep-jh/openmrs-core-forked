@@ -34,14 +34,12 @@ public interface SchedulerService extends OpenmrsService {
 	/**
 	 * Start all tasks that are scheduled to run on startup.
 	 */
-	@Override
 	@Authorized( { "Manage Scheduler" })
 	public void onStartup();
 	
 	/**
 	 * Stop all tasks and clean up the scheduler instance.
 	 */
-	@Override
 	@Authorized( { "Manage Scheduler" })
 	public void onShutdown();
 	
@@ -104,16 +102,6 @@ public interface SchedulerService extends OpenmrsService {
 	public TaskDefinition getTask(Integer id);
 	
 	/**
-	 * @since 2.4.0
-	 * 
-	 * Get the task with the given uuid
-	 * 
-	 * @param uuid the unique identifier of the task
-	 */
-	@Authorized({ "Manage Scheduler" })
-	public TaskDefinition getTaskByUuid(String uuid);
-
-	/**
 	 * Get the task with the given name.
 	 * 
 	 * @param name name of the task
@@ -133,7 +121,7 @@ public interface SchedulerService extends OpenmrsService {
 	 * Create the given task
 	 *
 	 * @param task the task to be created
-	 * <strong>Should</strong> save task to the database
+	 * @should save task to the database
 	 */
 	@Authorized( { "Manage Scheduler" })
 	@Logging(ignore = true)

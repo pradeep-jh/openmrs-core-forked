@@ -11,20 +11,19 @@ package org.openmrs.propertyeditor;
 
 import java.beans.PropertyEditorSupport;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.ConceptMapType;
 import org.openmrs.api.context.Context;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
 public class ConceptMapTypeEditor extends PropertyEditorSupport {
 	
-	private static final Logger log = LoggerFactory.getLogger(ConceptMapTypeEditor.class);
+	private final static Log log = LogFactory.getLog(ConceptMapTypeEditor.class);
 	
 	public ConceptMapTypeEditor() {
 	}
 	
-	@Override
 	public void setAsText(String text) throws IllegalArgumentException {
 		log.debug("Setting text: " + text);
 		if (StringUtils.hasText(text)) {
@@ -32,18 +31,13 @@ public class ConceptMapTypeEditor extends PropertyEditorSupport {
 				setValue(Context.getConceptService().getConceptMapType(Integer.valueOf(text)));
 			}
 			catch (Exception ex) {
-				ConceptMapType value = Context.getConceptService().getConceptMapTypeByUuid(text);
-				setValue(value);
-				if (value == null) {
-					throw new IllegalArgumentException("ConceptMapType not found: " + text, ex);
-				}
+				throw new IllegalArgumentException("ConceptMapType not found: " + text, ex);
 			}
 		} else {
 			setValue(null);
 		}
 	}
 	
-	@Override
 	public String getAsText() {
 		ConceptMapType mapType = (ConceptMapType) getValue();
 		if (mapType == null || mapType.getConceptMapTypeId() == null) {

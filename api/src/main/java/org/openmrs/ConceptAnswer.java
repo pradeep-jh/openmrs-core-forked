@@ -9,8 +9,6 @@
  */
 package org.openmrs;
 
-import org.hibernate.envers.Audited;
-
 import java.util.Date;
 
 /**
@@ -20,7 +18,6 @@ import java.util.Date;
  *
  * @see Concept#getAnswers()
  */
-@Audited
 public class ConceptAnswer extends BaseOpenmrsObject implements Auditable, java.io.Serializable, Comparable<ConceptAnswer> {
 	
 	public static final long serialVersionUID = 3744L;
@@ -129,7 +126,6 @@ public class ConceptAnswer extends BaseOpenmrsObject implements Auditable, java.
 	/**
 	 * @return Returns the creator.
 	 */
-	@Override
 	public User getCreator() {
 		return creator;
 	}
@@ -137,7 +133,6 @@ public class ConceptAnswer extends BaseOpenmrsObject implements Auditable, java.
 	/**
 	 * @param creator The creator to set.
 	 */
-	@Override
 	public void setCreator(User creator) {
 		this.creator = creator;
 	}
@@ -145,7 +140,6 @@ public class ConceptAnswer extends BaseOpenmrsObject implements Auditable, java.
 	/**
 	 * @return Returns the dateCreated.
 	 */
-	@Override
 	public Date getDateCreated() {
 		return dateCreated;
 	}
@@ -153,7 +147,6 @@ public class ConceptAnswer extends BaseOpenmrsObject implements Auditable, java.
 	/**
 	 * @param dateCreated The dateCreated to set.
 	 */
-	@Override
 	public void setDateCreated(Date dateCreated) {
 		this.dateCreated = dateCreated;
 	}
@@ -162,7 +155,6 @@ public class ConceptAnswer extends BaseOpenmrsObject implements Auditable, java.
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		return getConceptAnswerId();
 	}
@@ -171,7 +163,6 @@ public class ConceptAnswer extends BaseOpenmrsObject implements Auditable, java.
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setConceptAnswerId(id);
 	}
@@ -181,7 +172,6 @@ public class ConceptAnswer extends BaseOpenmrsObject implements Auditable, java.
 	 *
 	 * @see org.openmrs.Auditable#getChangedBy()
 	 */
-	@Override
 	public User getChangedBy() {
 		return null;
 	}
@@ -191,7 +181,6 @@ public class ConceptAnswer extends BaseOpenmrsObject implements Auditable, java.
 	 *
 	 * @see org.openmrs.Auditable#getDateChanged()
 	 */
-	@Override
 	public Date getDateChanged() {
 		return null;
 	}
@@ -201,7 +190,6 @@ public class ConceptAnswer extends BaseOpenmrsObject implements Auditable, java.
 	 *
 	 * @see org.openmrs.Auditable#setChangedBy(org.openmrs.User)
 	 */
-	@Override
 	public void setChangedBy(User changedBy) {
 	}
 	
@@ -210,7 +198,6 @@ public class ConceptAnswer extends BaseOpenmrsObject implements Auditable, java.
 	 *
 	 * @see org.openmrs.Auditable#setDateChanged(java.util.Date)
 	 */
-	@Override
 	public void setDateChanged(Date dateChanged) {
 	}
 	
@@ -232,7 +219,6 @@ public class ConceptAnswer extends BaseOpenmrsObject implements Auditable, java.
 	 * @see java.lang.Comparable#compareTo(java.lang.Object)
 	 * Note: this comparator imposes orderings that are inconsistent with equals.
 	 */
-	@Override
 	@SuppressWarnings("squid:S1210")
 	public int compareTo(ConceptAnswer ca) {
 		if ((getSortWeight() == null) && (ca.getSortWeight() != null)) {

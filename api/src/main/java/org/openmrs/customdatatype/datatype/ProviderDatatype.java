@@ -9,7 +9,7 @@
  */
 package org.openmrs.customdatatype.datatype;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.openmrs.Provider;
 import org.openmrs.api.context.Context;
 import org.springframework.stereotype.Component;
@@ -26,7 +26,6 @@ public class ProviderDatatype extends BaseMetadataDatatype<Provider> {
 	 * @see org.openmrs.customdatatype.SerializingCustomDatatype#deserialize(String)
 	 * @override
 	 */
-	@Override
 	public Provider deserialize(String uuid) {
 		if (StringUtils.isBlank(uuid)) {
 			return null;

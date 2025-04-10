@@ -13,13 +13,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.jupiter.api.Disabled;
+import org.junit.Ignore;
 import org.openmrs.OpenmrsMetadata;
 import org.openmrs.RelationshipType;
 import org.openmrs.Role;
 import org.openmrs.User;
 import org.openmrs.api.context.Context;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
 import org.openmrs.util.OpenmrsConstants;
 
 /**
@@ -27,7 +26,7 @@ import org.openmrs.util.OpenmrsConstants;
  * dataset. See ticket <a href="http://dev.openmrs.org/ticket/1842">#1842</a>:
  * "Synchronize core metadata UUIDs across sites".
  */
-@Disabled
+@Ignore
 public class CreateCoreUuids extends BaseContextSensitiveTest {
 	
 	//@Test
@@ -36,7 +35,7 @@ public class CreateCoreUuids extends BaseContextSensitiveTest {
 		Context.authenticate("admin", "test");
 		System.out.println("db: " + OpenmrsConstants.DATABASE_NAME);
 		
-		Map<String, List<? extends OpenmrsMetadata>> coremetadatas = new LinkedHashMap<>();
+		Map<String, List<? extends OpenmrsMetadata>> coremetadatas = new LinkedHashMap<String, List<? extends OpenmrsMetadata>>();
 		
 		coremetadatas.put("field_type", Context.getFormService().getAllFieldTypes(true));
 		coremetadatas.put("person_attribute_type", Context.getPersonService().getAllPersonAttributeTypes(true));

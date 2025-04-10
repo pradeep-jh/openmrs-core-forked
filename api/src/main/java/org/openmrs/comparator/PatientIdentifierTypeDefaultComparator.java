@@ -9,7 +9,6 @@
  */
 package org.openmrs.comparator;
 
-import java.io.Serializable;
 import java.util.Comparator;
 
 import org.apache.commons.collections.comparators.ComparatorChain;
@@ -22,9 +21,7 @@ import org.openmrs.PatientIdentifierType;
  * 
  * @since 1.9.2, 1.8.5
  */
-public class PatientIdentifierTypeDefaultComparator implements Comparator<PatientIdentifierType>, Serializable {
-
-	private static final long serialVersionUID = 1L;
+public class PatientIdentifierTypeDefaultComparator implements Comparator<PatientIdentifierType> {
 	
 	private final ComparatorChain comparatorChain;
 	
@@ -35,29 +32,49 @@ public class PatientIdentifierTypeDefaultComparator implements Comparator<Patien
 		final NullComparator nullLowerComparator = new NullComparator(false);
 		
 		//Retired higher
-		comparatorChain.addComparator(
-				(Comparator<PatientIdentifierType>) (o1, o2) -> nullLowerComparator.compare(o1.getRetired(), o2.getRetired()));
+		comparatorChain.addComparator(new Comparator<PatientIdentifierType>() {
+			
+			@Override
+			public int compare(PatientIdentifierType o1, PatientIdentifierType o2) {
+				return nullLowerComparator.compare(o1.getRetired(), o2.getRetired());
+			}
+		});
 		
 		//Required lower
-		comparatorChain.addComparator(
-				(Comparator<PatientIdentifierType>) (o1, o2) -> nullLowerComparator.compare(o1.getRequired(), o2.getRequired()), true);
+		comparatorChain.addComparator(new Comparator<PatientIdentifierType>() {
+			
+			@Override
+			public int compare(PatientIdentifierType o1, PatientIdentifierType o2) {
+				return nullLowerComparator.compare(o1.getRequired(), o2.getRequired());
+			}
+		}, true);
 		
 		//By name
-		comparatorChain.addComparator((Comparator<PatientIdentifierType>) (o1, o2) -> {
-			String o1Name = (o1.getName() != null) ? o1.getName().toLowerCase() : null;
-			String o2Name = (o2.getName() != null) ? o2.getName().toLowerCase() : null;
-
-			return nullHigherComparator.compare(o1Name, o2Name);
+		comparatorChain.addComparator(new Comparator<PatientIdentifierType>() {
+			
+			@Override
+			public int compare(PatientIdentifierType o1, PatientIdentifierType o2) {
+				String o1Name = (o1.getName() != null) ? o1.getName().toLowerCase() : null;
+				String o2Name = (o2.getName() != null) ? o2.getName().toLowerCase() : null;
+				
+				return nullHigherComparator.compare(o1Name, o2Name);
+			}
 		});
 		
 		//By id
-		comparatorChain.addComparator((Comparator<PatientIdentifierType>) (o1, o2) -> nullHigherComparator.compare(o1.getPatientIdentifierTypeId(), o2.getPatientIdentifierTypeId()));
+		comparatorChain.addComparator(new Comparator<PatientIdentifierType>() {
+			
+			@Override
+			public int compare(PatientIdentifierType o1, PatientIdentifierType o2) {
+				return nullHigherComparator.compare(o1.getPatientIdentifierTypeId(), o2.getPatientIdentifierTypeId());
+			}
+		});
 	}
 	
 	/**
 	 * Orders by retired (true last), required (true first), name and id.
 	 * 
-	 * <strong>Should</strong> order properly
+	 * @should order properly
 	 */
 	@Override
 	public int compare(PatientIdentifierType pit1, PatientIdentifierType pit2) {

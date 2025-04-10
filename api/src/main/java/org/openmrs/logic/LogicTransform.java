@@ -26,7 +26,7 @@ import org.openmrs.logic.result.Result;
  */
 public class LogicTransform {
 	
-	private Operator transformOperator;
+	private Operator transformOperator = null;
 	
 	private Integer numResults = null;
 	
@@ -50,7 +50,6 @@ public class LogicTransform {
 		return transformOperator;
 	}
 	
-	@Override
 	public String toString() {
 		StringBuilder result = new StringBuilder();
 		
@@ -59,11 +58,11 @@ public class LogicTransform {
 		}
 		
 		if (numResults != null) {
-			result.append(" ").append(numResults);
+			result.append(" " + numResults);
 		}
 		
 		if (sortColumn != null) {
-			result.append(" ordered by ").append(sortColumn);
+			result.append(" ordered by " + sortColumn);
 		}
 		return result.toString();
 	}
@@ -99,12 +98,22 @@ public class LogicTransform {
 		if (!(obj instanceof LogicTransform)) {
 			return false;
 		}
-
+		
 		LogicTransform compTransform = (LogicTransform) obj;
-
-		return safeEquals(this.transformOperator, compTransform.getTransformOperator()) && safeEquals(numResults,
-				compTransform.getNumResults()) && safeEquals(sortColumn, compTransform.getSortColumn());
-
+		
+		if (!safeEquals(this.transformOperator, compTransform.getTransformOperator())) {
+			return false;
+		}
+		
+		if (!safeEquals(numResults, compTransform.getNumResults())) {
+			return false;
+		}
+		
+		if (!safeEquals(sortColumn, compTransform.getSortColumn())) {
+			return false;
+		}
+		
+		return true;
 	}
 	
 	private boolean safeEquals(Object a, Object b) {

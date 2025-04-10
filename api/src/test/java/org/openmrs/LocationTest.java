@@ -9,16 +9,16 @@
  */
 package org.openmrs;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
+import org.openmrs.test.Verifies;
 
 public class LocationTest {
 	
@@ -28,7 +28,8 @@ public class LocationTest {
 	 * @see Location#isInHierarchy(Location,Location)
 	 */
 	@Test
-	public void isInHierarchy_shouldShouldFindLocationInHierarchy() {
+	@Verifies(value = "should should find location in hierarchy", method = "isInHierarchy(Location,Location)")
+	public void isInHierarchy_shouldShouldFindLocationInHierarchy() throws Exception {
 		Location locationGrandParent = new Location();
 		Location locationParent = new Location();
 		Location locationChild = new Location();
@@ -52,19 +53,19 @@ public class LocationTest {
 		Location childOnfLocationTwo = new Location();
 		
 		//make child-parent relations
-		rootLocation.setChildLocations(new HashSet<>(Arrays.asList(locationOne, locationTwo)));
+		rootLocation.setChildLocations(new HashSet<Location>(Arrays.asList(locationOne, locationTwo)));
 		
-		locationOne.setChildLocations(new HashSet<>(Collections.singletonList(childOflocationOne)));
-		locationTwo.setChildLocations(new HashSet<>(Collections.singletonList(childOnfLocationTwo)));
+		locationOne.setChildLocations(new HashSet<Location>(Arrays.asList(childOflocationOne)));
+		locationTwo.setChildLocations(new HashSet<Location>(Arrays.asList(childOnfLocationTwo)));
 		
-		childOflocationOne.setChildLocations(new HashSet<>());
-		childOnfLocationTwo.setChildLocations(new HashSet<>());
+		childOflocationOne.setChildLocations(new HashSet<Location>());
+		childOnfLocationTwo.setChildLocations(new HashSet<Location>());
 		
 		Set<Location> descendantLocations = rootLocation.getDescendantLocations(true);
 		
-		Set<Location> expectedLocations = new HashSet<>(Arrays.asList(locationOne, locationTwo, childOflocationOne,
+		Set<Location> expectedLocations = new HashSet<Location>(Arrays.asList(locationOne, locationTwo, childOflocationOne,
 		    childOnfLocationTwo));
-		assertThat(descendantLocations, equalTo(expectedLocations));
+		Assert.assertThat(descendantLocations, equalTo(expectedLocations));
 		
 	}
 	
@@ -83,23 +84,23 @@ public class LocationTest {
 		Location firstChildOfRetiredLocation = new Location();
 		
 		//make child-parent relations
-		rootLocation.setChildLocations(new HashSet<>(Arrays.asList(nonRetiredLocation, retiredLocation)));
+		rootLocation.setChildLocations(new HashSet<Location>(Arrays.asList(nonRetiredLocation, retiredLocation)));
 		
-		nonRetiredLocation.setChildLocations(new HashSet<>(Arrays.asList(firstChildOfNonRetiredLocation,
+		nonRetiredLocation.setChildLocations(new HashSet<Location>(Arrays.asList(firstChildOfNonRetiredLocation,
 		    secondChildOfNonRetiredLocation)));
-		retiredLocation.setChildLocations(new HashSet<>(Collections.singletonList(firstChildOfRetiredLocation)));
+		retiredLocation.setChildLocations(new HashSet<Location>(Arrays.asList(firstChildOfRetiredLocation)));
 		
-		firstChildOfNonRetiredLocation.setChildLocations(new HashSet<>());
-		secondChildOfNonRetiredLocation.setChildLocations(new HashSet<>());
+		firstChildOfNonRetiredLocation.setChildLocations(new HashSet<Location>());
+		secondChildOfNonRetiredLocation.setChildLocations(new HashSet<Location>());
 		
-		firstChildOfRetiredLocation.setChildLocations(new HashSet<>());
+		firstChildOfRetiredLocation.setChildLocations(new HashSet<Location>());
 		
 		//action
 		Set<Location> descendantLocations = rootLocation.getDescendantLocations(false);
 		
-		Set<Location> expectedLocations = new HashSet<>(Arrays.asList(nonRetiredLocation,
+		Set<Location> expectedLocations = new HashSet<Location>(Arrays.asList(nonRetiredLocation,
 		    firstChildOfNonRetiredLocation, secondChildOfNonRetiredLocation));
 		
-		assertThat(descendantLocations, equalTo(expectedLocations));
+		Assert.assertThat(descendantLocations, equalTo(expectedLocations));
 	}
 }

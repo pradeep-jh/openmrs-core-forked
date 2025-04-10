@@ -9,19 +9,18 @@
  */
 package org.openmrs.web.test;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
-import java.util.List;
 
+import org.junit.Assert;
 import org.openmrs.api.context.Context;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 import org.springframework.web.servlet.HandlerAdapter;
@@ -50,7 +49,8 @@ public class WebTestHelper {
 	 * @return
 	 */
 	public MockHttpServletRequest newGET(final String requestURI) {
-		return new MockHttpServletRequest("GET", requestURI);
+		MockHttpServletRequest request = new MockHttpServletRequest("GET", requestURI);
+		return request;
 	}
 	
 	/**
@@ -73,7 +73,8 @@ public class WebTestHelper {
 	 * @return
 	 */
 	public MockHttpServletRequest newPOST(final String requestURI) {
-		return new MockHttpServletRequest("POST", requestURI);
+		MockHttpServletRequest request = new MockHttpServletRequest("POST", requestURI);
+		return request;
 	}
 	
 	/**
@@ -115,20 +116,20 @@ public class WebTestHelper {
 				break;
 			}
 		}
-		assertNotNull(handlerChain, "The requested URI has no mapping: " + request.getRequestURI());
+		Assert.assertNotNull("The requested URI has no mapping: " + request.getRequestURI(), handlerChain);
 		
 		boolean supported = false;
 		for (HandlerAdapter handlerAdapter : handlerAdapters) {
 			final Object handler = handlerChain.getHandler();
 			if (handlerAdapter.supports(handler)) {
-				assertFalse(supported, "The requested URI has more than one handler: " + request.getRequestURI());
+				Assert.assertFalse("The requested URI has more than one handler: " + request.getRequestURI(), supported);
 				
 				modelAndView = handlerAdapter.handle(request, response, handler);
 				supported = true;
 			}
 		}
 		
-		assertTrue(supported, "The requested URI has no handlers: " + request.getRequestURI());
+		Assert.assertTrue("The requested URI has no handlers: " + request.getRequestURI(), supported);
 		
 		return new Response(response, request.getSession(), modelAndView);
 	}

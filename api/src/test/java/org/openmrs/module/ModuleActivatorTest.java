@@ -9,12 +9,12 @@
  */
 package org.openmrs.module;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Test;
+import org.junit.AfterClass;
+import org.junit.Test;
 
 /**
  * Tests methods of the module activator that do not require refreshing of the spring application
@@ -23,35 +23,35 @@ import org.junit.jupiter.api.Test;
 public class ModuleActivatorTest extends BaseModuleActivatorTest {
 	
 	@Test
-	public void shouldCallWillStartOnStartup() {
+	public void shouldCallWillStartOnStartup() throws Exception {
 		assertTrue(moduleTestData.getWillStartCallCount(MODULE1_ID) == 1);
 		assertTrue(moduleTestData.getWillStartCallCount(MODULE2_ID) == 1);
 		assertTrue(moduleTestData.getWillStartCallCount(MODULE3_ID) == 1);
 	}
 	
 	@Test
-	public void shouldNotCallStartedOnStartup() {
+	public void shouldNotCallStartedOnStartup() throws Exception {
 		assertTrue(moduleTestData.getStartedCallCount(MODULE1_ID) == 0);
 		assertTrue(moduleTestData.getStartedCallCount(MODULE2_ID) == 0);
 		assertTrue(moduleTestData.getStartedCallCount(MODULE3_ID) == 0);
 	}
 	
 	@Test
-	public void shouldNotCallWillStopOnStartup() {
+	public void shouldNotCallWillStopOnStartup() throws Exception {
 		assertTrue(moduleTestData.getWillStopCallCount(MODULE1_ID) == 0);
 		assertTrue(moduleTestData.getWillStopCallCount(MODULE2_ID) == 0);
 		assertTrue(moduleTestData.getWillStopCallCount(MODULE3_ID) == 0);
 	}
 	
 	@Test
-	public void shouldNotCallStoppedOnStartup() {
+	public void shouldNotCallStoppedOnStartup() throws Exception {
 		assertTrue(moduleTestData.getStoppedCallCount(MODULE1_ID) == 0);
 		assertTrue(moduleTestData.getStoppedCallCount(MODULE2_ID) == 0);
 		assertTrue(moduleTestData.getStoppedCallCount(MODULE3_ID) == 0);
 	}
 	
 	@Test
-	public void shouldStartModulesInOrder() {
+	public void shouldStartModulesInOrder() throws Exception {
 		//module2 depends on module1 while module3 depends on module2
 		//so startup order should be module1, module2, module3
 		assertTrue(moduleTestData.getWillStartCallTime(MODULE1_ID) <= moduleTestData.getWillStartCallTime(MODULE2_ID));
@@ -62,7 +62,7 @@ public class ModuleActivatorTest extends BaseModuleActivatorTest {
 	}
 	
 	@Test
-	public void shouldCallWillStopAndStoppedOnlyForStoppedModule() {
+	public void shouldCallWillStopAndStoppedOnlyForStoppedModule() throws Exception {
 		ModuleFactory.stopModule(ModuleFactory.getModuleById(MODULE3_ID));
 		
 		//should have called willStop() for only module3
@@ -77,7 +77,7 @@ public class ModuleActivatorTest extends BaseModuleActivatorTest {
 	}
 	
 	@Test
-	public void shouldStopDependantModulesOnStopModule() {
+	public void shouldStopDependantModulesOnStopModule() throws Exception {
 		//since module2 depends on module1, and module3 depends on module2
 		//stopping module1 should also stop both module2 and module3
 		ModuleFactory.stopModule(ModuleFactory.getModuleById(MODULE1_ID));
@@ -106,7 +106,7 @@ public class ModuleActivatorTest extends BaseModuleActivatorTest {
 	}
 	
 	@Test
-	public void shouldCallWillStopAndStoppedOnShutdown() {
+	public void shouldCallWillStopAndStoppedOnShutdown() throws Exception {
 		ModuleUtil.shutdown();
 		
 		//should have called willStop() for module1, module2, and module3
@@ -157,7 +157,7 @@ public class ModuleActivatorTest extends BaseModuleActivatorTest {
 	}
 	
 	@Test
-	public void shouldCallWillStopAndStoppedOnUnloadModule() {
+	public void shouldCallWillStopAndStoppedOnUnloadModule() throws Exception {
 		
 		ModuleFactory.unloadModule(ModuleFactory.getModuleById(MODULE3_ID));
 		
@@ -174,12 +174,16 @@ public class ModuleActivatorTest extends BaseModuleActivatorTest {
 	
 	@Test
 	public void shouldStartBeforeAnotherModule() {
+		//module 1 should start before module 5
 		//module 5 should start before module 4
 		assertTrue(moduleTestData.getWillStartCallTime(MODULE5_ID) <= moduleTestData.getWillStartCallTime(MODULE4_ID));
+		assertTrue(moduleTestData.getWillStartCallTime(MODULE1_ID) <= moduleTestData.getWillStartCallTime(MODULE5_ID));
+		
 		assertTrue(moduleTestData.getStartedCallTime(MODULE5_ID) <= moduleTestData.getStartedCallTime(MODULE4_ID));
+		assertTrue(moduleTestData.getStartedCallTime(MODULE1_ID) <= moduleTestData.getStartedCallTime(MODULE5_ID));
 	}
 	
-	@AfterAll
+	@AfterClass
 	public static void cleanUp() {
 		//ensure that we do not have any left overs to interfere with other tests
 		ModuleUtil.shutdown();

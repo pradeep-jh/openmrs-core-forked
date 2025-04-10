@@ -9,17 +9,10 @@
  */
 package org.openmrs;
 
-import static org.apache.commons.lang3.StringUtils.defaultString;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
-
-import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.codehaus.jackson.annotate.JsonIgnore;
-import org.hibernate.envers.Audited;
 import org.hibernate.search.annotations.Analyzer;
 import org.hibernate.search.annotations.Boost;
 import org.hibernate.search.annotations.DocumentId;
@@ -27,26 +20,27 @@ import org.hibernate.search.annotations.Field;
 import org.hibernate.search.annotations.Fields;
 import org.hibernate.search.annotations.Indexed;
 import org.hibernate.search.annotations.IndexedEmbedded;
-import org.openmrs.api.APIException;
 import org.openmrs.api.db.hibernate.search.LuceneAnalyzers;
-import org.openmrs.layout.name.NameSupport;
-import org.openmrs.layout.name.NameTemplate;
 import org.openmrs.util.OpenmrsConstants;
 import org.openmrs.util.OpenmrsUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.List;
+
+import static org.apache.commons.lang.StringUtils.defaultString;
 
 /**
  * A Person can have zero to n PersonName(s).
  */
 @Indexed
-@Audited
-public class PersonName extends BaseChangeableOpenmrsData implements java.io.Serializable, Cloneable, Comparable<PersonName> {
+public class PersonName extends BaseOpenmrsData implements java.io.Serializable, Cloneable, Comparable<PersonName> {
 	
 	public static final long serialVersionUID = 4353L;
 
-	private static final Logger log = LoggerFactory.getLogger(PersonName.class);
+	private static final Log log = LogFactory.getLog(PersonName.class);
 
 	// Fields
 	@DocumentId
@@ -60,8 +54,7 @@ public class PersonName extends BaseChangeableOpenmrsData implements java.io.Ser
 	@Fields({
 			@Field(name = "givenNameExact", analyzer = @Analyzer(definition = LuceneAnalyzers.EXACT_ANALYZER), boost = @Boost(8f)),
 			@Field(name = "givenNameStart", analyzer = @Analyzer(definition = LuceneAnalyzers.START_ANALYZER), boost = @Boost(4f)),
-			@Field(name = "givenNameAnywhere", analyzer = @Analyzer(definition = LuceneAnalyzers.ANYWHERE_ANALYZER), boost = @Boost(2f)),
-			@Field(name = "givenNameSoundex", analyzer =  @Analyzer(definition = LuceneAnalyzers.SOUNDEX_ANALYZER), boost = @Boost(1f))
+			@Field(name = "givenNameAnywhere", analyzer = @Analyzer(definition = LuceneAnalyzers.ANYWHERE_ANALYZER), boost = @Boost(2f))
 	})
 	private String givenName;
 	private String prefix;
@@ -69,8 +62,7 @@ public class PersonName extends BaseChangeableOpenmrsData implements java.io.Ser
 	@Fields({
 			@Field(name = "middleNameExact", analyzer = @Analyzer(definition = LuceneAnalyzers.EXACT_ANALYZER), boost = @Boost(4f)),
 			@Field(name = "middleNameStart", analyzer = @Analyzer(definition = LuceneAnalyzers.START_ANALYZER), boost = @Boost(2f)),
-			@Field(name = "middleNameAnywhere", analyzer = @Analyzer(definition = LuceneAnalyzers.ANYWHERE_ANALYZER)),
-			@Field(name = "middleNameSoundex", analyzer =  @Analyzer(definition = LuceneAnalyzers.SOUNDEX_ANALYZER), boost = @Boost(1f))
+			@Field(name = "middleNameAnywhere", analyzer = @Analyzer(definition = LuceneAnalyzers.ANYWHERE_ANALYZER))
 	})
 	private String middleName;
 	
@@ -80,7 +72,6 @@ public class PersonName extends BaseChangeableOpenmrsData implements java.io.Ser
 			@Field(name = "familyNameExact", analyzer = @Analyzer(definition = LuceneAnalyzers.EXACT_ANALYZER), boost = @Boost(8f)),
 			@Field(name = "familyNameStart", analyzer = @Analyzer(definition = LuceneAnalyzers.START_ANALYZER), boost = @Boost(4f)),
 			@Field(name = "familyNameAnywhere", analyzer = @Analyzer(definition = LuceneAnalyzers.ANYWHERE_ANALYZER), boost = @Boost(2f)),
-			@Field(name = "familyNameSoundex", analyzer =  @Analyzer(definition = LuceneAnalyzers.SOUNDEX_ANALYZER), boost = @Boost(1f))
 	})
 	private String familyName;
 
@@ -88,7 +79,6 @@ public class PersonName extends BaseChangeableOpenmrsData implements java.io.Ser
 			@Field(name = "familyName2Exact", analyzer = @Analyzer(definition = LuceneAnalyzers.EXACT_ANALYZER), boost = @Boost(4f)),
 			@Field(name = "familyName2Start", analyzer = @Analyzer(definition = LuceneAnalyzers.START_ANALYZER), boost = @Boost(2f)),
 			@Field(name = "familyName2Anywhere", analyzer = @Analyzer(definition = LuceneAnalyzers.ANYWHERE_ANALYZER)),
-			@Field(name = "familyName2Soundex", analyzer =  @Analyzer(definition = LuceneAnalyzers.SOUNDEX_ANALYZER), boost = @Boost(1f))
 	})
 	private String familyName2;
 	
@@ -130,8 +120,9 @@ public class PersonName extends BaseChangeableOpenmrsData implements java.io.Ser
 	 *
 	 * @param otherName PersonName with which to compare
 	 * @return boolean true/false whether or not they are the same names
-	 * <strong>Should</strong> return true if given middle and family name are equal
+	 * @should return true if given middle and family name are equal
 	 */
+	@SuppressWarnings("unchecked")
 	public boolean equalsContent(PersonName otherName) {
 		return new EqualsBuilder().append(defaultString(otherName.getPrefix()), defaultString(prefix)).append(
 		    defaultString(otherName.getGivenName()), defaultString(givenName)).append(
@@ -147,13 +138,13 @@ public class PersonName extends BaseChangeableOpenmrsData implements java.io.Ser
 	 * PersonName.person object in this object AND the cloned object will point at the same person
 	 *
 	 * @return New PersonName object
-	 * <strong>Should</strong> copy every property of given personName
+	 * @should copy every property of given personName
 	 */
 	public static PersonName newInstance(PersonName pn) {
 		if (pn == null) {
 			throw new IllegalArgumentException();
 		}
-		PersonName newName = new PersonName(pn.getPersonNameId());
+		PersonName newName = new PersonName(Integer.valueOf(pn.getPersonNameId()));
 		if (pn.getGivenName() != null) {
 			newName.setGivenName(String.valueOf(pn.getGivenName()));
 		}
@@ -193,10 +184,10 @@ public class PersonName extends BaseChangeableOpenmrsData implements java.io.Ser
 		}
 		
 		if (pn.getPreferred() != null) {
-			newName.setPreferred(pn.getPreferred());
+			newName.setPreferred(pn.getPreferred().booleanValue());
 		}
 		if (pn.getVoided() != null) {
-			newName.setVoided(pn.getVoided());
+			newName.setVoided(pn.getVoided().booleanValue());
 		}
 		
 		newName.setPerson(pn.getPerson());
@@ -223,7 +214,7 @@ public class PersonName extends BaseChangeableOpenmrsData implements java.io.Ser
 	
 	/**
 	 * @return Returns the familyName.
-	 * <strong>Should</strong> return obscured name if obscure_patients is set to true
+	 * @should return obscured name if obscure_patients is set to true
 	 */
 	public String getFamilyName() {
 		if (OpenmrsConstants.OBSCURE_PATIENTS) {
@@ -241,7 +232,7 @@ public class PersonName extends BaseChangeableOpenmrsData implements java.io.Ser
 	
 	/**
 	 * @return Returns the familyName2.
-	 * <strong>Should</strong> return null if obscure_patients is set to true
+	 * @should return null if obscure_patients is set to true
 	 */
 	public String getFamilyName2() {
 		if (OpenmrsConstants.OBSCURE_PATIENTS) {
@@ -259,7 +250,7 @@ public class PersonName extends BaseChangeableOpenmrsData implements java.io.Ser
 	
 	/**
 	 * @return Returns the familyNamePrefix.
-	 * <strong>Should</strong> return null if obscure_patients is set to true
+	 * @should return null if obscure_patients is set to true
 	 */
 	public String getFamilyNamePrefix() {
 		if (OpenmrsConstants.OBSCURE_PATIENTS) {
@@ -277,7 +268,7 @@ public class PersonName extends BaseChangeableOpenmrsData implements java.io.Ser
 	
 	/**
 	 * @return Returns the familyNameSuffix.
-	 * <strong>Should</strong> return null if obscure_patients is set to true
+	 * @should return null if obscure_patients is set to true
 	 */
 	public String getFamilyNameSuffix() {
 		if (OpenmrsConstants.OBSCURE_PATIENTS) {
@@ -295,7 +286,7 @@ public class PersonName extends BaseChangeableOpenmrsData implements java.io.Ser
 	
 	/**
 	 * @return Returns the givenName.
-	 * <strong>Should</strong> return obscured name if obscure_patients is set to true
+	 * @should return obscured name if obscure_patients is set to true
 	 */
 	public String getGivenName() {
 		if (OpenmrsConstants.OBSCURE_PATIENTS) {
@@ -313,7 +304,7 @@ public class PersonName extends BaseChangeableOpenmrsData implements java.io.Ser
 	
 	/**
 	 * @return Returns the middleName.
-	 * <strong>Should</strong> return obscured name if obscure_patients is set to true
+	 * @should return obscured name if obscure_patients is set to true
 	 */
 	public String getMiddleName() {
 		if (OpenmrsConstants.OBSCURE_PATIENTS) {
@@ -384,7 +375,7 @@ public class PersonName extends BaseChangeableOpenmrsData implements java.io.Ser
 	
 	/**
 	 * @return Returns the prefix.
-	 * <strong>Should</strong> return null if obscure_patients is set to true
+	 * @should return null if obscure_patients is set to true
 	 */
 	public String getPrefix() {
 		if (OpenmrsConstants.OBSCURE_PATIENTS) {
@@ -406,22 +397,10 @@ public class PersonName extends BaseChangeableOpenmrsData implements java.io.Ser
 	 * {@link #getMiddleName()}, etc are null, they are not included in the returned name
 	 *
 	 * @return all of the parts of this {@link PersonName} joined with spaces
-	 * <strong>Should</strong> not put spaces around an empty middle name
+	 * @should not put spaces around an empty middle name
 	 */
 	public String getFullName() {
-		NameTemplate nameTemplate = null;
-		try {
-			nameTemplate = NameSupport.getInstance().getDefaultLayoutTemplate();
-		}
-		catch (APIException ex) {
-			log.warn("No name layout format set");
-		}
-		
-		if (nameTemplate != null) {
-			return nameTemplate.format(this);
-		}
-
-		List<String> temp = new ArrayList<>();
+		List<String> temp = new ArrayList<String>();
 		if (StringUtils.hasText(getPrefix())) {
 			temp.add(getPrefix());
 		}
@@ -473,25 +452,27 @@ public class PersonName extends BaseChangeableOpenmrsData implements java.io.Ser
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		return getPersonNameId();
 	}
 	
 	/**
+	 * TODO: the behaviour of this method needs to be controlled by some sort of global property
+	 * because an implementation can define how they want their names to look (which fields to
+	 * show/hide)
+	 * 
 	 * @see java.lang.Comparable#compareTo(java.lang.Object)
-	 * <strong>Should</strong> return negative if other name is voided
-	 * <strong>Should</strong> return negative if this name is preferred
-	 * <strong>Should</strong> return negative if other familyName is greater
-	 * <strong>Should</strong> return negative if other familyName2 is greater
-	 * <strong>Should</strong> return negative if other givenName is greater
-	 * <strong>Should</strong> return negative if other middleName is greater
-	 * <strong>Should</strong> return negative if other familynamePrefix is greater
-	 * <strong>Should</strong> return negative if other familyNameSuffix is greater
-	 * <strong>Should</strong> return negative if other dateCreated is greater
+	 * @should return negative if other name is voided
+	 * @should return negative if this name is preferred
+	 * @should return negative if other familyName is greater
+	 * @should return negative if other familyName2 is greater
+	 * @should return negative if other givenName is greater
+	 * @should return negative if other middleName is greater
+	 * @should return negative if other familynamePrefix is greater
+	 * @should return negative if other familyNameSuffix is greater
+	 * @should return negative if other dateCreated is greater
 	 * Note: this comparator imposes orderings that are inconsistent with equals.
 	 */
-	@Override
 	public int compareTo(PersonName other) {
 		DefaultComparator pnDefaultComparator = new DefaultComparator();
 		return pnDefaultComparator.compare(this, other);
@@ -501,7 +482,6 @@ public class PersonName extends BaseChangeableOpenmrsData implements java.io.Ser
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setPersonNameId(id);
 		
@@ -523,15 +503,12 @@ public class PersonName extends BaseChangeableOpenmrsData implements java.io.Ser
 	 Provides a default comparator.
 	 @since 1.12
 	 **/
-	public static class DefaultComparator implements Comparator<PersonName>, Serializable {
-
-		private static final long serialVersionUID = 1L;
+	public static class DefaultComparator implements Comparator<PersonName> {
 		
-		@Override
 		public int compare(PersonName pn1, PersonName pn2) {
-			int ret = pn1.getVoided().compareTo(pn2.getVoided());
+			int ret = pn1.isVoided().compareTo(pn2.isVoided());
 			if (ret == 0) {
-				ret = pn2.getPreferred().compareTo(pn1.getPreferred());
+				ret = pn2.isPreferred().compareTo(pn1.isPreferred());
 			}
 			if (ret == 0) {
 				ret = OpenmrsUtil.compareWithNullAsGreatest(pn1.getFamilyName(), pn2.getFamilyName());

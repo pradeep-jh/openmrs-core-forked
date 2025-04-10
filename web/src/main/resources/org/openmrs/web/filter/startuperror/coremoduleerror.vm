@@ -1,4 +1,4 @@
-#parse($HEADER_TEMPLATE)
+#parse($headerTemplate)
 
 #if ($success)
 <div style="color: green">
@@ -40,4 +40,4 @@ See the server log for full output.
 #end
 
 
-#parse($FOOTER_TEMPLATE)
+#parse($footerTemplate)

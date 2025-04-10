@@ -9,11 +9,11 @@
  */
 package org.openmrs;
 
-import java.util.Date;
-import java.util.Locale;
-
 import org.springframework.validation.Errors;
 import org.springframework.validation.ValidationUtils;
+
+import java.util.Date;
+import java.util.Locale;
 
 public class CustomDosingInstructions implements DosingInstructions {
 	

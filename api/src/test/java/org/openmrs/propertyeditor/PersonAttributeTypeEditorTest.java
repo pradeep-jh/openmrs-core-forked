@@ -9,24 +9,31 @@
  */
 package org.openmrs.propertyeditor;
 
-import org.openmrs.PersonAttributeType;
-import org.openmrs.api.PersonService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.junit.Assert;
+import org.junit.Test;
+import org.openmrs.test.BaseContextSensitiveTest;
 
-public class PersonAttributeTypeEditorTest extends BasePropertyEditorTest<PersonAttributeType, PersonAttributeTypeEditor> {
+public class PersonAttributeTypeEditorTest extends BaseContextSensitiveTest {
 	
-	private static final Integer EXISTING_ID = 1;
-	
-	@Autowired
-	private PersonService personService;
-	
-	@Override
-	protected PersonAttributeTypeEditor getNewEditor() {
-		return new PersonAttributeTypeEditor();
+	/**
+	 * @see PersonAttributeTypeEditor#setAsText(String)
+	 * @verifies set using id
+	 */
+	@Test
+	public void setAsText_shouldSetUsingId() throws Exception {
+		PersonAttributeTypeEditor editor = new PersonAttributeTypeEditor();
+		editor.setAsText("1");
+		Assert.assertNotNull(editor.getValue());
 	}
 	
-	@Override
-	protected PersonAttributeType getExistingObject() {
-		return personService.getPersonAttributeType(EXISTING_ID);
+	/**
+	 * @see PersonAttributeTypeEditor#setAsText(String)
+	 * @verifies set using uuid
+	 */
+	@Test
+	public void setAsText_shouldSetUsingUuid() throws Exception {
+		PersonAttributeTypeEditor editor = new PersonAttributeTypeEditor();
+		editor.setAsText("b3b6d540-a32e-44c7-91b3-292d97667518");
+		Assert.assertNotNull(editor.getValue());
 	}
 }

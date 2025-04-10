@@ -96,11 +96,6 @@ public interface ProviderDAO {
 	ProviderAttributeType getProviderAttributeTypeByUuid(String uuid);
 	
 	/**
-	 * @see ProviderService#getProviderAttributeTypeByName(String)
-	 */
-	ProviderAttributeType getProviderAttributeTypeByName(String name);
-	
-	/**
 	 * @see ProviderService#saveProviderAttributeType(ProviderAttributeType)
 	 */
 	ProviderAttributeType saveProviderAttributeType(ProviderAttributeType providerAttributeType);

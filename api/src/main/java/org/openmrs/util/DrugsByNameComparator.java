@@ -9,9 +9,10 @@
  */
 package org.openmrs.util;
 
-import java.io.Serializable;
 import java.util.Comparator;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.Drug;
 
 /**
@@ -19,14 +20,14 @@ import org.openmrs.Drug;
  * numericals or other characters contained in the string. It will ignore all except letters a-z and
  * A-Z.
  */
-public class DrugsByNameComparator implements Comparator<Drug>, Serializable {
-
-	private static final long serialVersionUID = 1L;
-
+public class DrugsByNameComparator implements Comparator<Drug> {
+	
+	/** The Constant log. */
+	private final static Log log = LogFactory.getLog(DrugsByNameComparator.class);
+	
 	/* (non-Jsdoc)
 	 * @see java.util.Comparator#compare(java.lang.Object, java.lang.Object)
 	 */
-	@Override
 	public int compare(Drug d1, Drug d2) {
 		return compareDrugNamesIgnoringNumericals(d1, d2);
 	}
@@ -39,10 +40,10 @@ public class DrugsByNameComparator implements Comparator<Drug>, Serializable {
 	 * @param d1 the first Drug to be compared
 	 * @param d2 the second Drug to be compared
 	 * @return the int
-	 * <strong>Should</strong> return negative if name for drug1 comes before that of drug2
-	 * <strong>Should</strong> return zero if name for drug1 comes before that of drug2
-	 * <strong>Should</strong> return positive if name for drug1 comes before that of drug2 ignoring dashes
-	 * <strong>Should</strong> return positive if name for drug1 comes before that of drug2 ignoring numerics
+	 * @should return negative if name for drug1 comes before that of drug2
+	 * @should return zero if name for drug1 comes before that of drug2
+	 * @should return positive if name for drug1 comes before that of drug2 ignoring dashes
+	 * @should return positive if name for drug1 comes before that of drug2 ignoring numerics
 	 */
 	private int compareDrugNamesIgnoringNumericals(Drug d1, Drug d2) {
 		
@@ -59,6 +60,7 @@ public class DrugsByNameComparator implements Comparator<Drug>, Serializable {
 	 * @return the string
 	 */
 	private String remove(String drugName) {
-		return drugName.replaceAll("[^a-zA-Z]", "");
+		String cleanText = drugName.replaceAll("[^a-zA-Z]", "");
+		return cleanText;
 	}
 }

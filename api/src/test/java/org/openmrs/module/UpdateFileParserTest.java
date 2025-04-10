@@ -9,9 +9,9 @@
  */
 package org.openmrs.module;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.assertEquals;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 /**
  * Tests UpdateFileParser
@@ -20,6 +20,7 @@ public class UpdateFileParserTest {
 
 	
 	/**
+	 * @verifies set properties from xml file
 	 * @see UpdateFileParser#parse()
 	 */
 	@Test
@@ -41,6 +42,7 @@ public class UpdateFileParserTest {
 	}
 
 	/**
+	 * @verifies set properties using the newest update
 	 * @see UpdateFileParser#parse()
 	 */
 	@Test
@@ -75,6 +77,7 @@ public class UpdateFileParserTest {
 	}
 
 	/**
+	 * @verifies not set properties using updates ahead of current openmrs version
 	 * @see UpdateFileParser#parse()
 	 */
 	@Test

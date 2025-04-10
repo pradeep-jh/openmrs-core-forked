@@ -9,13 +9,10 @@
  */
 package org.openmrs;
 
-import org.hibernate.envers.Audited;
-
 /**
  * FieldType
  */
-@Audited
-public class FieldType extends BaseChangeableOpenmrsMetadata {
+public class FieldType extends BaseOpenmrsMetadata {
 	
 	public static final long serialVersionUID = 35467L;
 	
@@ -70,7 +67,6 @@ public class FieldType extends BaseChangeableOpenmrsMetadata {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		
 		return getFieldTypeId();
@@ -80,7 +76,6 @@ public class FieldType extends BaseChangeableOpenmrsMetadata {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setFieldTypeId(id);
 		

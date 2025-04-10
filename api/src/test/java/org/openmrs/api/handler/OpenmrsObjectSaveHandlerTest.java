@@ -9,13 +9,10 @@
  */
 package org.openmrs.api.handler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 import java.util.Date;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.BaseOpenmrsObject;
 import org.openmrs.ConceptReferenceTerm;
 import org.openmrs.ConceptSource;
@@ -24,6 +21,7 @@ import org.openmrs.Role;
 import org.openmrs.User;
 import org.openmrs.annotation.AllowEmptyStrings;
 import org.openmrs.annotation.AllowLeadingOrTrailingWhitespace;
+import org.openmrs.test.Verifies;
 
 /**
  * Tests for {@link OpenmrsObjectSaveHandler}
@@ -34,6 +32,7 @@ public class OpenmrsObjectSaveHandlerTest {
 	 * @see OpenmrsObjectSaveHandler#handle(OpenmrsObject,User,Date,String)
 	 */
 	@Test
+	@Verifies(value = "set empty string properties to null", method = "handle(OpenmrsObject,User,Date,String)")
 	public void handle_shouldSetEmptyStringPropertiesToNull() {
 		Role role = new Role();
 		role.setName("");
@@ -42,51 +41,55 @@ public class OpenmrsObjectSaveHandlerTest {
 		
 		new OpenmrsObjectSaveHandler().handle(role, null, null, null);
 		
-		assertNull(role.getName());
-		assertNull(role.getDescription());
-		assertNull(role.getRole());
+		Assert.assertNull(role.getName());
+		Assert.assertNull(role.getDescription());
+		Assert.assertNull(role.getRole());
 	}
 	
 	/**
 	 * @see OpenmrsObjectSaveHandler#handle(OpenmrsObject,User,Date,String)
 	 */
 	@Test
+	@Verifies(value = "not set empty string properties to null for AllowEmptyStrings annotation", method = "handle(OpenmrsObject,User,Date,String)")
 	public void handle_shouldNotSetEmptyStringPropertiesToNullForAllowEmptyStringsAnnotation() {
 		SomeClass obj = new SomeClass("");
 		new OpenmrsObjectSaveHandler().handle(obj, null, null, null);
-		assertNotNull(obj.getName());
+		Assert.assertNotNull(obj.getName());
 	}
 	
 	/**
 	 * @see OpenmrsObjectSaveHandler#handle(OpenmrsObject,User,Date,String)
 	 */
 	@Test
+	@Verifies(value = "not trim empty strings for AllowLeadingOrTrailingWhitespace annotation", method = "handle(OpenmrsObject,User,Date,String)")
 	public void handle_shouldNotTrimEmptyStringsForAllowLeadingOrTrailingWhitespaceAnnotation() {
 		SomeClass obj = new SomeClass(null, " ");
 		new OpenmrsObjectSaveHandler().handle(obj, null, null, null);
-		assertNotNull(obj.getDescription());
+		Assert.assertNotNull(obj.getDescription());
 	}
 	
 	/**
 	 * @see OpenmrsObjectSaveHandler#handle(OpenmrsObject,User,Date,String)
 	 */
 	@Test
+	@Verifies(value = "trim strings without AllowLeadingOrTrailingWhitespace annotation", method = "handle(OpenmrsObject,User,Date,String)")
 	public void handle_shouldTrimStringsWithoutAllowLeadingOrTrailingWhitespaceAnnotation() {
 		ConceptReferenceTerm term = new ConceptReferenceTerm();
 		term.setCode(" code ");
 		term.setConceptSource(new ConceptSource(1));
 		new OpenmrsObjectSaveHandler().handle(term, null, null, null);
-		assertEquals("code", term.getCode());
+		Assert.assertEquals("code", term.getCode());
 	}
 	
 	/**
 	 * @see OpenmrsObjectSaveHandler#handle(OpenmrsObject,User,Date,String)
 	 */
 	@Test
+	@Verifies(value = "trim empty strings for AllowEmptyStrings annotation", method = "handle(OpenmrsObject,User,Date,String)")
 	public void handle_shouldTrimEmptyStringsForAllowEmptyStringsAnnotation() {
 		SomeClass obj = new SomeClass(" name ");
 		new OpenmrsObjectSaveHandler().handle(obj, null, null, null);
-		assertEquals("name", obj.getName());
+		Assert.assertEquals("name", obj.getName());
 	}
 	
 	public class SomeClass extends BaseOpenmrsObject {
@@ -124,12 +127,10 @@ public class OpenmrsObjectSaveHandlerTest {
 			this.description = description;
 		}
 		
-		@Override
 		public void setId(Integer id) {
 			this.id = id;
 		}
 		
-		@Override
 		public Integer getId() {
 			return id;
 		}

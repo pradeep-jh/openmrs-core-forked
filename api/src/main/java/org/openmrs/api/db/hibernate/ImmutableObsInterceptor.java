@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 @Component("immutableObsInterceptor")
 public class ImmutableObsInterceptor extends ImmutableEntityInterceptor {
 	
-	private static final String[] MUTABLE_PROPERTY_NAMES = new String[] { "voided", "dateVoided", "voidedBy", "voidReason", "groupMembers" };
+	private static final String[] MUTABLE_PROPERTY_NAMES = new String[] { "voided", "dateVoided", "voidedBy", "voidReason" };
 	
 	/**
 	 * @see ImmutableEntityInterceptor#getSupportedType()

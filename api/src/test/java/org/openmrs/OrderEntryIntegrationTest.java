@@ -9,15 +9,13 @@
  */
 package org.openmrs;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItems;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Calendar;
 import java.util.Collection;
@@ -26,7 +24,10 @@ import java.util.List;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.time.DateUtils;
-import org.junit.jupiter.api.Test;
+import org.hamcrest.Matchers;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.openmrs.api.APIException;
 import org.openmrs.api.ConceptService;
 import org.openmrs.api.EncounterService;
@@ -35,7 +36,7 @@ import org.openmrs.api.PatientService;
 import org.openmrs.api.ProviderService;
 import org.openmrs.api.context.Context;
 import org.openmrs.order.OrderUtilTest;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
 import org.openmrs.util.DateUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -61,6 +62,8 @@ public class OrderEntryIntegrationTest extends BaseContextSensitiveTest {
 	@Autowired
 	private EncounterService encounterService;
 	
+	@Rule
+	public ExpectedException expectedException = ExpectedException.none();
 	
 	@Test
 	public void shouldGetTheActiveOrdersForAPatient() {
@@ -84,7 +87,7 @@ public class OrderEntryIntegrationTest extends BaseContextSensitiveTest {
 	}
 	
 	@Test
-	public void shouldPlaceADrugOrder() {
+	public void shouldPlaceADrugOrder() throws Exception {
 		executeDataSet(ORDER_ENTRY_DATASET_XML);
 		Patient patient = patientService.getPatient(7);
 		CareSetting careSetting = orderService.getCareSetting(1);
@@ -117,7 +120,7 @@ public class OrderEntryIntegrationTest extends BaseContextSensitiveTest {
 	}
 	
 	@Test
-	public void shouldPlaceATestOrder() {
+	public void shouldPlaceATestOrder() throws Exception {
 		executeDataSet(ORDER_ENTRY_DATASET_XML);
 		Patient patient = patientService.getPatient(7);
 		CareSetting careSetting = orderService.getCareSetting(1);
@@ -137,8 +140,6 @@ public class OrderEntryIntegrationTest extends BaseContextSensitiveTest {
 		order.setFrequency(orderService.getOrderFrequency(3000));
 		order.setSpecimenSource(conceptService.getConcept(22));
 		order.setNumberOfRepeats(3);
-		order.setFulfillerStatus(Order.FulfillerStatus.RECEIVED);
-		order.setFulfillerComment("A comment from the filler");
 		
 		orderService.saveOrder(order, null);
 		List<Order> activeOrders = orderService.getActiveOrders(patient, orderService.getOrderTypeByName("Test order"),
@@ -148,7 +149,7 @@ public class OrderEntryIntegrationTest extends BaseContextSensitiveTest {
 	}
 	
 	@Test
-	public void shouldDiscontinueAnActiveOrder() {
+	public void shouldDiscontinueAnActiveOrder() throws Exception {
 		executeDataSet(ORDER_ENTRY_DATASET_XML);
 		executeDataSet("org/openmrs/api/include/OrderServiceTest-discontinueReason.xml");
 		
@@ -188,7 +189,7 @@ public class OrderEntryIntegrationTest extends BaseContextSensitiveTest {
 	}
 	
 	@Test
-	public void shouldReviseAnOrder() {
+	public void shouldReviseAnOrder() throws Exception {
 		Order originalOrder = orderService.getOrder(111);
 		assertTrue(OrderUtilTest.isActiveOrder(originalOrder, null));
 		final Patient patient = originalOrder.getPatient();
@@ -210,10 +211,11 @@ public class OrderEntryIntegrationTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies void an order
 	 * @see OrderService#voidOrder(org.openmrs.Order, String)
 	 */
 	@Test
-	public void shouldVoidAnOrderAndFlushSuccessfully() {
+	public void shouldVoidAnOrderAndFlushSuccessfully() throws Exception {
 		Order order = orderService.getOrder(1);
 		assertFalse(order.getVoided());
 		assertNull(order.getDateVoided());
@@ -230,10 +232,11 @@ public class OrderEntryIntegrationTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies unvoid an order
 	 * @see OrderService#unvoidOrder(org.openmrs.Order)
 	 */
 	@Test
-	public void shouldUnvoidAnOrderAndFlushSuccessfully() {
+	public void shouldUnvoidAnOrderAndFlushSuccessfully() throws Exception {
 		Order order = orderService.getOrder(8);
 		assertTrue(order.getVoided());
 		assertNotNull(order.getDateVoided());
@@ -249,7 +252,7 @@ public class OrderEntryIntegrationTest extends BaseContextSensitiveTest {
 	}
 	
 	@Test
-	public void shouldDiscontinueAnActiveOrderAndFlushSuccessfully() {
+	public void shouldDiscontinueAnActiveOrderAndFlushSuccessfully() throws Exception {
 		executeDataSet(ORDER_ENTRY_DATASET_XML);
 		executeDataSet("org/openmrs/api/include/OrderServiceTest-discontinueReason.xml");
 		
@@ -266,7 +269,7 @@ public class OrderEntryIntegrationTest extends BaseContextSensitiveTest {
 	}
 	
 	@Test
-	public void shouldReviseAnOrderAndFlushSuccessfully() {
+	public void shouldReviseAnOrderAndFlushSuccessfully() throws Exception {
 		Order originalOrder = orderService.getOrder(111);
 		assertTrue(OrderUtilTest.isActiveOrder(originalOrder, null));
 		final Patient patient = originalOrder.getPatient();
@@ -288,13 +291,14 @@ public class OrderEntryIntegrationTest extends BaseContextSensitiveTest {
 	}
 	
 	@Test
-	public void shouldFailIfAnEditedOrderIsFlushed() {
+	public void shouldFailIfAnEditedOrderIsFlushed() throws Exception {
 		Encounter encounter = encounterService.getEncounter(3);
 		assertFalse(encounter.getOrders().isEmpty());
 		encounter.getOrders().iterator().next().setInstructions("new");
+		expectedException.expect(APIException.class);
+		expectedException.expectMessage(Matchers.is(Context.getMessageSourceService().getMessage("editing.fields.not.allowed", new Object[] { "[instructions]", Order.class.getSimpleName() }, null)));
 		encounterService.saveEncounter(encounter);
-		APIException exception = assertThrows(APIException.class, () -> Context.flushSession());
-		assertThat(exception.getMessage(), is(Context.getMessageSourceService().getMessage("editing.fields.not.allowed", new Object[] { "[instructions]", Order.class.getSimpleName() }, null)));
+		Context.flushSession();
 	}
 	
 	/**
@@ -304,7 +308,7 @@ public class OrderEntryIntegrationTest extends BaseContextSensitiveTest {
 	 * @throws Exception
 	 */
 	@Test
-	public void shouldNotReturnAProxyForPreviousOrder() {
+	public void shouldNotReturnAProxyForPreviousOrder() throws Exception {
 		Order dcOrder = orderService.getOrder(22);
 		Order previousOrder = dcOrder.getPreviousOrder();
 		assertNotNull(previousOrder);
@@ -318,7 +322,7 @@ public class OrderEntryIntegrationTest extends BaseContextSensitiveTest {
 	}
 	
 	@Test
-	public void shouldAllowEditingADiscontinuationOrder() {
+	public void shouldAllowEditingADiscontinuationOrder() throws Exception {
 		Order originalDCOrder = orderService.getOrder(22);
 		assertEquals(Order.Action.DISCONTINUE, originalDCOrder.getAction());
 		List<Order> originalPatientOrders = orderService.getAllOrdersByPatient(originalDCOrder.getPatient());
@@ -345,7 +349,7 @@ public class OrderEntryIntegrationTest extends BaseContextSensitiveTest {
 	}
 	
 	@Test
-	public void shouldAllowRetrospectiveDataEntryOfOrders() {
+	public void shouldAllowRetrospectiveDataEntryOfOrders() throws Exception {
 		Order order = new TestOrder();
 		order.setPatient(patientService.getPatient(2));
 		order.setCareSetting(orderService.getCareSetting(2));
@@ -366,7 +370,7 @@ public class OrderEntryIntegrationTest extends BaseContextSensitiveTest {
 	}
 
 	@Test
-	public void shouldAllowRevisionOfOrdersInRetrospectiveDataEntry() {
+	public void shouldAllowRevisionOfOrdersInRetrospectiveDataEntry() throws Exception {
 		executeDataSet("org/openmrs/api/include/OrderServiceTest-drugOrderAutoExpireDate.xml");
 		Calendar cal = Calendar.getInstance();
 		cal.add(Calendar.DAY_OF_WEEK, -20);

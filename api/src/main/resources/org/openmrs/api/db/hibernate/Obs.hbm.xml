@@ -18,7 +18,7 @@
 	<class name="Obs" table="obs" batch-size="25">
 
 		<id name="obsId" type="int" column="obs_id" unsaved-value="null">
-			<generator class="identity">
+			<generator class="native">
 				<param name="sequence">obs_obs_id_seq</param>
 			</generator>
 		</id>
@@ -42,10 +42,10 @@
 			column="value_numeric" length="22" />
 		<property name="valueModifier" type="java.lang.String"
 			column="value_modifier" length="2" />
-		<property name="valueText" type="text"
+		<property name="valueText" type="java.lang.String"
 			column="value_text" length="65535" />
 		<property name="valueComplex" type="java.lang.String"
-		    column="value_complex" length="1000" />
+		    column="value_complex" length="255" />
 			
 		<property name="comment" type="java.lang.String"
 			column="comments" length="255" />
@@ -66,13 +66,13 @@
 		<property name="status" column="status" length="16" not-null="true">
 			<type name="org.hibernate.type.EnumType">
 				<param name="enumClass">org.openmrs.Obs$Status</param>
-				<param name="useNamed">true</param>
+				<param name="type">12</param>
 			</type>
 		</property>
 		<property name="interpretation" column="interpretation" length="32">
 			<type name="org.hibernate.type.EnumType">
 				<param name="enumClass">org.openmrs.Obs$Interpretation</param>
-				<param name="useNamed">true</param>
+				<param name="type">12</param>
 			</type>
 		</property>
 		
@@ -99,8 +99,6 @@
 			<one-to-many class="Obs" />
 		</set> 
 		<many-to-one name="previousVersion" class="Obs" column="previous_version" unique="true" />
-
-		<one-to-one name="referenceRange" class="org.openmrs.ObsReferenceRange" cascade="all"  />
 	</class>
 	
 </hibernate-mapping>

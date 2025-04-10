@@ -48,7 +48,7 @@ public class ModuleFilterChain implements FilterChain {
 	 * Factory method to construct and return a ModuleFilterChain
 	 * 
 	 * @param filters The Collection of {@link Filter}s that this FilterChain will iterate over
-	 *            before returning control back to the <code>initialFilterChain</code>
+	 *            before returning control back the the <code>initialFilterChain</code>
 	 * @param initialFilterChain The {@link FilterChain} to return control to once all of the
 	 *            {@link Filter}s have been executed
 	 * @return The ModuleFilterChain that is fully initialized with the passed parameters
@@ -64,7 +64,6 @@ public class ModuleFilterChain implements FilterChain {
 	 * @see javax.servlet.FilterChain#doFilter(javax.servlet.ServletRequest,
 	 *      javax.servlet.ServletResponse)
 	 */
-	@Override
 	public void doFilter(ServletRequest request, ServletResponse response) throws ServletException, IOException {
 		if (filterIterator.hasNext()) {
 			Filter f = filterIterator.next();

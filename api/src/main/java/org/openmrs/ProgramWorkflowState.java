@@ -9,13 +9,10 @@
  */
 package org.openmrs;
 
-import org.hibernate.envers.Audited;
-
 /**
  * ProgramWorkflowState
  */
-@Audited
-public class ProgramWorkflowState extends BaseChangeableOpenmrsMetadata {
+public class ProgramWorkflowState extends BaseOpenmrsMetadata {
 	
 	private static final long serialVersionUID = 1L;
 	
@@ -51,9 +48,8 @@ public class ProgramWorkflowState extends BaseChangeableOpenmrsMetadata {
 	// ******************
 	
 	/** @see Object#toString() */
-	@Override
 	public String toString() {
-		return "State " + getConcept().toString() + " initial=" + getInitial() + " terminal=" + getTerminal();
+		return "State " + getConcept().getName() + " initial=" + getInitial() + " terminal=" + getTerminal();
 	}
 	
 	// ******************
@@ -104,7 +100,6 @@ public class ProgramWorkflowState extends BaseChangeableOpenmrsMetadata {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		return getProgramWorkflowStateId();
 	}
@@ -113,7 +108,6 @@ public class ProgramWorkflowState extends BaseChangeableOpenmrsMetadata {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setProgramWorkflowStateId(id);
 		

@@ -9,304 +9,61 @@
  */
 package org.openmrs.util;
 
-import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
-import org.apache.logging.log4j.core.ErrorHandler;
-import org.apache.logging.log4j.core.Filter;
-import org.apache.logging.log4j.core.Layout;
-import org.apache.logging.log4j.core.LogEvent;
-import org.apache.logging.log4j.core.StringLayout;
-import org.apache.logging.log4j.core.config.Property;
+import org.apache.commons.collections.buffer.CircularFifoBuffer;
+import org.apache.log4j.AppenderSkeleton;
+import org.apache.log4j.Layout;
+import org.apache.log4j.spi.LoggingEvent;
 
 /**
- * This class stores a configurable number lines of the output from the log file.
- *
- * Note that this class is implemented as a single-buffer-per-appender-name meaning that each appender name can only support
- * a single configuration (the most recent applied)
- * 
- * @deprecated As of 2.4.4, 2.5.1, and 2.6.0 this class is moved to the org.openmrs.logging package
+ * This class stores a few lines of the output to the log file. This class is set in the log4j
+ * descriptor file: /metadata/api/log4j/log4j.xml
  */
-@Deprecated
-public class MemoryAppender extends org.openmrs.logging.MemoryAppender {
+public class MemoryAppender extends AppenderSkeleton {
 	
-	private final org.openmrs.logging.MemoryAppender implementation;
+	private CircularFifoBuffer buffer;
 	
-	MemoryAppender(org.openmrs.logging.MemoryAppender implementation) {
-		super(implementation.getName(), implementation.getFilter(),
-			(StringLayout) implementation.getLayout(), implementation.ignoreExceptions(),
-			implementation.getPropertyArray(), 1);
-		
-		this.implementation = implementation;
+	private int bufferSize = 100;
+	
+	public MemoryAppender() {
 	}
 	
-	protected MemoryAppender(String name, Filter filter,
-		StringLayout layout, boolean ignoreExceptions,
-		Property[] properties, int bufferSize) {
-		super(name, filter, layout, ignoreExceptions, properties, bufferSize);
-		
-		implementation = null;
-	}
-	
-	@Override
-	public void append(LogEvent logEvent) {
-		if (implementation != null) {
-			implementation.append(logEvent);
-		} else {
-			super.append(logEvent);
+	protected void append(LoggingEvent loggingEvent) {
+		if (buffer != null) {
+			buffer.add(loggingEvent);
 		}
 	}
 	
-	@Override
-	public int getBufferSize() {
-		if (implementation != null) {
-			return implementation.getBufferSize();
-		} else {
-			return super.getBufferSize();
-		}
+	public void close() {
+		buffer.clear();
 	}
 	
-	@Override
+	public boolean requiresLayout() {
+		return true;
+	}
+	
+	public void activateOptions() {
+		this.buffer = new CircularFifoBuffer(bufferSize);
+	}
+	
 	public List<String> getLogLines() {
-		if (implementation != null) {
-			return implementation.getLogLines();
-		} else {
-			return super.getLogLines();
+		List<String> logLines = new ArrayList<String>(buffer.size());
+		Layout layout = this.getLayout();
+		for (Iterator<?> iterBuffer = buffer.iterator(); iterBuffer.hasNext();) {
+			LoggingEvent loggingEvent = (LoggingEvent) iterBuffer.next();
+			logLines.add(layout.format(loggingEvent));
 		}
+		return logLines;
 	}
 	
-	@Override
-	public boolean requiresLocation() {
-		if (implementation != null) {
-			return implementation.requiresLocation();
-		} else {
-			return super.requiresLocation();
-		}
+	public int getBufferSize() {
+		return bufferSize;
 	}
 	
-	@Override
-	public void error(String msg) {
-		if (implementation != null) {
-			implementation.error(msg);
-		} else {
-			super.error(msg);
-		}
-	}
-	
-	@Override
-	public void error(String msg, LogEvent event, Throwable t) {
-		if (implementation != null) {
-			implementation.error(msg, event, t);
-		} else {
-			super.error(msg, event, t);
-		}
-	}
-	
-	@Override
-	public void error(String msg, Throwable t) {
-		if (implementation != null) {
-			implementation.error(msg, t);
-		} else {
-			super.error(msg, t);
-		}
-	}
-	
-	@Override
-	public ErrorHandler getHandler() {
-		if (implementation != null) {
-			return implementation.getHandler();
-		} else {
-			return super.getHandler();
-		}
-	}
-	
-	@Override
-	public Layout<? extends Serializable> getLayout() {
-		if (implementation != null) {
-			return implementation.getLayout();
-		} else {
-			return super.getLayout();
-		}
-	}
-	
-	@Override
-	public String getName() {
-		if (implementation != null) {
-			return implementation.getName();
-		} else {
-			return super.getName();
-		}
-	}
-	
-	@Override
-	public boolean ignoreExceptions() {
-		if (implementation != null) {
-			return implementation.ignoreExceptions();
-		} else {
-			return super.ignoreExceptions();
-		}
-	}
-	
-	@Override
-	public void setHandler(ErrorHandler handler) {
-		if (implementation != null) {
-			implementation.setHandler(handler);
-		} else {
-			super.setHandler(handler);
-		}
-	}
-	
-	@Override
-	public String toString() {
-		if (implementation != null) {
-			return implementation.toString();
-		} else {
-			return super.toString();
-		}
-	}
-	
-	@Override
-	public synchronized void addFilter(Filter filter) {
-		if (implementation != null) {
-			implementation.addFilter(filter);
-		} else {
-			super.addFilter(filter);
-		}
-	}
-	
-	@Override
-	public Filter getFilter() {
-		if (implementation != null) {
-			return implementation.getFilter();
-		} else {
-			return super.getFilter();
-		}
-	}
-	
-	@Override
-	public boolean hasFilter() {
-		if (implementation != null) {
-			return implementation.hasFilter();
-		} else {
-			return super.hasFilter();
-		}
-	}
-	
-	@Override
-	public boolean isFiltered(LogEvent event) {
-		if (implementation != null) {
-			return implementation.isFiltered(event);
-		} else {
-			return super.isFiltered(event);
-		}
-	}
-	
-	@Override
-	public synchronized void removeFilter(Filter filter) {
-		if (implementation != null) {
-			implementation.removeFilter(filter);
-		} else {
-			super.removeFilter(filter);
-		}
-	}
-	
-	@Override
-	public void start() {
-		if (implementation != null) {
-			implementation.start();
-		} else {
-			super.start();
-		}
-	}
-	
-	@Override
-	public boolean stop(long timeout, TimeUnit timeUnit) {
-		if (implementation != null) {
-			return implementation.stop(timeout, timeUnit);
-		} else {
-			return super.stop(timeout, timeUnit);
-		}
-	}
-	
-	@Override
-	public Property[] getPropertyArray() {
-		if (implementation != null) {
-			return implementation.getPropertyArray();
-		} else {
-			return super.getPropertyArray();
-		}
-	}
-	
-	@Override
-	public State getState() {
-		if (implementation != null) {
-			return implementation.getState();
-		} else {
-			return super.getState();
-		}
-	}
-	
-	@Override
-	public boolean isInitialized() {
-		if (implementation != null) {
-			return implementation.isInitialized();
-		} else {
-			return super.isInitialized();
-		}
-	}
-	
-	@Override
-	public boolean isStarted() {
-		if (implementation != null) {
-			return implementation.isStarted();
-		} else {
-			return super.isStarted();
-		}
-	}
-	
-	@Override
-	public boolean isStarting() {
-		if (implementation != null) {
-			return implementation.isStarting();
-		} else {
-			return super.isStarting();
-		}
-	}
-	
-	@Override
-	public boolean isStopped() {
-		if (implementation != null) {
-			return implementation.isStopped();
-		} else {
-			return super.isStopped();
-		}
-	}
-	
-	@Override
-	public boolean isStopping() {
-		if (implementation != null) {
-			return implementation.isStopping();
-		} else {
-			return super.isStopping();
-		}
-	}
-	
-	@Override
-	public void initialize() {
-		if (implementation != null) {
-			implementation.initialize();
-		} else {
-			super.initialize();
-		}
-	}
-	
-	@Override
-	public void stop() {
-		if (implementation != null) {
-			implementation.stop();
-		} else {
-			super.stop();
-		}
+	public void setBufferSize(int bufferSize) {
+		this.bufferSize = bufferSize;
 	}
 }

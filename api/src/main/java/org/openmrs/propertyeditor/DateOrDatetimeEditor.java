@@ -14,7 +14,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.openmrs.api.context.Context;
 
 /**
@@ -25,10 +25,10 @@ public class DateOrDatetimeEditor extends PropertyEditorSupport {
 	
 	/**
 	 * @see java.beans.PropertyEditorSupport#setAsText(java.lang.String)
-	 * <strong>Should</strong> handle date
-	 * <strong>Should</strong> handle date and time
-	 * <strong>Should</strong> fail on partial date
-	 * <strong>Should</strong> fail on partial date and time
+	 * @should handle date
+	 * @should handle date and time
+	 * @should fail on partial date
+	 * @should fail on partial date and time
 	 */
 	@Override
 	public void setAsText(String asString) throws IllegalArgumentException {
@@ -54,8 +54,8 @@ public class DateOrDatetimeEditor extends PropertyEditorSupport {
 	
 	/**
 	 * @see java.beans.PropertyEditorSupport#getAsText()
-	 * <strong>Should</strong> print date without time
-	 * <strong>Should</strong> print date and time with time
+	 * @should print date without time
+	 * @should print date and time with time
 	 */
 	@Override
 	public String getAsText() {

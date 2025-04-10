@@ -9,24 +9,39 @@
  */
 package org.openmrs.propertyeditor;
 
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.Drug;
-import org.openmrs.api.ConceptService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 
-public class DrugEditorTest extends BasePropertyEditorTest<Drug, DrugEditor> {
+/**
+ * 
+ */
+public class DrugEditorTest extends BaseContextSensitiveTest {
 	
-	private static final Integer EXISTING_ID = 2;
-	
-	@Autowired
-	ConceptService conceptService;
-	
-	@Override
-	protected DrugEditor getNewEditor() {
-		return new DrugEditor();
+	/**
+	 * @see DrugEditor#setAsText(String)
+	 */
+	@Test
+	@Verifies(value = "should set value to the drug with the specified identifier", method = "setAsText(String)")
+	public void xsetAsText_shouldSetValueToTheDrugWithTheSpecifiedIdentifier() throws Exception {
+		DrugEditor drugEditor = new DrugEditor();
+		drugEditor.setAsText("2");
+		Drug drug = (Drug) drugEditor.getValue();
+		
+		Assert.assertNotNull(drug);
+		Assert.assertEquals("", Integer.valueOf(2), drug.getDrugId());
 	}
 	
-	@Override
-	protected Drug getExistingObject() {
-		return conceptService.getDrug(EXISTING_ID);
+	/**
+	 * @see DrugEditor#setAsText(String)
+	 * @verifies set using uuid
+	 */
+	@Test
+	public void setAsText_shouldSetUsingUuid() throws Exception {
+		DrugEditor drugEditor = new DrugEditor();
+		drugEditor.setAsText("3cfcf118-931c-46f7-8ff6-7b876f0d4202");
+		Assert.assertNotNull(drugEditor.getValue());
 	}
 }

@@ -9,7 +9,7 @@
  */
 package org.openmrs.api.context;
 
-import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.when;
 
 import java.util.Calendar;
 import java.util.HashMap;
@@ -92,7 +92,7 @@ public class ContextMockHelper {
 	
 	ContextDAO contextDAO;
 	
-	Map<Class<?>, Object> realServices = new HashMap<>();
+	Map<Class<?>, Object> realServices = new HashMap<Class<?>, Object>();
 	
 	UserContext realUserContext;
 	
@@ -127,9 +127,9 @@ public class ContextMockHelper {
 		person.setBirthdate(calendar.getTime());
 		person.setGender("M");
 		user.setPerson(person);
-
-		lenient().when(userContext.getAuthenticatedUser()).thenReturn(user);
-		lenient().when(userContext.isAuthenticated()).thenReturn(true);
+		
+		when(userContext.getAuthenticatedUser()).thenReturn(user);
+		when(userContext.isAuthenticated()).thenReturn(true);
 	}
 	
 	public void revertMocks() {

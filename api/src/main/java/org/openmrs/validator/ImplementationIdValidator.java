@@ -9,7 +9,9 @@
  */
 package org.openmrs.validator;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.ImplementationId;
 import org.openmrs.annotation.Handler;
 import org.openmrs.api.APIException;
@@ -24,17 +26,19 @@ import org.springframework.validation.Validator;
 @Handler(supports = { ImplementationId.class }, order = 50)
 public class ImplementationIdValidator implements Validator {
 	
+	protected final Log log = LogFactory.getLog(getClass());
+	
 	@Override
 	public boolean supports(Class<?> clazz) {
 		return clazz.equals(ImplementationId.class);
 	}
 	
 	/*
-	 * <strong>Should</strong> should fail validation if implementation id is null
-	 * <strong>Should</strong> should fail validation if description is null
-	 * <strong>Should</strong> should fail validation if pass phrase is null
-	 * <strong>Should</strong> should fail if given empty implementationId object
-	 * <strong>Should</strong> should fail if given a pipe in the implementationId code
+	 * @should should fail validation if implementation id is null
+	 * @should should fail validation if description is null
+	 * @should should fail validation if pass phrase is null
+	 * @should should fail if given empty implementationId object
+	 * @should should fail if given a pipe in the implementationId code
 	 * 
 	 */
 

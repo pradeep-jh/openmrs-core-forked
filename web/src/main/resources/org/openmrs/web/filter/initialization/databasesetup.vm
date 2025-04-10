@@ -1,4 +1,4 @@
-#parse($HEADER_TEMPLATE)
+#parse($headerTemplate)
 
     <form method="post" autocomplete="off">
         <input type="hidden" name="page" value="databasesetup.vm" />
@@ -57,4 +57,4 @@
 		</div>
 	</form>
 
-#parse($FOOTER_TEMPLATE)
+#parse($footerTemplate)

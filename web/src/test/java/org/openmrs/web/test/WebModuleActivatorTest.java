@@ -9,31 +9,21 @@
  */
 package org.openmrs.web.test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.openmrs.module.ModuleFactory.getLoadedModules;
-import static org.openmrs.module.ModuleFactory.getStartedModules;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.lang.reflect.Method;
 import java.net.URL;
-import java.nio.file.Paths;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import org.openmrs.module.BaseModuleActivatorTest;
 import org.openmrs.module.Module;
 import org.openmrs.module.ModuleFactory;
 import org.openmrs.module.ModuleUtil;
 import org.openmrs.module.web.WebModuleUtil;
-import org.openmrs.test.SkipBaseSetup;
 import org.openmrs.util.OpenmrsClassLoader;
 import org.openmrs.web.Listener;
 import org.springframework.context.support.AbstractRefreshableApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.util.ReflectionUtils;
 import org.springframework.web.context.support.XmlWebApplicationContext;
 
 /**
@@ -44,24 +34,22 @@ import org.springframework.web.context.support.XmlWebApplicationContext;
  * out, just put these tests in ModuleActivatorTest NOTE: The way we start, stop, unload, etc,
  * modules is copied from ModuleListController
  */
-@ContextConfiguration(locations = {
-        "classpath*:webModuleApplicationContext.xml" }, inheritLocations = true, loader = TestContextLoader.class)
-@SkipBaseSetup
+@ContextConfiguration(locations = { "classpath*:webModuleApplicationContext.xml" }, inheritLocations = true, loader = TestContextLoader.class)
 public class WebModuleActivatorTest extends BaseModuleActivatorTest {
 	
-	public void createWebInfFolderIfNotExist() {
+	public void createWebInfFolderIfNotExist() throws Exception {
 		//when run from the IDE and this folder does not exist, some tests fail with
 		//org.openmrs.module.ModuleException: Unable to load module messages from file: 
 		// /Projects/openmrs/core/web/target/test-classes/WEB-INF/module_messages_fr.properties
 		
-		File folder = Paths.get("target", "test-classes", "WEB-INF").toFile();
+		File folder = new File("target" + File.separatorChar + "test-classes" + File.separatorChar + "WEB-INF");
 		if (!folder.exists()) {
 			folder.mkdirs();
 		}
 	}
 	
 	@Test
-	public void shouldCallWillRefreshContextAndContextRefreshedOnRefresh() {
+	public void shouldCallWillRefreshContextAndContextRefreshedOnRefresh() throws Exception {
 		
 		ModuleUtil.refreshApplicationContext((AbstractRefreshableApplicationContext) applicationContext, false, null);
 		
@@ -107,7 +95,7 @@ public class WebModuleActivatorTest extends BaseModuleActivatorTest {
 	}
 	
 	@Test
-	public void shouldRefreshOtherModulesOnStartingStoppedModule() {
+	public void shouldRefreshOtherModulesOnStartingStoppedModule() throws Exception {
 		Module module = ModuleFactory.getModuleById(MODULE3_ID);
 		ModuleFactory.stopModule(module);
 		
@@ -168,7 +156,7 @@ public class WebModuleActivatorTest extends BaseModuleActivatorTest {
 	}
 	
 	@Test
-	public void shouldRefreshOtherModulesOnInstallingNewModule() {
+	public void shouldRefreshOtherModulesOnInstallingNewModule() throws Exception {
 		//first completely remove module3
 		Module module = ModuleFactory.getModuleById(MODULE3_ID);
 		ModuleFactory.stopModule(module);
@@ -211,7 +199,7 @@ public class WebModuleActivatorTest extends BaseModuleActivatorTest {
 	}
 	
 	@Test
-	public void shouldUpgradeModule() {
+	public void shouldUpgradeModule() throws Exception {
 		Module module = ModuleFactory.getModuleById(MODULE3_ID);
 		
 		assertTrue(module.getVersion().equals("1.0-SNAPSHOT"));
@@ -232,7 +220,7 @@ public class WebModuleActivatorTest extends BaseModuleActivatorTest {
 	}
 	
 	@Test
-	public void shouldUpgradeModuleWithDependents() {
+	public void shouldUpgradeModuleWithDependents() throws Exception {
 		Module module = ModuleFactory.getModuleById(MODULE1_ID);
 		assertTrue(module.getVersion().equals("1.0-SNAPSHOT"));
 		
@@ -247,8 +235,8 @@ public class WebModuleActivatorTest extends BaseModuleActivatorTest {
 		assertTrue(ModuleFactory.getModuleById(MODULE3_ID).isStarted());
 		
 		//and they should be only 3
-		assertThat(getLoadedModules(), hasSize(5));
-		assertThat(getStartedModules(), hasSize(5));
+		assertTrue(ModuleFactory.getLoadedModules().size() == 3);
+		assertTrue(ModuleFactory.getStartedModules().size() == 3);
 		
 		//now stop module1
 		ModuleFactory.stopModule(module, false, true); // stop the module with these parameters so that mandatory modules can be upgraded
@@ -278,23 +266,8 @@ public class WebModuleActivatorTest extends BaseModuleActivatorTest {
 		assertTrue(ModuleFactory.getModuleById(MODULE2_ID).isStarted());
 		assertTrue(ModuleFactory.getModuleById(MODULE3_ID).isStarted());
 		
-		//we should have 5 modules instead of 6
-		assertThat(getLoadedModules(), hasSize(5));
-		assertThat(getStartedModules(), hasSize(5));
-	}
-	
-	@BeforeEach
-	public void initializeInDatabase() throws Exception {
-		initializeInMemoryDatabase();
-		authenticate();
-	}
-	
-	@AfterEach
-	public void removeCurrentTransactionContext() throws Exception {
-		Class<?> clazz = OpenmrsClassLoader.getInstance()
-		        .loadClass("org.springframework.test.context.transaction.TransactionContextHolder");
-		Method method = clazz.getDeclaredMethod("removeCurrentTransactionContext");
-		ReflectionUtils.makeAccessible(method);
-		ReflectionUtils.invokeMethod(method, null);
+		//we should have 3 modules instead of 4
+		assertTrue(ModuleFactory.getLoadedModules().size() == 3);
+		assertTrue(ModuleFactory.getStartedModules().size() == 3);
 	}
 }

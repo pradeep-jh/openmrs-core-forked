@@ -45,7 +45,6 @@ public abstract class BaseConceptMap extends BaseOpenmrsObject implements Audita
 	/**
 	 * @return the creator
 	 */
-	@Override
 	public User getCreator() {
 		return creator;
 	}
@@ -53,7 +52,6 @@ public abstract class BaseConceptMap extends BaseOpenmrsObject implements Audita
 	/**
 	 * @param creator the creator to set
 	 */
-	@Override
 	public void setCreator(User creator) {
 		this.creator = creator;
 	}
@@ -61,7 +59,6 @@ public abstract class BaseConceptMap extends BaseOpenmrsObject implements Audita
 	/**
 	 * @return the changedBy
 	 */
-	@Override
 	public User getChangedBy() {
 		return changedBy;
 	}
@@ -69,7 +66,6 @@ public abstract class BaseConceptMap extends BaseOpenmrsObject implements Audita
 	/**
 	 * @param changedBy the changedBy to set
 	 */
-	@Override
 	public void setChangedBy(User changedBy) {
 		this.changedBy = changedBy;
 	}
@@ -77,47 +73,29 @@ public abstract class BaseConceptMap extends BaseOpenmrsObject implements Audita
 	/**
 	 * @return the dateCreated
 	 */
-	@Override
 	public Date getDateCreated() {
-		if(dateCreated == null) {
-			return null;
-		}
-		return (Date) dateCreated.clone();
+		return dateCreated;
 	}
 	
 	/**
 	 * @param dateCreated the dateCreated to set
 	 */
-	@Override
 	public void setDateCreated(Date dateCreated) {
-		if(dateCreated == null) {
-			this.dateCreated = null;
-			return;
-		}
-		this.dateCreated = new Date(dateCreated.getTime());
+		this.dateCreated = dateCreated;
 	}
 	
 	/**
 	 * @return the dateChanged
 	 */
-	@Override
 	public Date getDateChanged() {
-		if(dateChanged == null) {
-			return null;
-		}
-		return (Date) dateChanged.clone();
+		return dateChanged;
 	}
 	
 	/**
 	 * @param dateChanged the dateChanged to set
 	 */
-	@Override
 	public void setDateChanged(Date dateChanged) {
-		if(dateChanged == null) {
-			this.dateChanged = null;
-			return;
-		}
-		this.dateChanged = new Date(dateChanged.getTime());
+		this.dateChanged = dateChanged;
 	}
 	
 }

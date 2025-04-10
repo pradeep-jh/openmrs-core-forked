@@ -24,9 +24,6 @@ import java.util.Properties;
 import org.openmrs.api.APIException;
 
 public class UpgradeUtil {
-
-	private UpgradeUtil() {
-	}
 	
 	/**
 	 * Returns conceptId for the given units from DatabaseUtil#ORDER_ENTRY_UPGRADE_SETTINGS_FILENAME
@@ -34,49 +31,42 @@ public class UpgradeUtil {
 	 * 
 	 * @param units
 	 * @return conceptId
-	 * <strong>Should</strong> return concept_id for units
-	 * <strong>Should</strong> fail if units is not specified
+	 * @should return concept_id for units
+	 * @should fail if units is not specified
 	 */
 	public static Integer getConceptIdForUnits(String units) {
 		String appDataDir = OpenmrsUtil.getApplicationDataDirectory();
 		Properties props = new Properties();
 		String conceptId = null;
-		String filePath = appDataDir +
-				System.getProperty("file.separator") +
-				DatabaseUtil.ORDER_ENTRY_UPGRADE_SETTINGS_FILENAME;
-
-		try (FileInputStream fis = new FileInputStream(filePath)) {
-
+		try {
+			FileInputStream fis = new FileInputStream(appDataDir + System.getProperty("file.separator")
+			        + DatabaseUtil.ORDER_ENTRY_UPGRADE_SETTINGS_FILENAME);
 			props.load(fis);
-			for (Map.Entry<Object, Object> prop : props.entrySet()) {
+			for (Map.Entry prop : props.entrySet()) {
 				if (prop.getKey().equals(units)) {
 					conceptId = prop.getValue().toString();
 					return Integer.valueOf(conceptId);
 				}
 			}
+			fis.close();
 		}
 		catch (NumberFormatException e) {
-			throw new APIException("Your order entry upgrade settings file" + "contains invalid mapping from " + units
-			        + " to concept ID " + conceptId
-			        + ". ID must be an integer or null. Please refer to upgrade instructions for more details. https://wiki.openmrs.org/x/OALpAw Cause:" + e.getMessage());
+			throw new APIException("upgrade.settings.file.invalid.mapping", new Object[] { units, conceptId }, e);
 		}
 		catch (IOException e) {
 			if (e instanceof FileNotFoundException) {
-				throw new APIException("Unable to find file named order_entry_upgrade_settings.txt containing order entry upgrade settings in your "
-				        + "application data directory: " + appDataDir
-				        + "\nPlease refer to upgrade instructions for more details. https://wiki.openmrs.org/x/OALpAw Cause:" + e.getMessage());
+				throw new APIException("upgrade.settings.unable.find.file", new Object[] { appDataDir }, e);
 			} else {
 				throw new APIException(e);
 			}
 		}
 		
-		throw new APIException("Your order entry upgrade settings file" + " does not have mapping for " + units
-		        + ". Please refer to upgrade instructions for more details. https://wiki.openmrs.org/x/OALpAw");
+		throw new APIException("upgrade.settings.file.not.have.mapping", new Object[] { units });
 	}
 	
 	public static String getConceptUuid(Connection connection, int conceptId) throws SQLException {
-
-		try (PreparedStatement select = connection.prepareStatement("select uuid from concept where concept_id = ?")) {
+		PreparedStatement select = connection.prepareStatement("select uuid from concept where concept_id = ?");
+		try {
 			select.setInt(1, conceptId);
 			
 			ResultSet resultSet = select.executeQuery();
@@ -86,12 +76,15 @@ public class UpgradeUtil {
 				throw new IllegalArgumentException("Concept not found " + conceptId);
 			}
 		}
+		finally {
+			select.close();
+		}
 	}
 	
 	public static String getGlobalProperty(Connection connection, String gp) throws SQLException {
-
-		try (PreparedStatement select = connection
-				.prepareStatement("select property_value from global_property where property = ?")) {
+		PreparedStatement select = connection
+		        .prepareStatement("select property_value from global_property where property = ?");
+		try {
 			select.setString(1, gp);
 			
 			ResultSet resultSet = select.executeQuery();
@@ -101,12 +94,16 @@ public class UpgradeUtil {
 				throw new IllegalArgumentException("Global property not found " + gp);
 			}
 		}
+		finally {
+			select.close();
+		}
 	}
 	
 	public static List<Integer> getMemberSetIds(Connection connection, String conceptUuid) throws SQLException {
-		Integer conceptSetId;
-
-		try (PreparedStatement select = connection.prepareStatement("select concept_id from concept where uuid = ?")) {
+		Integer conceptSetId = null;
+		
+		PreparedStatement select = connection.prepareStatement("select concept_id from concept where uuid = ?");
+		try {
 			select.setString(1, conceptUuid);
 			
 			ResultSet resultSet = select.executeQuery();
@@ -116,11 +113,14 @@ public class UpgradeUtil {
 				throw new IllegalArgumentException("Concept not found " + conceptUuid);
 			}
 		}
-
-		List<Integer> conceptIds = new ArrayList<>();
-
-		try (PreparedStatement selectConceptIds = connection
-				.prepareStatement("select concept_id from concept_set where concept_set = ?")) {
+		finally {
+			select.close();
+		}
+		
+		List<Integer> conceptIds = new ArrayList<Integer>();
+		PreparedStatement selectConceptIds = connection
+		        .prepareStatement("select concept_id from concept_set where concept_set = ?");
+		try {
 			selectConceptIds.setInt(1, conceptSetId);
 			
 			ResultSet resultSet = selectConceptIds.executeQuery();
@@ -128,7 +128,10 @@ public class UpgradeUtil {
 				conceptIds.add(resultSet.getInt(1));
 			}
 		}
-
+		finally {
+			selectConceptIds.close();
+		}
+		
 		return conceptIds;
 	}
 	

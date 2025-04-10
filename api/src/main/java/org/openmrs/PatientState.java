@@ -11,61 +11,28 @@ package org.openmrs;
 
 import java.util.Date;
 
-import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.Parameter;
-import org.hibernate.envers.Audited;
 import org.openmrs.util.OpenmrsUtil;
-
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
 
 /**
  * PatientState
  */
-@Entity
-@Table(name = "patient_state")
-@Audited
-public class PatientState extends BaseFormRecordableOpenmrsData implements java.io.Serializable, Comparable<PatientState> {
+public class PatientState extends BaseOpenmrsData implements java.io.Serializable, Comparable<PatientState> {
 	
 	public static final long serialVersionUID = 0L;
 	
 	// ******************
 	// Properties
 	// ******************
-
-	@Id
-	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "patient_state_id_seq")
-	@GenericGenerator(
-		name = "patient_state_id_seq",
-		strategy = "native",
-		parameters = @Parameter(name = "sequence", value = "patient_state_patient_state_id_seq")
-	)
-	@Column(name = "patient_state_id")
+	
 	private Integer patientStateId;
-
-	@ManyToOne
-	@JoinColumn(name = "patient_program_id", nullable = false)
+	
 	private PatientProgram patientProgram;
-
-	@ManyToOne
-	@JoinColumn(name = "state", nullable = false)
+	
 	private ProgramWorkflowState state;
-
-	@Column(name = "start_date", length = 19)
+	
 	private Date startDate;
-
-	@Column(name = "end_date", length = 19)
+	
 	private Date endDate;
-
-	@ManyToOne
-	@JoinColumn(name = "encounter_id")
-	private Encounter encounter;
 	
 	// ******************
 	// Constructors
@@ -101,7 +68,6 @@ public class PatientState extends BaseFormRecordableOpenmrsData implements java.
 		target.setState(this.getState());
 		target.setStartDate(this.getStartDate());
 		target.setEndDate(this.getEndDate());
-		target.setEncounter(this.getEncounter());
 		target.setCreator(this.getCreator());
 		target.setDateCreated(this.getDateCreated());
 		target.setChangedBy(this.getChangedBy());
@@ -122,15 +88,15 @@ public class PatientState extends BaseFormRecordableOpenmrsData implements java.
 	 * 
 	 * @param onDate - {@link Date} to check for {@link PatientState} enrollment
 	 * @return boolean - true if this {@link PatientState} is active as of the passed {@link Date}
-	 * <strong>Should</strong> return false if voided and date in range
-	 * <strong>Should</strong> return false if voided and date not in range
-	 * <strong>Should</strong> return true if not voided and date in range
-	 * <strong>Should</strong> return false if not voided and date earlier than startDate
-	 * <strong>Should</strong> return false if not voided and date later than endDate
-	 * <strong>Should</strong> return true if not voided and date in range with null startDate
-	 * <strong>Should</strong> return true if not voided and date in range with null endDate
-	 * <strong>Should</strong> return true if not voided and both startDate and endDate nulled
-	 * <strong>Should</strong> compare with current date if date null
+	 * @should return false if voided and date in range
+	 * @should return false if voided and date not in range
+	 * @should return true if not voided and date in range
+	 * @should return false if not voided and date earlier than startDate
+	 * @should return false if not voided and date later than endDate
+	 * @should return true if not voided and date in range with null startDate
+	 * @should return true if not voided and date in range with null endDate
+	 * @should return true if not voided and both startDate and endDate nulled
+	 * @should compare with current date if date null
 	 */
 	public boolean getActive(Date onDate) {
 		if (onDate == null) {
@@ -150,10 +116,9 @@ public class PatientState extends BaseFormRecordableOpenmrsData implements java.
 	}
 	
 	/** @see Object#toString() */
-	@Override
 	public String toString() {
 		return "id=" + getPatientStateId() + ", patientProgram=" + getPatientProgram() + ", state=" + getState()
-		        + ", startDate=" + getStartDate() + ", endDate=" + getEndDate() + ", encounter=" + getEncounter() + ", dateCreated=" + getDateCreated()
+		        + ", startDate=" + getStartDate() + ", endDate=" + getEndDate() + ", dateCreated=" + getDateCreated()
 		        + ", dateChanged=" + getDateChanged();
 	}
 	
@@ -200,28 +165,11 @@ public class PatientState extends BaseFormRecordableOpenmrsData implements java.
 	public void setStartDate(Date startDate) {
 		this.startDate = startDate;
 	}
-
-	/**
-	 * @since 2.5
-	 * @return encounter - the associated encounter
-	 */
-	public Encounter getEncounter() {
-		return encounter;
-	}
-
-	/**
-	 * @since 2.5
-	 * @param encounter - the encounter to set
-	 */
-	public void setEncounter(Encounter encounter) {
-		this.encounter = encounter;
-	}
-
+	
 	/**
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		return getPatientStateId();
 	}
@@ -230,7 +178,6 @@ public class PatientState extends BaseFormRecordableOpenmrsData implements java.
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setPatientStateId(id);
 	}
@@ -239,10 +186,10 @@ public class PatientState extends BaseFormRecordableOpenmrsData implements java.
 	 * Compares by startDate with null as earliest and endDate with null as latest.
 	 * 
 	 * @see java.lang.Comparable#compareTo(java.lang.Object)
-	 * <strong>Should</strong> return positive if startDates equal and this endDate null
-	 * <strong>Should</strong> return negative if this startDate null
-	 * <strong>Should</strong> pass if two states have the same start date, end date and uuid
-	 * <strong>Should</strong> return positive or negative if two states have the same start date and end date but different uuids
+	 * @should return positive if startDates equal and this endDate null
+	 * @should return negative if this startDate null
+	 * @should pass if two states have the same start date, end date and uuid
+	 * @should return positive or negative if two states have the same start date and end date but different uuids
 	 * Note: this comparator imposes orderings that are inconsistent with equals.
 	 */
 	@SuppressWarnings("squid:S1210")

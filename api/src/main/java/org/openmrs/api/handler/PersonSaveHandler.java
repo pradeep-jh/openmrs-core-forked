@@ -10,10 +10,7 @@
 package org.openmrs.api.handler;
 
 import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
 
-import org.openmrs.Address;
 import org.openmrs.Person;
 import org.openmrs.PersonAddress;
 import org.openmrs.PersonAttribute;
@@ -40,21 +37,17 @@ public class PersonSaveHandler implements SaveHandler<Person> {
 	 * @see org.openmrs.api.handler.SaveHandler#handle(org.openmrs.OpenmrsObject, org.openmrs.User,
 	 *      java.util.Date, java.lang.String)
 	 */
-	@Override
 	public void handle(Person person, User creator, Date dateCreated, String other) {
 		
 		// address collection
 		if (person.getAddresses() != null && !person.getAddresses().isEmpty()) {
-			Set<Address> blankAddresses = new HashSet<>();
 			for (PersonAddress pAddress : person.getAddresses()) {
-				if (pAddress.isBlank()) {
-					blankAddresses.add(pAddress);
+				if (pAddress.isBlank()){
+					person.removeAddress(pAddress);
 					continue;
 				}
 				pAddress.setPerson(person);
 			}
-
-			person.getAddresses().removeAll(blankAddresses);
 		}
 		
 		// name collection
@@ -72,12 +65,12 @@ public class PersonSaveHandler implements SaveHandler<Person> {
 		}
 		
 		//if the patient was marked as dead and reversed, drop the cause of death
-		if (!person.getDead() && person.getCauseOfDeath() != null) {
+		if (!person.isDead() && person.getCauseOfDeath() != null) {
 			person.setCauseOfDeath(null);
 		}
 		
 		// do the checks for voided attributes (also in PersonVoidHandler)
-		if (person.getPersonVoided()) {
+		if (person.isPersonVoided()) {
 			
 			if (!StringUtils.hasLength(person.getPersonVoidReason())) {
 				throw new APIException("Person.voided.bit", new Object[] { person });

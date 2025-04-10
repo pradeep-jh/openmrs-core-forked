@@ -9,19 +9,13 @@
  */
 package org.openmrs.util.databasechange;
 
-import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
-
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import liquibase.change.custom.CustomTaskChange;
 import liquibase.database.Database;
@@ -32,6 +26,10 @@ import liquibase.exception.SetupException;
 import liquibase.exception.ValidationErrors;
 import liquibase.resource.ResourceAccessor;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 /**
  * Creates concept reference terms from existing rows in the concept_reference_map table.
  * <p>
@@ -39,7 +37,7 @@ import liquibase.resource.ResourceAccessor;
  */
 public class MigrateConceptReferenceTermChangeSet implements CustomTaskChange {
 	
-	private static final Logger log = LoggerFactory.getLogger(MigrateConceptReferenceTermChangeSet.class);
+	protected final Log log = LogFactory.getLog(getClass());
 	
 	public static final String DEFAULT_CONCEPT_MAP_TYPE = "NARROWER-THAN";
 	
@@ -63,7 +61,7 @@ public class MigrateConceptReferenceTermChangeSet implements CustomTaskChange {
 			connection.setAutoCommit(false);
 			
 			//Prepare a list of types and their ids.
-			Map<String, Integer> typesToIds = new HashMap<>();
+			Map<String, Integer> typesToIds = new HashMap<String, Integer>();
 			
 			selectTypes = connection.prepareStatement("select * from concept_map_type");
 			selectTypes.execute();
@@ -123,7 +121,8 @@ public class MigrateConceptReferenceTermChangeSet implements CustomTaskChange {
 					        + ", updated rows: " + updateMapType.getUpdateCount());
 				}
 				
-				if (source == prevSource && (Objects.equals(sourceCode, prevSourceCode))) {
+				if (source == prevSource
+				        && (sourceCode == prevSourceCode || (sourceCode != null && sourceCode.equals(prevSourceCode)))) {
 					if (mapTypeId == null && comment != null && !comment.equals(prevComment)) {
 						log.warn("Lost comment '" + comment + "' for map " + conceptMapId + ". Preserved comment "
 						        + prevComment);
@@ -141,7 +140,7 @@ public class MigrateConceptReferenceTermChangeSet implements CustomTaskChange {
 				} else {
 					insertTerm.setInt(1, conceptMapId);
 					//We need to guaranty that UUIDs are always the same when run on different systems.
-					insertTerm.setString(2, UUID.nameUUIDFromBytes(uuid.getBytes(StandardCharsets.UTF_8)).toString());
+					insertTerm.setString(2, UUID.nameUUIDFromBytes(uuid.getBytes()).toString());
 					insertTerm.setInt(3, source);
 					insertTerm.setString(4, sourceCode);
 					insertTerm.setInt(5, creator);

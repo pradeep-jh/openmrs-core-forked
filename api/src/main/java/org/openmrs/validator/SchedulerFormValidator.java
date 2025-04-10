@@ -9,6 +9,8 @@
  */
 package org.openmrs.validator;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.annotation.Handler;
 import org.openmrs.scheduler.Task;
 import org.openmrs.scheduler.TaskDefinition;
@@ -19,6 +21,9 @@ import org.springframework.validation.Validator;
 
 @Handler(supports = { TaskDefinition.class }, order = 50)
 public class SchedulerFormValidator implements Validator {
+	
+	/** Log for this class and subclasses */
+	protected final Log log = LogFactory.getLog(getClass());
 	
 	/**
 	 * Determines if the command object being submitted is a valid type
@@ -35,16 +40,16 @@ public class SchedulerFormValidator implements Validator {
 	 * 
 	 * @see org.springframework.validation.Validator#validate(java.lang.Object,
 	 *      org.springframework.validation.Errors)
-	 * <strong>Should</strong> fail validation if name is null or empty or whitespace
-	 * <strong>Should</strong> fail validation if taskClass is empty or whitespace
-	 * <strong>Should</strong> fail validation if repeatInterval is null or empty or whitespace
-	 * <strong>Should</strong> fail validation if class is not instance of Task
-	 * <strong>Should</strong> fail validation if class is not accessible
-	 * <strong>Should</strong> fail validation if class cannot be instantiated
-	 * <strong>Should</strong> fail validation if class not found
-	 * <strong>Should</strong> pass validation if all required fields have proper values
-	 * <strong>Should</strong> pass validation if field lengths are correct
-	 * <strong>Should</strong> fail validation if field lengths are not correct
+	 * @should fail validation if name is null or empty or whitespace
+	 * @should fail validation if taskClass is empty or whitespace
+	 * @should fail validation if repeatInterval is null or empty or whitespace
+	 * @should fail validation if class is not instance of Task
+	 * @should fail validation if class is not accessible
+	 * @should fail validation if class cannot be instantiated
+	 * @should fail validation if class not found
+	 * @should pass validation if all required fields have proper values
+	 * @should pass validation if field lengths are correct
+	 * @should fail validation if field lengths are not correct
 	 */
 	@Override
 	public void validate(Object obj, Errors errors) {

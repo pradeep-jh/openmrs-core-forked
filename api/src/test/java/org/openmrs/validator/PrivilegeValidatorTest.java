@@ -9,14 +9,11 @@
  */
 package org.openmrs.validator;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.Privilege;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 
@@ -29,55 +26,58 @@ public class PrivilegeValidatorTest extends BaseContextSensitiveTest {
 	 * @see PrivilegeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfPrivilegeIsNullOrEmptyOrWhitespace() {
+	@Verifies(value = "should fail validation if privilege is null or empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfPrivilegeIsNullOrEmptyOrWhitespace() throws Exception {
 		Privilege priv = new Privilege();
 		priv.setPrivilege(null);
 		priv.setDescription("some text");
 		
 		Errors errors = new BindException(priv, "priv");
 		new PrivilegeValidator().validate(priv, errors);
-		assertTrue(errors.hasFieldErrors("privilege"));
+		Assert.assertTrue(errors.hasFieldErrors("privilege"));
 		
 		priv.setPrivilege("");
 		errors = new BindException(priv, "priv");
 		new PrivilegeValidator().validate(priv, errors);
-		assertTrue(errors.hasFieldErrors("privilege"));
+		Assert.assertTrue(errors.hasFieldErrors("privilege"));
 		
 		priv.setPrivilege(" ");
 		errors = new BindException(priv, "priv");
 		new PrivilegeValidator().validate(priv, errors);
-		assertTrue(errors.hasFieldErrors("privilege"));
+		Assert.assertTrue(errors.hasFieldErrors("privilege"));
 	}
 	
 	/**
 	 * @see PrivilegeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfDescriptionIsNullOrEmptyOrWhitespace() {
+	@Verifies(value = "should pass validation if description is null or empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfDescriptionIsNullOrEmptyOrWhitespace() throws Exception {
 		Privilege priv = new Privilege();
 		priv.setPrivilege("Wallhacking");
 		priv.setDescription(null);
 		
 		Errors errors = new BindException(priv, "priv");
 		new PrivilegeValidator().validate(priv, errors);
-		assertFalse(errors.hasFieldErrors("description"));
+		Assert.assertFalse(errors.hasFieldErrors("description"));
 		
 		priv.setDescription("");
 		errors = new BindException(priv, "priv");
 		new PrivilegeValidator().validate(priv, errors);
-		assertFalse(errors.hasFieldErrors("description"));
+		Assert.assertFalse(errors.hasFieldErrors("description"));
 		
 		priv.setDescription(" ");
 		errors = new BindException(priv, "priv");
 		new PrivilegeValidator().validate(priv, errors);
-		assertFalse(errors.hasFieldErrors("description"));
+		Assert.assertFalse(errors.hasFieldErrors("description"));
 	}
 	
 	/**
 	 * @see PrivilegeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfAllRequiredFieldsHaveProperValues() {
+	@Verifies(value = "should pass validation if all required fields have proper values", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfAllRequiredFieldsHaveProperValues() throws Exception {
 		Privilege priv = new Privilege();
 		priv.setPrivilege("Wallhacking");
 		priv.setDescription("idspispopd");
@@ -85,16 +85,17 @@ public class PrivilegeValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(priv, "priv");
 		new PrivilegeValidator().validate(priv, errors);
 		
-		assertFalse(errors.hasErrors());
-		assertNotNull(priv.getName());
-		assertEquals(priv.getPrivilege(), "Wallhacking");
+		Assert.assertFalse(errors.hasErrors());
+		Assert.assertNotNull(priv.getName());
+		Assert.assertEquals(priv.getPrivilege(), "Wallhacking");
 	}
 	
 	/**
 	 * @see PrivilegeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() {
+	@Verifies(value = "should pass validation if field lengths are correct", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() throws Exception {
 		Privilege priv = new Privilege();
 		priv.setPrivilege("Wallhacking");
 		priv.setDescription("description");
@@ -102,14 +103,15 @@ public class PrivilegeValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(priv, "priv");
 		new PrivilegeValidator().validate(priv, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see PrivilegeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() {
+	@Verifies(value = "should fail validation if field lengths are not correct", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() throws Exception {
 		Privilege priv = new Privilege();
 		priv
 		        .setPrivilege("too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text");
@@ -119,7 +121,7 @@ public class PrivilegeValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(priv, "priv");
 		new PrivilegeValidator().validate(priv, errors);
 		
-		assertTrue(errors.hasFieldErrors("privilege"));
-		assertTrue(errors.hasFieldErrors("description"));
+		Assert.assertTrue(errors.hasFieldErrors("privilege"));
+		Assert.assertTrue(errors.hasFieldErrors("description"));
 	}
 }

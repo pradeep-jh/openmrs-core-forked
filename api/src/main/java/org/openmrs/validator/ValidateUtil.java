@@ -9,19 +9,18 @@
  */
 package org.openmrs.validator;
 
-import org.apache.commons.lang3.StringUtils;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+import org.apache.commons.lang.StringUtils;
 import org.openmrs.OpenmrsObject;
 import org.openmrs.api.ValidationException;
 import org.openmrs.api.context.Context;
-import org.openmrs.api.db.hibernate.HibernateUtil;
 import org.springframework.util.Assert;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
-
-import java.util.LinkedHashSet;
-import java.util.Set;
 
 /**
  * This class should be used in the *Services to validate objects before saving them. <br>
@@ -41,16 +40,10 @@ import java.util.Set;
  */
 public class ValidateUtil {
 
-	private ValidateUtil() {
-	}
-
 	/**
 	 * This is set in {@link Context#checkCoreDataset()} class
 	 */
 	private static Boolean disableValidation = false;
-	
-	/** This enables consuming code to disable validation if needed for specific operations in the current thread */
-	private static final ThreadLocal<Boolean> disableValidationForThread = new ThreadLocal<>();
 	
 	/**
 	 * Test the given object against all validators that are registered as compatible with the
@@ -58,16 +51,14 @@ public class ValidateUtil {
 	 *
 	 * @param obj the object to validate
 	 * @throws ValidationException thrown if a binding exception occurs
-	 * <strong>Should</strong> throw APIException if errors occur during validation
-	 * <strong>Should</strong> return immediately if validation is disabled
+	 * @should throw APIException if errors occur during validation
+	 * @should return immediately if validation is disabled
 	 */
 	public static void validate(Object obj) throws ValidationException {
-		if (disableValidation || isValidationDisabledForThread()) {
+		if (disableValidation) {
 			return;
 		}
 
-		obj = HibernateUtil.getRealObjectFromProxy(obj);
-		
 		Errors errors = new BindException(obj, "");
 		
 		Context.getAdministrationService().validate(obj, errors);
@@ -76,7 +67,7 @@ public class ValidateUtil {
 			Set<String> uniqueErrorMessages = new LinkedHashSet<>();
 			for (Object objerr : errors.getAllErrors()) {
 				ObjectError error = (ObjectError) objerr;
-				String message = Context.getMessageSourceService().getMessage(error.getCode(), error.getArguments(), Context.getLocale());
+				String message = Context.getMessageSourceService().getMessage(error.getCode());
 				if (error instanceof FieldError) {
 					message = ((FieldError) error).getField() + ": " + message;
 				}
@@ -96,16 +87,14 @@ public class ValidateUtil {
 	 * @param obj the object to validate
 	 * @param errors the validation errors found
 	 * @since 1.9
-	 * <strong>Should</strong> populate errors if object invalid
-	 * <strong>Should</strong> return immediately if validation is disabled and have no errors
+	 * @should populate errors if object invalid
+	 * @should return immediately if validation is disabled and have no errors
 	 */
 	public static void validate(Object obj, Errors errors) {
 		if (disableValidation) {
 			return;
 		}
 
-		obj = HibernateUtil.getRealObjectFromProxy(obj);
-		
 		Context.getAdministrationService().validate(obj, errors);
 	}
 	
@@ -115,10 +104,10 @@ public class ValidateUtil {
 	 * @param errors
 	 * @param aClass the class of the object being tested
 	 * @param fields a var args that contains all of the fields from the model
-	 * <strong>Should</strong> pass validation if regEx field length is not too long
-	 * <strong>Should</strong> fail validation if regEx field length is too long
-	 * <strong>Should</strong> fail validation if name field length is too long
-	 * <strong>Should</strong> return immediately if validation is disabled and have no errors
+	 * @should pass validation if regEx field length is not too long
+	 * @should fail validation if regEx field length is too long
+	 * @should fail validation if name field length is too long
+	 * @should return immediately if validation is disabled and have no errors
 	 */
 	public static void validateFieldLengths(Errors errors, Class<?> aClass, String... fields) {
 		if (disableValidation) {
@@ -149,29 +138,4 @@ public class ValidateUtil {
 		ValidateUtil.disableValidation = disableValidation;
 	}
 
-	/**
-	 * @return true if validation has been disabled for the current thread, false otherwise
-	 * @since 2.5.8
-	 */
-	public static boolean isValidationDisabledForThread() {
-		return disableValidationForThread.get() == Boolean.TRUE;
-	}
-
-	/**
-	 * Used to indicate that validation should be disabled for the current thread
-	 * NOTE: This should always be used in conjunction with the resumeValidationForThread method
-	 * @since 2.5.8
-	 */
-	public static void disableValidationForThread() {
-		disableValidationForThread.set(Boolean.TRUE);
-	}
-
-	/**
-	 * Used to indicate that validation should be re-enabled for the current thread
-	 * Typically this would be placed in a `finally` block after the disableValidationForThread method is used
-	 * @since 2.5.8
-	 */
-	public static void resumeValidationForThread() {
-		disableValidationForThread.remove();
-	}
 }

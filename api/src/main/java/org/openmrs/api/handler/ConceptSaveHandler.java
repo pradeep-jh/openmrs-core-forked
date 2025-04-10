@@ -11,7 +11,7 @@ package org.openmrs.api.handler;
 
 import java.util.Date;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.openmrs.Concept;
 import org.openmrs.ConceptAnswer;
 import org.openmrs.ConceptDescription;
@@ -40,7 +40,6 @@ public class ConceptSaveHandler implements SaveHandler<Concept> {
 	 * @see org.openmrs.api.handler.SaveHandler#handle(org.openmrs.OpenmrsObject, org.openmrs.User,
 	 *      java.util.Date, java.lang.String)
 	 */
-	@Override
 	public void handle(Concept concept, User creator, Date dateCreated, String other) {
 		if (concept.getNames() != null) {
 			for (ConceptName cn : concept.getNames()) {

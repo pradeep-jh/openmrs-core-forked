@@ -9,7 +9,7 @@
  */
 package org.openmrs.util;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.openmrs.api.APIAuthenticationException;
 
 /**
@@ -17,16 +17,13 @@ import org.openmrs.api.APIAuthenticationException;
  * @since 1.8.4
  */
 public class ExceptionUtil {
-
-	private ExceptionUtil() {
-	}
 	
 	/**
 	 * If any cause in the exception chain is an instance of causeType, then rethrow that exception 
 	 *
 	 * @param thrown
 	 * @param causeType must be a {@link RuntimeException} so that we can throw it
-	 * <strong>Should</strong> allow an intermediate exception to be rethrown
+	 * @should allow an intermediate exception to be rethrown
 	 */
 	public static void rethrowIfCause(Throwable thrown, Class<? extends RuntimeException> causeType) {
 		int index = ExceptionUtils.indexOfType(thrown, causeType);

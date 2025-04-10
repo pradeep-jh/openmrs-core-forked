@@ -15,7 +15,6 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.hibernate.envers.Audited;
 import org.openmrs.Auditable;
 import org.openmrs.BaseOpenmrsObject;
 import org.openmrs.User;
@@ -26,7 +25,6 @@ import org.openmrs.api.context.Context;
  * to attribute the alert to. Alerts are not intended to be sent from user to user and a user cannot
  * send a "reply alert"
  */
-@Audited
 public class Alert extends BaseOpenmrsObject implements Auditable, Serializable {
 	
 	private static final long serialVersionUID = -507111111109152L;
@@ -107,7 +105,6 @@ public class Alert extends BaseOpenmrsObject implements Auditable, Serializable 
 	/**
 	 * @return Returns the creator.
 	 */
-	@Override
 	public User getCreator() {
 		return creator;
 	}
@@ -115,7 +112,6 @@ public class Alert extends BaseOpenmrsObject implements Auditable, Serializable 
 	/**
 	 * @param creator The creator to set.
 	 */
-	@Override
 	public void setCreator(User creator) {
 		this.creator = creator;
 	}
@@ -123,7 +119,6 @@ public class Alert extends BaseOpenmrsObject implements Auditable, Serializable 
 	/**
 	 * @return Returns the dateCreated.
 	 */
-	@Override
 	public Date getDateCreated() {
 		return dateCreated;
 	}
@@ -131,7 +126,6 @@ public class Alert extends BaseOpenmrsObject implements Auditable, Serializable 
 	/**
 	 * @param dateCreated The dateCreated to set.
 	 */
-	@Override
 	public void setDateCreated(Date dateCreated) {
 		this.dateCreated = dateCreated;
 	}
@@ -209,7 +203,6 @@ public class Alert extends BaseOpenmrsObject implements Auditable, Serializable 
 	/**
 	 * @return Returns the changedBy.
 	 */
-	@Override
 	public User getChangedBy() {
 		return changedBy;
 	}
@@ -217,7 +210,6 @@ public class Alert extends BaseOpenmrsObject implements Auditable, Serializable 
 	/**
 	 * @param changedBy The user that changed this alert
 	 */
-	@Override
 	public void setChangedBy(User changedBy) {
 		this.changedBy = changedBy;
 	}
@@ -225,7 +217,6 @@ public class Alert extends BaseOpenmrsObject implements Auditable, Serializable 
 	/**
 	 * @return Returns the date this alert was changed
 	 */
-	@Override
 	public Date getDateChanged() {
 		return dateChanged;
 	}
@@ -233,7 +224,6 @@ public class Alert extends BaseOpenmrsObject implements Auditable, Serializable 
 	/**
 	 * @param dateChanged The date this alert was changed
 	 */
-	@Override
 	public void setDateChanged(Date dateChanged) {
 		this.dateChanged = dateChanged;
 	}
@@ -259,7 +249,7 @@ public class Alert extends BaseOpenmrsObject implements Auditable, Serializable 
 	 */
 	public void addRecipient(AlertRecipient r) {
 		if (this.recipients == null) {
-			this.recipients = new HashSet<>();
+			this.recipients = new HashSet<AlertRecipient>();
 		}
 		r.setAlert(this);
 		// duplicates are avoided by depending on the .equals and .hashcode
@@ -338,7 +328,6 @@ public class Alert extends BaseOpenmrsObject implements Auditable, Serializable 
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		return getAlertId();
 	}
@@ -347,7 +336,6 @@ public class Alert extends BaseOpenmrsObject implements Auditable, Serializable 
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setAlertId(id);
 	}

@@ -9,77 +9,83 @@
  */
 package org.openmrs.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.util.Date;
 import java.util.Locale;
 
-import org.junit.jupiter.api.Test;
-
 public class FormatTest {
 
     /**
+     * @verifies that all arguments can be null
      * @see Format#format(Date, Locale, Format.FORMAT_TYPE)
      */
     @Test
     public void format_shouldNotFailWhenAllParametersAreNull() {
-        assertEquals("",Format.format(null, null, null));
+        Assert.assertEquals("",Format.format(null, null, null));
     }
 
     /**
+     * @verifies that the date and locale arguments can be null
      * @see Format#format(Date, Locale, Format.FORMAT_TYPE)
      */
     @Test
     public void format_shouldNotFailWhenDateAndLocaleIsNull() {
-        assertEquals("", Format.format(null, null, Format.FORMAT_TYPE.DATE));
+        Assert.assertEquals("", Format.format(null, null, Format.FORMAT_TYPE.DATE));
     }
 
     /**
+     * @verifies that the type and locale arguments can be null
      * @see Format#format(Date, Locale, Format.FORMAT_TYPE)
      */
     @Test
     public void format_shouldNotFailWhenLocaleAndTypeIsNull() {
-        assertEquals("", Format.format(new Date(1460323142), null, null));
+        Assert.assertEquals("", Format.format(new Date(1460323142), null, null));
     }
 
     /**
+     * @verifies that the locale argument can be null
      * @see Format#format(Date, Locale, Format.FORMAT_TYPE)
      */
     @Test
     public void format_shouldNotFailWhenOnlyLocaleIsNull() {
-        assertEquals("", Format.format(new Date(1460323142), null, Format.FORMAT_TYPE.DATE));
+        Assert.assertEquals("", Format.format(new Date(1460323142), null, Format.FORMAT_TYPE.DATE));
     }
 
     /**
+     * @verifies that the date and type arguments can be null
      * @see Format#format(Date, Locale, Format.FORMAT_TYPE)
      */
     @Test
     public void format_shouldNotFailWhenDateAndTypeIsNull() {
-        assertEquals("", Format.format(null, Locale.US, null));
+        Assert.assertEquals("", Format.format(null, Locale.US, null));
     }
 
     /**
+     * @verifies that the date argument can be null
      * @see Format#format(Date, Locale, Format.FORMAT_TYPE)
      */
     @Test
     public void format_shouldNotFailWhenOnlyDateIsNull() {
-        assertEquals("", Format.format(null, Locale.US, Format.FORMAT_TYPE.DATE));
+        Assert.assertEquals("", Format.format(null, Locale.US, Format.FORMAT_TYPE.DATE));
     }
 
     /**
+     * @verifies that the type argument can be null
      * @see Format#format(Date, Locale, Format.FORMAT_TYPE)
      */
     @Test
     public void format_shouldNotFailWhenOnlyTypeIsNull() {
-        assertEquals("", Format.format(new Date(1460323539000L), Locale.US, null));
+        Assert.assertEquals("", Format.format(new Date(1460323539000L), Locale.US, null));
     }
 
     /**
+     * @verifies that with non-null arguments, the method returns the correct date
      * @see Format#format(Date, Locale, Format.FORMAT_TYPE)
      */
     @Test
     public void format_shouldNotFailWhenNoneOfTheParametersAreNull() {
-        assertNotEquals("", Format.format(new Date(1460323539000L), Locale.US, Format.FORMAT_TYPE.DATE));
+        Assert.assertNotEquals("", Format.format(new Date(1460323539000L), Locale.US, Format.FORMAT_TYPE.DATE));
     }
 }

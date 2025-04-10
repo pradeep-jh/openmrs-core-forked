@@ -11,8 +11,8 @@ package org.openmrs.module;
 
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * An extension is a small snippet of code that is run at certain "extension points" throughout the
@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class Extension {
 	
-	private static final Logger log = LoggerFactory.getLogger(Extension.class);
+	private Log log = LogFactory.getLog(this.getClass());
 	
 	// point which this extension is extending
 	private String pointId;
@@ -41,7 +41,7 @@ public abstract class Extension {
 	 *
 	 * @see #toExtensionId(String, MEDIA_TYPE)
 	 */
-	public static final String EXTENSION_ID_SEPARATOR = "|";
+	public static final String extensionIdSeparator = "|";
 	
 	/**
 	 * All media types allowed by the module extension system. If an extension specifies 'html' as
@@ -167,7 +167,6 @@ public abstract class Extension {
 	 *
 	 * @see java.lang.Object#toString()
 	 */
-	@Override
 	public final String toString() {
 		return "Extension: " + this.getExtensionId();
 	}
@@ -182,7 +181,7 @@ public abstract class Extension {
 	 */
 	public static final String toExtensionId(String pointId, MEDIA_TYPE mediaType) {
 		if (mediaType != null) {
-			return pointId + Extension.EXTENSION_ID_SEPARATOR + mediaType;
+			return new StringBuffer(pointId).append(Extension.extensionIdSeparator).append(mediaType).toString();
 		} else {
 			return pointId;
 		}

@@ -18,7 +18,6 @@ package org.openmrs.logic.op;
  */
 public class Distinct implements TransformOperator {
 	
-	@Override
 	public String toString() {
 		return "DISTINCT";
 	}

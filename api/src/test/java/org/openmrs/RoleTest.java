@@ -9,16 +9,17 @@
  */
 package org.openmrs;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.HashSet;
 import java.util.Set;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
+import org.openmrs.test.Verifies;
 import org.openmrs.util.RoleConstants;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertEquals;
 
 /**
  * This class tests all methods that are not getter or setters in the Role java object TODO: finish
@@ -34,7 +35,7 @@ public class RoleTest {
 	 * @throws Exception
 	 */
 	@Test
-	public void shouldAddRemovePrivilege() {
+	public void shouldAddRemovePrivilege() throws Exception {
 		Role role = new Role();
 		
 		// test the null parameter cases
@@ -43,26 +44,26 @@ public class RoleTest {
 		
 		Privilege priv1 = new Privilege("priv1");
 		role.addPrivilege(priv1);
-		assertEquals(role.getPrivileges().size(), 1, "Incorrect number of privileges");
+		assertEquals("Incorrect number of privileges", 1, role.getPrivileges().size());
 		
 		// adding the same privilege should not be allowed
 		role.addPrivilege(priv1);
-		assertEquals(role.getPrivileges().size(), 1, "Incorrect number of privileges");
+		assertEquals("Incorrect number of privileges", 1, role.getPrivileges().size());
 		
 		// adding a different privilege with the same name should not be allowed
 		Privilege priv2 = new Privilege(priv1.getPrivilege());
 		role.addPrivilege(priv2);
-		assertEquals(role.getPrivileges().size(), 1, "Incorrect number of privileges");
+		assertEquals("Incorrect number of privileges", 1, role.getPrivileges().size());
 		
 		Privilege priv3 = new Privilege("priv3");
 		
 		// removing a fake privilege shouldn't do anything
 		role.removePrivilege(priv3);
-		assertEquals(role.getPrivileges().size(), 1, "Incorrect number of privileges");
+		assertEquals("Incorrect number of privileges", 1, role.getPrivileges().size());
 		
 		// removing the first privilege
 		role.removePrivilege(priv1);
-		assertEquals(role.getPrivileges().size(), 0, "Incorrect number of privileges");
+		assertEquals("Incorrect number of privileges", 0, role.getPrivileges().size());
 	}
 	
 	/**
@@ -71,7 +72,8 @@ public class RoleTest {
 	 * @see Role#hasPrivilege(String)
 	 */
 	@Test
-	public void hasPrivilege_shouldNotFailGivenNullParameter() {
+	@Verifies(value = "should not fail given null parameter", method = "hasPrivilege(String)")
+	public void hasPrivilege_shouldNotFailGivenNullParameter() throws Exception {
 		Role role = new Role();
 		
 		// test the null case
@@ -82,43 +84,37 @@ public class RoleTest {
 	 * @see Role#hasPrivilege(String)
 	 */
 	@Test
-	public void hasPrivilege_shouldReturnTrueIfFound() {
+	@Verifies(value = "should return true if found", method = "hasPrivilege(String)")
+	public void hasPrivilege_shouldReturnTrueIfFound() throws Exception {
 		Role role = new Role();
 		
 		// very basic privilege adding and checking
 		Privilege p1 = new Privilege("priv1");
 		role.addPrivilege(p1);
-		assertTrue(role.hasPrivilege("priv1"), "This roles should have the privilege");
+		assertTrue("This roles should have the privilege", role.hasPrivilege("priv1"));
 	}
 	
 	/**
 	 * @see Role#hasPrivilege(String)
 	 */
 	@Test
-	public void hasPrivilege_shouldReturnFalseIfNotFound() {
+	@Verifies(value = "should return false if not found", method = "hasPrivilege(String)")
+	public void hasPrivilege_shouldReturnFalseIfNotFound() throws Exception {
 		Role role = new Role();
-		assertFalse(role.hasPrivilege("some other privilege name"), "This roles should not have the privilege");
-	}
-
-	@Test
-	public void hasPrivilege_shouldBeCaseInsensitive() {
-		Role role = new Role();
-
-		// very basic privilege adding and checking
-		Privilege p1 = new Privilege("PrIv1");
-		role.addPrivilege(p1);
-		assertTrue(role.hasPrivilege("priv1"), "This roles should have the privilege");
+		assertFalse("This roles should not have the privilege", role.hasPrivilege("some other privilege name"));
 	}
 	
 	/**
 	 * @see Role#hasPrivilege(String)
 	 */
 	@Test
-	public void hasPrivilege_shouldReturnTrueForAnyPrivilegeNameIfSuperUser() {
+	@Verifies(value = "should return true for any privilegeName if super user", method = "hasPrivilege(String)")
+	public void hasPrivilege_shouldReturnTrueForAnyPrivilegeNameIfSuperUser() throws Exception {
 		// check super user "super" status
 		Role role = new Role(RoleConstants.SUPERUSER);
 		
-		assertTrue(role.hasPrivilege("Some weird privilege name that shouldn't be there"), "Super users are super special and should have all privileges");
+		assertTrue("Super users are super special and should have all privileges", role
+		        .hasPrivilege("Some weird privilege name that shouldn't be there"));
 		assertNotNull(role.getName());
 		assertEquals(role.getName(), RoleConstants.SUPERUSER);
 	}
@@ -127,7 +123,8 @@ public class RoleTest {
 	 * @see Role#getAllParentRoles()
 	 */
 	@Test
-	public void getAllParentRoles_shouldOnlyReturnParentRoles() {
+	@Verifies(value = "should only return parent roles", method = "getAllParentRoles()")
+	public void getAllParentRoles_shouldOnlyReturnParentRoles() throws Exception {
 		Role grandparent = new Role("Grandparent");
 		Role aunt = new Role("Aunt");
 		Role uncle = new Role("Uncle");
@@ -157,20 +154,21 @@ public class RoleTest {
 		child2.setInheritedRoles(new HashSet<>(inheritedRoles));
 		
 		// ensure only inherited roles are found
-		assertEquals(3, niece.getAllParentRoles().size());
-		assertEquals(2, child1.getAllParentRoles().size());
-		assertEquals(2, child2.getAllParentRoles().size());
-		assertEquals(1, parent.getAllParentRoles().size());
-		assertEquals(1, aunt.getAllParentRoles().size());
-		assertEquals(1, uncle.getAllParentRoles().size());
-		assertEquals(0, grandparent.getAllParentRoles().size());
+		Assert.assertEquals(3, niece.getAllParentRoles().size());
+		Assert.assertEquals(2, child1.getAllParentRoles().size());
+		Assert.assertEquals(2, child2.getAllParentRoles().size());
+		Assert.assertEquals(1, parent.getAllParentRoles().size());
+		Assert.assertEquals(1, aunt.getAllParentRoles().size());
+		Assert.assertEquals(1, uncle.getAllParentRoles().size());
+		Assert.assertEquals(0, grandparent.getAllParentRoles().size());
 	}
 	
 	/**
 	 * @see Role#getAllChildRoles()
 	 */
 	@Test
-	public void getAllChildRoles_shouldOnlyReturnChildRoles() {
+	@Verifies(value = "should only return child roles", method = "getAllChildRoles()")
+	public void getAllChildRoles_shouldOnlyReturnChildRoles() throws Exception {
 		Role grandparent = new Role("Grandparent");
 		Role aunt = new Role("Aunt");
 		Role uncle = new Role("Uncle");
@@ -200,13 +198,13 @@ public class RoleTest {
 		parent.setChildRoles(new HashSet<>(childRoles));
 		
 		// ensure only child roles are found
-		assertEquals(0, niece.getAllChildRoles().size());
-		assertEquals(0, child1.getAllChildRoles().size());
-		assertEquals(0, child2.getAllChildRoles().size());
-		assertEquals(2, parent.getAllChildRoles().size());
-		assertEquals(1, aunt.getAllChildRoles().size());
-		assertEquals(1, uncle.getAllChildRoles().size());
-		assertEquals(6, grandparent.getAllChildRoles().size());
+		Assert.assertEquals(0, niece.getAllChildRoles().size());
+		Assert.assertEquals(0, child1.getAllChildRoles().size());
+		Assert.assertEquals(0, child2.getAllChildRoles().size());
+		Assert.assertEquals(2, parent.getAllChildRoles().size());
+		Assert.assertEquals(1, aunt.getAllChildRoles().size());
+		Assert.assertEquals(1, uncle.getAllChildRoles().size());
+		Assert.assertEquals(6, grandparent.getAllChildRoles().size());
 	}
 	
 }

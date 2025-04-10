@@ -20,7 +20,6 @@ package org.openmrs.logic.op;
  */
 public class AsOf implements Operator {
 	
-	@Override
 	public String toString() {
 		return "AS OF";
 	}

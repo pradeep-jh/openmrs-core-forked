@@ -9,17 +9,16 @@
  */
 package org.openmrs.api.handler;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 import java.util.Calendar;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import org.openmrs.Encounter;
 import org.openmrs.Visit;
 import org.openmrs.api.context.Context;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 
 /**
  * Tests methods in the {@link ExistingVisitAssignmentHandler}
@@ -36,8 +35,8 @@ public class ExistingVisitAssignmentHandlerTest extends BaseContextSensitiveTest
 	 * @see BaseContextSensitiveTest#runBeforeAllUnitTests()
 	 * @throws Exception
 	 */
-	@BeforeEach
-	public void runBeforeEachTest() {
+	@Before
+	public void runBeforeEachTest() throws Exception {
 		executeDataSet(ENC_INITIAL_DATA_XML);
 	}
 	
@@ -45,23 +44,25 @@ public class ExistingVisitAssignmentHandlerTest extends BaseContextSensitiveTest
 	 * @see ExistingVisitAssignmentHandler#beforeCreateEncounter(Encounter)
 	 */
 	@Test
-	public void beforeCreateEncounter_shouldAssignExistingVisitIfMatchFound() {
+	@Verifies(value = "should assign existing visit if match found", method = "beforeCreateEncounter(Encounter)")
+	public void beforeCreateEncounter_shouldAssignExistingVisitIfMatchFound() throws Exception {
 		Encounter encounter = Context.getEncounterService().getEncounter(1);
-		assertNull(encounter.getVisit());
+		Assert.assertNull(encounter.getVisit());
 		
 		new ExistingVisitAssignmentHandler().beforeCreateEncounter(encounter);
 		
-		assertNotNull(encounter.getVisit());
-		assertNotNull(encounter.getVisit().getVisitId());
+		Assert.assertNotNull(encounter.getVisit());
+		Assert.assertNotNull(encounter.getVisit().getVisitId());
 	}
 	
 	/**
 	 * @see ExistingVisitAssignmentHandler#beforeCreateEncounter(Encounter)
 	 */
 	@Test
-	public void beforeCreateEncounter_shouldNotAssignVisitIfNoMatchFound() {
+	@Verifies(value = "should not assign visit if no match found", method = "beforeCreateEncounter(Encounter)")
+	public void beforeCreateEncounter_shouldNotAssignVisitIfNoMatchFound() throws Exception {
 		Encounter encounter = Context.getEncounterService().getEncounter(1);
-		assertNull(encounter.getVisit());
+		Assert.assertNull(encounter.getVisit());
 		
 		Calendar calendar = Calendar.getInstance();
 		calendar.setTime(encounter.getEncounterDatetime());
@@ -71,16 +72,17 @@ public class ExistingVisitAssignmentHandlerTest extends BaseContextSensitiveTest
 		
 		new ExistingVisitAssignmentHandler().beforeCreateEncounter(encounter);
 		
-		assertNull(encounter.getVisit());
+		Assert.assertNull(encounter.getVisit());
 	}
 	
 	/**
 	 * @see ExistingVisitAssignmentHandler#beforeCreateEncounter(Encounter)
 	 */
 	@Test
-	public void beforeCreateEncounter_shouldNotAssignVisitWhichStoppedBeforeEncounterDate() {
+	@Verifies(value = "should not assign visit which stopped before encounter date", method = "beforeCreateEncounter(Encounter)")
+	public void beforeCreateEncounter_shouldNotAssignVisitWhichStoppedBeforeEncounterDate() throws Exception {
 		Encounter encounter = Context.getEncounterService().getEncounter(1);
-		assertNull(encounter.getVisit());
+		Assert.assertNull(encounter.getVisit());
 		
 		//set the visit stop date to that before the encounter date
 		Visit visit = Context.getVisitService().getVisit(1);
@@ -92,6 +94,6 @@ public class ExistingVisitAssignmentHandlerTest extends BaseContextSensitiveTest
 		
 		new ExistingVisitAssignmentHandler().beforeCreateEncounter(encounter);
 		
-		assertNull(encounter.getVisit());
+		Assert.assertNull(encounter.getVisit());
 	}
 }

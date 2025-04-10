@@ -9,29 +9,23 @@
  */
 package org.openmrs;
 
-import org.hibernate.envers.Audited;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * Represents a person who may provide care to a patient during an encounter
  *
  * @since 1.9
  */
-@Audited
 public class Provider extends BaseCustomizableMetadata<ProviderAttribute> {
 	
-	private static final Logger log = LoggerFactory.getLogger(Provider.class);
+	private final Log log = LogFactory.getLog(getClass());
 	
 	private Integer providerId;
 	
 	private Person person;
 	
 	private String identifier;
-	
-	private Concept role;
-	
-	private Concept speciality;
 	
 	public Provider() {
 	}
@@ -98,55 +92,18 @@ public class Provider extends BaseCustomizableMetadata<ProviderAttribute> {
 		return identifier;
 	}
 	
-	/**
-	 * Sets the role concept
-	 * 
-	 * @since 2.2
-	 * @param role the role to set
-	 */
-	public void setRole(Concept role) {
-		this.role = role;
-	}
-	
-	/**
-	 * Gets the role concept
-	 * 
-	 * @since 2.2
-	 * @return the role
-	 */
-	public Concept getRole() {
-		return role;
-	}
-	
-	/**
-	 * Sets the speciality concept
-	 * 
-	 * @since 2.2
-	 * @param speciality the speciality to set
-	 */
-	public void setSpeciality(Concept speciality) {
-		this.speciality = speciality;
-	}
-	
-	/**
-	 * Gets the speciality concept
-	 * 
-	 * @since 2.2
-	 * @return the speciality
-	 */
-	public Concept getSpeciality() {
-		return speciality;
-	}
-	
 	@Override
 	public String toString() {
-		String provider = String.valueOf(providerId) + " providerName:" + ((person != null) ? person.getNames() : "");
-		return "[Provider: providerId:" + provider + " ]";
+		StringBuilder sb = new StringBuilder();
+		sb.append(providerId);
+		sb.append(" providerName:");
+		sb.append((person != null) ? person.getNames() : "");
+		return "[Provider: providerId:" + sb.toString() + " ]";
 	}
 	
 	/**
 	 * @see org.openmrs.BaseOpenmrsMetadata#getName()
-	 * <strong>Should</strong> return person full name if person is not null or null otherwise
+	 * @should return person full name if person is not null or null otherwise
 	 */
 	
 	@Override

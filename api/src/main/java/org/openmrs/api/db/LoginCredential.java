@@ -39,8 +39,6 @@ public class LoginCredential extends BaseOpenmrsObject implements OpenmrsObject 
 	
 	private Date dateChanged;
 	
-	private String activationKey;
-	
 	public LoginCredential() {
 	}
 	
@@ -153,7 +151,6 @@ public class LoginCredential extends BaseOpenmrsObject implements OpenmrsObject 
 	/**
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		return userId;
 	}
@@ -161,22 +158,7 @@ public class LoginCredential extends BaseOpenmrsObject implements OpenmrsObject 
 	/**
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setUserId(id);
-	}
-	
-	/**
-	 * @returns the activation key
-	 */
-	public String getActivationKey() {
-		return activationKey;
-	}
-	
- 	/**
-	 * @param activationKey the activation key to set.
-	 */
-	public void setActivationKey(String activationKey) {
-		this.activationKey = activationKey;
 	}
 }

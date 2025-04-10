@@ -9,12 +9,11 @@
  */
 package org.openmrs.validator;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.FieldType;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 
@@ -28,24 +27,25 @@ public class FieldTypeValidatorTest extends BaseContextSensitiveTest {
 	 * 
 	 */
 	@Test
-	public void validate_shouldFailValidationIfNameIsNullOrEmptyOrWhitespace() {
+	@Verifies(value = "should fail validation if name is null or empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfNameIsNullOrEmptyOrWhitespace() throws Exception {
 		FieldType type = new FieldType();
 		type.setName(null);
 		type.setDescription("Humba humba humba ...");
 		
 		Errors errors = new BindException(type, "type");
 		new FieldTypeValidator().validate(type, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 		
 		type.setName("");
 		errors = new BindException(type, "type");
 		new FieldTypeValidator().validate(type, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 		
 		type.setName(" ");
 		errors = new BindException(type, "type");
 		new FieldTypeValidator().validate(type, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 	}
 	
 	/**
@@ -53,28 +53,30 @@ public class FieldTypeValidatorTest extends BaseContextSensitiveTest {
 	 * 
 	 */
 	@Test
-	public void validate_shouldPassValidationIfAllRequiredFieldsHaveProperValues() {
+	@Verifies(value = "should pass validation if all required fields have proper values", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfAllRequiredFieldsHaveProperValues() throws Exception {
 		FieldType type = new FieldType();
 		type.setName("soccer");
 		
 		Errors errors = new BindException(type, "type");
 		new FieldTypeValidator().validate(type, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see org.openmrs.validator.FieldTypeValidator#validate(Object, Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfFieldTypeNameIsDuplicate() {
+	@Verifies(value = "should fail if field type name is duplicate", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfFieldTypeNameIsDuplicate() throws Exception {
 		FieldType type = new FieldType();
 		type.setName("some field type");
 		
 		Errors errors = new BindException(type, "type");
 		new FieldTypeValidator().validate(type, errors);
 		
-		assertTrue(errors.hasErrors());
+		Assert.assertTrue(errors.hasErrors());
 	}
 	
 	/**
@@ -82,14 +84,15 @@ public class FieldTypeValidatorTest extends BaseContextSensitiveTest {
 	 *
 	 */
 	@Test
-	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() {
+	@Verifies(value = "should pass validation if field lengths are correct", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() throws Exception {
 		FieldType type = new FieldType();
 		type.setName("soccer");
 		
 		Errors errors = new BindException(type, "type");
 		new FieldTypeValidator().validate(type, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
@@ -97,13 +100,14 @@ public class FieldTypeValidatorTest extends BaseContextSensitiveTest {
 	 *
 	 */
 	@Test
-	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() {
+	@Verifies(value = "should fail validation if field lengths are not correct", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() throws Exception {
 		FieldType type = new FieldType();
 		type.setName("too long text too long text too long text too long text");
 		
 		Errors errors = new BindException(type, "type");
 		new FieldTypeValidator().validate(type, errors);
 		
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 	}
 }

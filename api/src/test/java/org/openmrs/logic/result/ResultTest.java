@@ -9,17 +9,12 @@
  */
 package org.openmrs.logic.result;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.Encounter;
 import org.openmrs.api.context.Context;
 import org.openmrs.logic.LogicException;
@@ -31,30 +26,48 @@ import org.openmrs.logic.LogicException;
  */
 public class ResultTest {
 	
+	/**
+	 * @verifies {@link Result#toObject()} test = should return resultObject for single results
+	 */
+	@SuppressWarnings( { "MismatchedQueryAndUpdateOfCollection" })
 	@Test
-	public void toObject_shouldReturnResultObjectForSingleResults() {
+	public void toObject_shouldReturnResultObjectForSingleResults() throws Exception {
 		Result firstResult = new Result(new Date(), "some value", new Encounter(123));
 		
-		assertEquals(123, ((Encounter) firstResult.toObject()).getId().intValue());
+		Assert.assertEquals(123, ((Encounter) firstResult.toObject()).getId().intValue());
 	}
 	
+	/**
+	 * @verifies {@link Result#Result(List<QResult;>)} test = should not fail with null list
+	 */
+	@SuppressWarnings("unchecked")
 	@Test
-	public void Result_shouldNotFailWithNullList() {
-		new Result((List<Result>) null);
+	public void Result_shouldNotFailWithNullList() throws Exception {
+		new Result((List) null);
 	}
 	
+	/**
+	 * @verifies {@link Result#Result(List<QResult;>)} test = should not fail with empty list
+	 */
+	@SuppressWarnings("unchecked")
 	@Test
-	public void Result_shouldNotFailWithEmptyList() {
-		new Result(new ArrayList<Result>());
+	public void Result_shouldNotFailWithEmptyList() throws Exception {
+		new Result(new ArrayList());
 	}
 	
+	/**
+	 * @verifies {@link Result#Result(Result)} test = should not fail with null result
+	 */
 	@Test
-	public void Result_shouldNotFailWithNullResult() {
+	public void Result_shouldNotFailWithNullResult() throws Exception {
 		new Result((Result) null);
 	}
 	
+	/**
+	 * @verifies {@link Result#earliest()} test = should get the first result given multiple results
+	 */
 	@Test
-	public void earliest_shouldGetTheFirstResultGivenMultipleResults() throws ParseException {
+	public void earliest_shouldGetTheFirstResultGivenMultipleResults() throws Exception {
 		Result parentResult = new Result();
 		Result secondResult = new Result(Context.getDateFormat().parse("15/08/2008"), "some other value", new Encounter(124));
 		Result firstResult = new Result(Context.getDateFormat().parse("12/08/2008"), "some value", new Encounter(123));
@@ -62,11 +75,14 @@ public class ResultTest {
 		parentResult.add(firstResult);
 		parentResult.add(secondResult);
 		
-		assertEquals("some value", parentResult.earliest().toString());
+		Assert.assertEquals("some value", parentResult.earliest().toString());
 	}
 	
+	/**
+	 * @verifies {@link Result#earliest()} test = should get the result given a single result
+	 */
 	@Test
-	public void earliest_shouldGetTheResultGivenASingleResult() throws ParseException {
+	public void earliest_shouldGetTheResultGivenASingleResult() throws Exception {
 		Result parentResult = new Result();
 		Result secondResult = new Result(Context.getDateFormat().parse("15/08/2008"), "some other value", new Encounter(124));
 		Result firstResult = new Result(Context.getDateFormat().parse("12/08/2008"), "some value", new Encounter(123));
@@ -74,17 +90,24 @@ public class ResultTest {
 		parentResult.add(firstResult);
 		parentResult.add(secondResult);
 		
-		assertEquals("some value", parentResult.earliest().toString());
+		Assert.assertEquals("some value", parentResult.earliest().toString());
 	}
 	
+	/**
+	 * @verifies {@link Result#earliest()} test = should get an empty result given an empty result
+	 */
 	@Test
-	public void earliest_shouldGetAnEmptyResultGivenAnEmptyResult() {
+	public void earliest_shouldGetAnEmptyResultGivenAnEmptyResult() throws Exception {
 		Result parentResult = new EmptyResult();
-		assertEquals(new EmptyResult(), parentResult.earliest());
+		Assert.assertEquals(new EmptyResult(), parentResult.earliest());
 	}
 	
+	/**
+	 * @verifies {@link Result#earliest()} test = should not get the result with null result date
+	 *           given other results
+	 */
 	@Test
-	public void earliest_shouldNotGetTheResultWithNullResultDateGivenOtherResults() throws ParseException {
+	public void earliest_shouldNotGetTheResultWithNullResultDateGivenOtherResults() throws Exception {
 		Result parentResult = new Result();
 		Result secondResult = new Result(null, "some value", new Encounter(123));
 		Result firstResult = new Result(Context.getDateFormat().parse("12/08/2008"), "some other value", new Encounter(124));
@@ -92,11 +115,15 @@ public class ResultTest {
 		parentResult.add(firstResult);
 		parentResult.add(secondResult);
 		
-		assertEquals("some other value", parentResult.earliest().toString());
+		Assert.assertEquals("some other value", parentResult.earliest().toString());
 	}
 	
+	/**
+	 * @verifies {@link Result#earliest()} test = should get one result with null result dates for
+	 *           all results
+	 */
 	@Test
-	public void earliest_shouldGetOneResultWithNullResultDatesForAllResults() {
+	public void earliest_shouldGetOneResultWithNullResultDatesForAllResults() throws Exception {
 		Result parentResult = new Result();
 		Result firstResult = new Result(null, "some value", new Encounter(123));
 		Result secondResult = new Result(null, "some other value", new Encounter(124));
@@ -104,16 +131,22 @@ public class ResultTest {
 		parentResult.add(firstResult);
 		parentResult.add(secondResult);
 		
-		assertEquals("some value", parentResult.earliest().toString());
+		Assert.assertEquals("some value", parentResult.earliest().toString());
 	}
 	
+	/**
+	 * @verifies {@link Result#equals(Object)} test = should return true on two empty results
+	 */
 	@Test
-	public void equals_shouldReturnTrueOnTwoEmptyResults() {
-		assertTrue(new EmptyResult().equals(new Result()));
+	public void equals_shouldReturnTrueOnTwoEmptyResults() throws Exception {
+		Assert.assertTrue(new EmptyResult().equals(new Result()));
 	}
 	
+	/**
+	 * @verifies {@link Result#get(int)} test = should get empty result for indexes out of range
+	 */
 	@Test
-	public void get_shouldGetEmptyResultForIndexesOutOfRange() throws ParseException {
+	public void get_shouldGetEmptyResultForIndexesOutOfRange() throws Exception {
 		Result parentResult = new Result();
 		Result secondResult = new Result(null, "some value", new Encounter(123));
 		Result firstResult = new Result(Context.getDateFormat().parse("12/08/2008"), "some other value", new Encounter(124));
@@ -122,16 +155,23 @@ public class ResultTest {
 		parentResult.add(secondResult);
 		
 		// 3 is greater than the number of entries in the parentResult
-		assertEquals(new EmptyResult(), parentResult.get(3));
+		Assert.assertEquals(new EmptyResult(), parentResult.get(3));
 	}
 	
+	/**
+	 * @verifies {@link Result#isNull()} test = should return false
+	 */
 	@Test
-	public void isNull_shouldReturnFalse() {
-		assertFalse(new Result().isNull());
+	public void isNull_shouldReturnFalse() throws Exception {
+		Assert.assertFalse(new Result().isNull());
 	}
 	
+	/**
+	 * @verifies {@link Result#latest()} test = should get the most recent result given multiple
+	 *           results
+	 */
 	@Test
-	public void latest_shouldGetTheMostRecentResultGivenMultipleResults() throws ParseException {
+	public void latest_shouldGetTheMostRecentResultGivenMultipleResults() throws Exception {
 		Result parentResult = new Result();
 		Result firstResult = new Result(Context.getDateFormat().parse("12/08/2008"), "some other value", new Encounter(124));
 		Result secondResult = new Result(Context.getDateFormat().parse("15/08/2008"), "some value", new Encounter(123));
@@ -139,23 +179,32 @@ public class ResultTest {
 		parentResult.add(firstResult);
 		parentResult.add(secondResult);
 		
-		assertEquals("some value", parentResult.latest().toString());
+		Assert.assertEquals("some value", parentResult.latest().toString());
 	}
 	
+	/**
+	 * @verifies {@link Result#latest()} test = should get the result given a single result
+	 */
 	@Test
-	public void latest_shouldGetTheResultGivenASingleResult() throws ParseException {
+	public void latest_shouldGetTheResultGivenASingleResult() throws Exception {
 		Result result = new Result(Context.getDateFormat().parse("12/08/2008"), "some other value", new Encounter(124));
 		
-		assertEquals("some other value", result.latest().toString());
+		Assert.assertEquals("some other value", result.latest().toString());
 	}
 	
+	/**
+	 * @verifies {@link Result#latest()} test = should get an empty result given an empty result
+	 */
 	@Test
-	public void latest_shouldGetAnEmptyResultGivenAnEmptyResult() {
-		assertEquals(new EmptyResult(), new Result().latest());
+	public void latest_shouldGetAnEmptyResultGivenAnEmptyResult() throws Exception {
+		Assert.assertEquals(new EmptyResult(), new Result().latest());
 	}
 	
+	/**
+	 * @verifies {@link Result#latest()} test = should get the result with null result date
+	 */
 	@Test
-	public void latest_shouldGetTheResultWithNullResultDate() throws ParseException {
+	public void latest_shouldGetTheResultWithNullResultDate() throws Exception {
 		Result parentResult = new Result();
 		Result firstResult = new Result(Context.getDateFormat().parse("15/08/2008"), "some value", new Encounter(123));
 		Result secondResult = new Result(null, "some other value", new Encounter(124));
@@ -163,11 +212,14 @@ public class ResultTest {
 		parentResult.add(firstResult);
 		parentResult.add(secondResult);
 		
-		assertEquals("some value", parentResult.latest().toString());
+		Assert.assertEquals("some value", parentResult.latest().toString());
 	}
 	
-	@Test
-	public void toObject_shouldFailWhenContainsMultipleResults() throws ParseException {
+	/**
+	 * @verifies {@link Result#toObject()} test = should fail when contains multiple results
+	 */
+	@Test(expected = LogicException.class)
+	public void toObject_shouldFailWhenContainsMultipleResults() throws Exception {
 		Result parentResult = new Result();
 		Result firstResult = new Result(Context.getDateFormat().parse("12/08/2008"), "some value", new Encounter(123));
 		Result secondResult = new Result(Context.getDateFormat().parse("15/08/2008"), "some other value", new Encounter(124));
@@ -175,6 +227,7 @@ public class ResultTest {
 		parentResult.add(firstResult);
 		parentResult.add(secondResult);
 		
-		assertThrows(LogicException.class, () -> parentResult.toObject());
+		Object toObject = parentResult.toObject();
+		Assert.assertNull(toObject);
 	}
 }

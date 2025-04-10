@@ -9,15 +9,12 @@
  */
 package org.openmrs;
 
-import org.hibernate.envers.Audited;
-
 /**
  * An EncounterType defines how a certain kind of {@link Encounter}.
  * 
  * @see Encounter
  */
-@Audited
-public class EncounterType extends BaseChangeableOpenmrsMetadata {
+public class EncounterType extends BaseOpenmrsMetadata {
 	
 	public static final long serialVersionUID = 789L;
 	
@@ -36,7 +33,7 @@ public class EncounterType extends BaseChangeableOpenmrsMetadata {
 	/**
 	 * Constructor with id
 	 * 
-	 * <strong>Should</strong> set encounter type id with given parameter
+	 * @should set encounter type id with given parameter
 	 */
 	public EncounterType(Integer encounterTypeId) {
 		this.encounterTypeId = encounterTypeId;
@@ -74,7 +71,6 @@ public class EncounterType extends BaseChangeableOpenmrsMetadata {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		return getEncounterTypeId();
 	}
@@ -83,7 +79,6 @@ public class EncounterType extends BaseChangeableOpenmrsMetadata {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setEncounterTypeId(id);
 		

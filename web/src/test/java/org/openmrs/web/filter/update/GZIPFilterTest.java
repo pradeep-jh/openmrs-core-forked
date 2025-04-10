@@ -9,13 +9,22 @@
  */
 package org.openmrs.web.filter.update;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.mockito.Mockito.mock;
+import org.junit.Assert;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
+import org.openmrs.GlobalProperty;
+import org.openmrs.api.context.Context;
+import org.openmrs.test.Verifies;
+import org.openmrs.web.filter.GZIPFilter;
+import org.openmrs.web.test.BaseWebContextSensitiveTest;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -24,15 +33,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.zip.GZIPOutputStream;
 
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
-import org.openmrs.GlobalProperty;
-import org.openmrs.api.context.Context;
-import org.openmrs.web.filter.GZIPFilter;
-import org.openmrs.web.test.BaseWebContextSensitiveTest;
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.mock.web.MockHttpServletResponse;
+import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.mock;
 
 /**
  * Tests some of the methods on the {@link org.openmrs.web.filter.update.GZIPFilter}
@@ -43,6 +45,7 @@ public class GZIPFilterTest extends BaseWebContextSensitiveTest {
 	 * @see org.openmrs.web.filter.GZIPFilter#doFilterInternal(HttpServletRequest,HttpServletResponse, javax.servlet.FilterChain)
 	 */
 	@Test
+	@Verifies(value = "zip request and response", method = "performGZIPRequest(HttpServletRequest,HttpServletResponse,FilterChain)")
 	public void zipRequestWrapperTest_shouldReturnTrueIfUnzippedContentReadFromWrapperIsTheSameAsContentBeforeZipping()
 	        throws Exception {
 		GlobalProperty property = new GlobalProperty("gzip.acceptCompressedRequestsForPaths", ".*");
@@ -74,7 +77,7 @@ public class GZIPFilterTest extends BaseWebContextSensitiveTest {
 			BufferedReader bufReader = new BufferedReader(iReader);
 			String outputMessage = bufReader.readLine();
 			
-			assertThat(outputMessage, is("message string"));
+			Assert.assertThat(outputMessage, is("message string"));
 		}
 		catch (IOException e) {
 			throw new RuntimeException();

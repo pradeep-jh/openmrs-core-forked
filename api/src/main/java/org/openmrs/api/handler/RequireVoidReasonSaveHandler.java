@@ -11,7 +11,7 @@ package org.openmrs.api.handler;
 
 import java.util.Date;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.openmrs.Encounter;
 import org.openmrs.Patient;
 import org.openmrs.User;
@@ -36,16 +36,15 @@ public class RequireVoidReasonSaveHandler implements SaveHandler<Voidable> {
 	/**
 	 * Validates that the voidReason is non-null and non-empty for supported objects
 	 * 
-	 * <strong>Should</strong> throw APIException if Patient voidReason is null
-	 * <strong>Should</strong> throw APIException if Encounter voidReason is empty
-	 * <strong>Should</strong> throw APIException if Encounter voidReason is blank
-	 * <strong>Should</strong> not throw Exception if voidReason is not blank
-	 * <strong>Should</strong> not throw Exception if voidReason is null for unsupported types
+	 * @should throw APIException if Patient voidReason is null
+	 * @should throw APIException if Encounter voidReason is empty
+	 * @should throw APIException if Encounter voidReason is blank
+	 * @should not throw Exception if voidReason is not blank
+	 * @should not throw Exception if voidReason is null for unsupported types
 	 */
-	@Override
 	public void handle(Voidable voidableObject, User currentUser, Date currentDate, String notUsed) {
 		
-		if (voidableObject.getVoided() && StringUtils.isBlank(voidableObject.getVoidReason())) {
+		if (voidableObject.isVoided() && StringUtils.isBlank(voidableObject.getVoidReason())) {
 			throw new APIException("voided.bit.was.set.true", new Object[] { voidableObject, voidableObject.getClass() });
 		}
 	}

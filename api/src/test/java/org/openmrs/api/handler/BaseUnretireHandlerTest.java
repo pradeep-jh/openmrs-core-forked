@@ -9,16 +9,14 @@
  */
 package org.openmrs.api.handler;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.Date;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.Location;
 import org.openmrs.Retireable;
 import org.openmrs.User;
+import org.openmrs.test.Verifies;
 
 /**
  * Tests the {@link BaseUnretireHandler} class.
@@ -29,70 +27,76 @@ public class BaseUnretireHandlerTest {
 	 * @see BaseUnretireHandler#handle(Retireable,User,Date,String)
 	 */
 	@Test
-	public void handle_shouldUnsetTheRetiredBit() {
+	@Verifies(value = "should unset the retired bit", method = "handle(Retireable,User,Date,String)")
+	public void handle_shouldUnsetTheRetiredBit() throws Exception {
 		UnretireHandler<Retireable> handler = new BaseUnretireHandler();
 		Retireable retireable = new Location();
 		retireable.setRetired(true); // make sure isRetired is set
 		handler.handle(retireable, null, null, null);
-		assertFalse(retireable.getRetired());
+		Assert.assertFalse(retireable.isRetired());
 	}
 	
 	/**
 	 * @see BaseUnretireHandler#handle(Retireable,User,Date,String)
 	 */
 	@Test
-	public void handle_shouldUnsetTheRetirer() {
+	@Verifies(value = "should unset the retirer", method = "handle(Retireable,User,Date,String)")
+	public void handle_shouldUnsetTheRetirer() throws Exception {
 		UnretireHandler<Retireable> handler = new BaseUnretireHandler();
 		Retireable retireable = new Location();
 		retireable.setRetired(true);
 		retireable.setRetiredBy(new User(1));
 		handler.handle(retireable, null, null, null);
-		assertNull(retireable.getRetiredBy());
+		Assert.assertNull(retireable.getRetiredBy());
 	}
 	
 	/**
 	 * @see BaseUnretireHandler#handle(Retireable,User,Date,String)
 	 */
 	@Test
-	public void handle_shouldUnsetTheDateRetired() {
+	@Verifies(value = "should unset the date retired", method = "handle(Retireable,User,Date,String)")
+	public void handle_shouldUnsetTheDateRetired() throws Exception {
 		UnretireHandler<Retireable> handler = new BaseUnretireHandler();
 		Retireable retireable = new Location();
 		retireable.setRetired(true);
 		retireable.setDateRetired(new Date());
 		handler.handle(retireable, null, null, null);
-		assertNull(retireable.getDateRetired());
+		Assert.assertNull(retireable.getDateRetired());
 	}
 	
 	/**
 	 * @see BaseUnretireHandler#handle(Retireable,User,Date,String)
 	 */
 	@Test
-	public void handle_shouldUnsetTheRetireReason() {
+	@Verifies(value = "should unset the retire reason", method = "handle(Retireable,User,Date,String)")
+	public void handle_shouldUnsetTheRetireReason() throws Exception {
 		UnretireHandler<Retireable> handler = new BaseUnretireHandler();
 		Retireable retireable = new Location();
 		retireable.setRetired(true);
 		retireable.setRetireReason("SOME REASON");
 		handler.handle(retireable, null, null, null);
-		assertNull(retireable.getRetireReason());
+		Assert.assertNull(retireable.getRetireReason());
 	}
 	
 	/**
 	 * @see BaseUnretireHandler#handle(Retireable,User,Date,String)
 	 */
 	@Test
-	public void handle_shouldNotActOnAlreadyUnretiredObjects() {
+	@Verifies(value = "should not act on already unretired objects", method = "handle(Retireable,User,Date,String)")
+	public void handle_shouldNotActOnAlreadyUnretiredObjects() throws Exception {
 		UnretireHandler<Retireable> handler = new BaseUnretireHandler();
 		Retireable retireable = new Location();
 		retireable.setRetired(false);
 		handler.handle(retireable, null, null, "SOME REASON");
-		assertNull(retireable.getRetireReason());
+		Assert.assertNull(retireable.getRetireReason());
 	}
 	
 	/**
 	 * @see BaseUnretireHandler#handle(Retireable,User,Date,String)
 	 */
 	@Test
-	public void handle_shouldNotActOnRetiredObjectsWithADifferentDateRetired() {
+	@Verifies(value = "should not act on retired objects with a different dateRetired", method = "handle(Retireable,User,Date,String)")
+	public void handle_shouldNotActOnRetiredObjectsWithADifferentDateRetired() throws Exception {
 		Date d = new Date(new Date().getTime() - 1000); // a time that isn't right now
 		
 		UnretireHandler<Retireable> handler = new BaseUnretireHandler();
@@ -101,7 +105,7 @@ public class BaseUnretireHandlerTest {
 		retireable.setDateRetired(d);
 		
 		handler.handle(retireable, null, new Date(), "SOME REASON");
-		assertTrue(retireable.getRetired());
+		Assert.assertTrue(retireable.isRetired());
 	}
 	
 }

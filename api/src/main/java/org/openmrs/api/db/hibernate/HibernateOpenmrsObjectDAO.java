@@ -11,7 +11,9 @@ package org.openmrs.api.db.hibernate;
 
 import java.io.Serializable;
 
+import org.hibernate.Criteria;
 import org.hibernate.SessionFactory;
+import org.hibernate.criterion.Restrictions;
 import org.openmrs.BaseOpenmrsObject;
 import org.openmrs.api.db.OpenmrsObjectDAO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,16 +43,14 @@ public class HibernateOpenmrsObjectDAO<T extends BaseOpenmrsObject> implements O
 	/**
 	 * @see org.openmrs.api.db.OpenmrsObjectDAO#getByUuid(java.lang.String)
 	 */
-	@Override
 	public T getByUuid(String uuid) {
-		return HibernateUtil.getUniqueEntityByUUID(sessionFactory, mappedClass, uuid);
+		Criteria crit = sessionFactory.getCurrentSession().createCriteria(mappedClass);
+		return (T) crit.add(Restrictions.eq("uuid", uuid)).uniqueResult();
 	}
-
-
+	
 	/** 
 	 * @see org.openmrs.api.db.OpenmrsObjectDAO#delete(org.openmrs.BaseOpenmrsObject)
 	 */
-	@Override
 	public void delete(T persistent) {
 		sessionFactory.getCurrentSession().delete(persistent);
 	}
@@ -58,7 +58,6 @@ public class HibernateOpenmrsObjectDAO<T extends BaseOpenmrsObject> implements O
 	/**
 	 * @see org.openmrs.api.db.OpenmrsObjectDAO#saveOrUpdate(org.openmrs.BaseOpenmrsObject)
 	 */
-	@Override
 	public T saveOrUpdate(T persistent) {
 		sessionFactory.getCurrentSession().saveOrUpdate(persistent);
 		return persistent;

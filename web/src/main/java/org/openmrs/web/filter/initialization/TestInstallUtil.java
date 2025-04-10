@@ -20,18 +20,18 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
-import java.util.Base64;
-import java.util.Base64.Encoder;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.xerces.impl.dv.util.Base64;
 import org.openmrs.api.APIAuthenticationException;
 import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
@@ -39,18 +39,14 @@ import org.openmrs.module.ModuleConstants;
 import org.openmrs.util.OpenmrsConstants;
 import org.openmrs.util.OpenmrsUtil;
 import org.openmrs.web.filter.util.FilterUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Contains static methods to be used by the installation wizard when creating a testing
  * installation
  */
 public class TestInstallUtil {
-	private TestInstallUtil() {
-	}
 	
-	private static final Logger log = LoggerFactory.getLogger(TestInstallUtil.class);
+	private static final Log log = LogFactory.getLog(TestInstallUtil.class);
 	
 	/**
 	 * Adds data to the test database from a sql dump file
@@ -63,7 +59,7 @@ public class TestInstallUtil {
 	 * @return true if data was added successfully
 	 */
 	protected static boolean addTestData(String host, int port, String databaseName, String user, String pwd, String filePath) {
-		Process proc;
+		Process proc = null;
 		BufferedReader br = null;
 		String errorMsg = null;
 		String[] command = new String[] { "mysql", "--host=" + host, "--port=" + port, "--user=" + user,
@@ -71,7 +67,8 @@ public class TestInstallUtil {
 		
 		//For stand-alone, use explicit path to the mysql executable.
 		String runDirectory = System.getProperties().getProperty("user.dir");
-		File file = Paths.get(runDirectory, "database", "bin", "mysql").toFile();
+		File file = new File(runDirectory + File.separatorChar + "database" + File.separatorChar + "bin"
+		        + File.separatorChar + "mysql");
 		
 		if (file.exists()) {
 			command[0] = file.getAbsolutePath();
@@ -80,7 +77,7 @@ public class TestInstallUtil {
 		try {
 			proc = Runtime.getRuntime().exec(command);
 			try {
-				br = new BufferedReader(new InputStreamReader(proc.getErrorStream(), StandardCharsets.UTF_8));
+				br = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
 				String line;
 				StringBuilder sb = new StringBuilder();
 				while ((line = br.readLine()) != null) {
@@ -109,12 +106,14 @@ public class TestInstallUtil {
 			}
 			
 			if (proc.waitFor() == 0) {
-				log.debug("Added test data successfully");
+				if (log.isDebugEnabled()) {
+					log.debug("Added test data successfully");
+				}
 				return true;
 			}
 			
 			log
-	        .error("The process terminated abnormally while adding test data. Please look under the Configuration section at: https://wiki.openmrs.org/display/docs/Release+Testing+Helper+Module");
+			        .error("The process terminated abnormally while adding test data. Please look under the Configuration section at: https://wiki.openmrs.org/display/docs/Release+Testing+Helper+Module");
 			
 		}
 		catch (IOException e) {
@@ -150,7 +149,9 @@ public class TestInstallUtil {
 			while (entries.hasMoreElements()) {
 				ZipEntry entry = (ZipEntry) entries.nextElement();
 				if (entry.isDirectory()) {
-					log.debug("Skipping directory: {}", entry.getName());
+					if (log.isDebugEnabled()) {
+						log.debug("Skipping directory: " + entry.getName());
+					}
 					continue;
 				}
 				
@@ -162,7 +163,9 @@ public class TestInstallUtil {
 						fileName = new File(entry.getName()).getName();
 					}
 					
-					log.debug("Extracting module file: {}", fileName);
+					if (log.isDebugEnabled()) {
+						log.debug("Extracting module file: " + fileName);
+					}
 					
 					//use the module repository folder GP value if specified
 					String moduleRepositoryFolder = FilterUtil
@@ -184,16 +187,13 @@ public class TestInstallUtil {
 					
 					//delete all previously added modules in case of prior test installations
 					FileUtils.cleanDirectory(moduleRepository);
-
-					final File zipEntryFile = new File(moduleRepository, fileName);
-
-					if (!zipEntryFile.toPath().normalize().startsWith(moduleRepository.toPath().normalize())) {
-						throw new IOException("Bad zip entry");
-					}
 					
-					OpenmrsUtil.copyFile(zipFile.getInputStream(entry), new BufferedOutputStream(new FileOutputStream(zipEntryFile)));
+					OpenmrsUtil.copyFile(zipFile.getInputStream(entry), new BufferedOutputStream(new FileOutputStream(
+					        new File(moduleRepository, fileName))));
 				} else {
-					log.debug("Ignoring file that is not a .omod '{}'", fileName);
+					if (log.isDebugEnabled()) {
+						log.debug("Ignoring file that is not a .omod '" + fileName);
+					}
 				}
 			}
 		}
@@ -237,57 +237,56 @@ public class TestInstallUtil {
 			urlConnect.getContent();
 			return true;
 		}
+		catch (UnknownHostException e) {
+			if (log.isDebugEnabled()) {
+				log.debug("Error generated:", e);
+			}
+		}
 		catch (IOException e) {
-			log.debug("Error generated:", e);
+			if (log.isDebugEnabled()) {
+				log.debug("Error generated:", e);
+			}
 		}
 		
 		return false;
 	}
 	
 	/**
-	 * @param url
+	 * @param urlString
 	 * @param openmrsUsername
 	 * @param openmrsPassword
 	 * @return input stream
 	 * @throws MalformedURLException
 	 * @throws IOException
 	 */
-	protected static InputStream getResourceInputStream(String url, String openmrsUsername, String openmrsPassword)
+	protected static InputStream getResourceInputStream(String urlString, String openmrsUsername, String openmrsPassword)
 	        throws MalformedURLException, IOException, APIException {
 		
-		HttpURLConnection connection = createConnection(url);
-		OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), StandardCharsets.UTF_8);
-		out.write(encodeCredentials(openmrsUsername, openmrsPassword));
+		HttpURLConnection urlConnection = (HttpURLConnection) new URL(urlString).openConnection();
+		urlConnection.setRequestMethod("POST");
+		urlConnection.setConnectTimeout(15000);
+		urlConnection.setUseCaches(false);
+		urlConnection.setDoOutput(true);
+		
+		String requestParams = "username=" + Base64.encode(openmrsUsername.getBytes(Charset.forName("UTF-8")))
+		        + "&password=" + Base64.encode(openmrsPassword.getBytes(Charset.forName("UTF-8")));
+		
+		OutputStreamWriter out = new OutputStreamWriter(urlConnection.getOutputStream());
+		out.write(requestParams);
 		out.flush();
 		out.close();
 		
-		log.info("Http response message: {}, Code: {}", connection.getResponseMessage(), connection.getResponseCode());
+		if (log.isInfoEnabled()) {
+			log.info("Http response message:" + urlConnection.getResponseMessage() + ", Code:"
+			        + urlConnection.getResponseCode());
+		}
 		
-		if (connection.getResponseCode() == HttpURLConnection.HTTP_UNAUTHORIZED) {
+		if (urlConnection.getResponseCode() == HttpURLConnection.HTTP_UNAUTHORIZED) {
 			throw new APIAuthenticationException("Invalid username or password");
-		} else if (connection.getResponseCode() == HttpURLConnection.HTTP_INTERNAL_ERROR) {
+		} else if (urlConnection.getResponseCode() == HttpURLConnection.HTTP_INTERNAL_ERROR) {
 			throw new APIException("error.occurred.on.remote.server", (Object[]) null);
 		}
 		
-		return connection.getInputStream();
-	}
-	private static HttpURLConnection createConnection(String url) 
-			throws IOException, MalformedURLException {
-		final HttpURLConnection result = (HttpURLConnection) new URL(url).openConnection();
-		result.setRequestMethod("POST");
-		result.setConnectTimeout(15000);
-		result.setUseCaches(false);
-		result.setDoOutput(true);
-		return result;
-	}
-	private static String encodeCredentials(String openmrsUsername, String openmrsPassword) {
-		final StringBuilder result = new StringBuilder();
-		result.append("username=");
-		final Encoder encoder = Base64.getEncoder();
-		final Charset utf8 = StandardCharsets.UTF_8;
-		result.append(new String(encoder.encode(openmrsUsername.getBytes(utf8)), utf8));
-		result.append("&password=");
-		result.append(new String(encoder.encode(openmrsPassword.getBytes(utf8)), utf8));
-		return result.toString();
+		return urlConnection.getInputStream();
 	}
 }

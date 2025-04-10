@@ -15,6 +15,8 @@ import java.util.Date;
 import java.util.UUID;
 
 import org.apache.commons.beanutils.PropertyUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.Obs;
 import org.openmrs.OpenmrsObject;
 import org.openmrs.User;
@@ -24,8 +26,6 @@ import org.openmrs.annotation.AllowLeadingOrTrailingWhitespace;
 import org.openmrs.annotation.Handler;
 import org.openmrs.aop.RequiredDataAdvice;
 import org.openmrs.api.APIException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This class deals with any object that implements {@link OpenmrsObject}. When an
@@ -42,20 +42,19 @@ import org.slf4j.LoggerFactory;
 @Handler(supports = OpenmrsObject.class)
 public class OpenmrsObjectSaveHandler implements SaveHandler<OpenmrsObject> {
 	
-	private static final Logger log = LoggerFactory.getLogger(OpenmrsObjectSaveHandler.class);
+	private static final Log log = LogFactory.getLog(OpenmrsObjectSaveHandler.class);
 	
 	/**
 	 * This sets the uuid property on the given OpenmrsObject if it is non-null.
 	 *
 	 * @see org.openmrs.api.handler.RequiredDataHandler#handle(org.openmrs.OpenmrsObject,
 	 *      org.openmrs.User, java.util.Date, java.lang.String)
-	 * <strong>Should</strong> set empty string properties to null
-	 * <strong>Should</strong> not set empty string properties to null for AllowEmptyStrings annotation
-	 * <strong>Should</strong> not trim empty strings for AllowLeadingOrTrailingWhitespace annotation
-	 * <strong>Should</strong> trim strings without AllowLeadingOrTrailingWhitespace annotation
-	 * <strong>Should</strong> trim empty strings for AllowEmptyStrings annotation
+	 * @should set empty string properties to null
+	 * @should not set empty string properties to null for AllowEmptyStrings annotation
+	 * @should not trim empty strings for AllowLeadingOrTrailingWhitespace annotation
+	 * @should trim strings without AllowLeadingOrTrailingWhitespace annotation
+	 * @should trim empty strings for AllowEmptyStrings annotation
 	 */
-	@Override
 	public void handle(OpenmrsObject openmrsObject, User creator, Date dateCreated, String reason) {
 		if (openmrsObject.getUuid() == null) {
 			openmrsObject.setUuid(UUID.randomUUID().toString());
@@ -110,7 +109,7 @@ public class OpenmrsObjectSaveHandler implements SaveHandler<OpenmrsObject> {
 					continue;
 				}
 				
-				if ("".equals(value) && !(openmrsObject instanceof Voidable && ((Voidable) openmrsObject).getVoided())) {
+				if ("".equals(value) && !(openmrsObject instanceof Voidable && ((Voidable) openmrsObject).isVoided())) {
 					//Set to null only if object is not already voided
 					PropertyUtils.setProperty(openmrsObject, property.getName(), null);
 				}

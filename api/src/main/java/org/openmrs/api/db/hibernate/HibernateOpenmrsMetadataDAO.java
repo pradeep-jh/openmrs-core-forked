@@ -11,13 +11,9 @@ package org.openmrs.api.db.hibernate;
 
 import java.util.List;
 
-import javax.persistence.Query;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
-
-import org.hibernate.Session;
+import org.hibernate.Criteria;
+import org.hibernate.Query;
+import org.hibernate.criterion.Restrictions;
 import org.openmrs.BaseOpenmrsMetadata;
 import org.openmrs.api.db.OpenmrsMetadataDAO;
 
@@ -38,50 +34,35 @@ public class HibernateOpenmrsMetadataDAO<T extends BaseOpenmrsMetadata> extends 
 	/**
 	 * @see org.openmrs.api.db.OpenmrsMetadataDAO#getAll(boolean)
 	 */
-	@Override
 	public List<T> getAll(boolean includeRetired) {
-		Session session = sessionFactory.getCurrentSession();
-		CriteriaBuilder cb = session.getCriteriaBuilder();
-		CriteriaQuery<T> cq = cb.createQuery(mappedClass);
-		Root<T> root = cq.from(mappedClass);
-
+		Criteria crit = sessionFactory.getCurrentSession().createCriteria(mappedClass);
+		
 		if (!includeRetired) {
-			cq.where(cb.isFalse(root.get("retired")));
+			crit.add(Restrictions.eq("retired", false));
 		}
-
-		return session.createQuery(cq).getResultList();
+		
+		return crit.list();
 	}
-
+	
 	/**
 	 * @see org.openmrs.api.db.OpenmrsMetadataDAO#getAll(boolean, java.lang.Integer, java.lang.Integer)
 	 */
-	@Override
 	public List<T> getAll(boolean includeRetired, Integer firstResult, Integer maxResults) {
-		Session session = sessionFactory.getCurrentSession();
-		CriteriaBuilder cb = session.getCriteriaBuilder();
-		CriteriaQuery<T> cq = cb.createQuery(mappedClass);
-		Root<T> root = cq.from(mappedClass);
-
-		if (!includeRetired) {
-			cq.where(cb.isFalse(root.get("retired")));
-		}
-
-		TypedQuery<T> query = session.createQuery(cq);
-		if (firstResult != null) {
-			query.setFirstResult(firstResult);
-		}
-		if (maxResults != null) {
-			query.setMaxResults(maxResults);
-		}
+		Criteria crit = sessionFactory.getCurrentSession().createCriteria(mappedClass);
 		
-		return query.getResultList();
+		if (!includeRetired) {
+			crit.add(Restrictions.eq("retired", false));
+		}
+		crit.setFirstResult(firstResult);
+		crit.setMaxResults(maxResults);
+		
+		return crit.list();
+		
 	}
-
-
+	
 	/**
 	 * @see org.openmrs.api.db.OpenmrsMetadataDAO#getAllCount(boolean)
 	 */
-	@Override
 	public int getAllCount(boolean includeRetired) {
 		
 		String hql = "select count(*)" + " from " + mappedClass;
@@ -91,7 +72,7 @@ public class HibernateOpenmrsMetadataDAO<T extends BaseOpenmrsMetadata> extends 
 		}
 		Query query = sessionFactory.getCurrentSession().createQuery(hql);
 		
-		Number count = JpaUtils.getSingleResultOrNull(query);
+		Number count = (Number) query.uniqueResult();
 		
 		return count == null ? 0 : count.intValue();
 	}

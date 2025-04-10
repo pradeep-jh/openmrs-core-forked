@@ -22,7 +22,6 @@ import org.openmrs.VisitAttribute;
 import org.openmrs.VisitAttributeType;
 import org.openmrs.VisitType;
 import org.openmrs.annotation.Authorized;
-import org.openmrs.parameter.VisitSearchCriteria;
 import org.openmrs.util.OpenmrsConstants;
 import org.openmrs.util.PrivilegeConstants;
 
@@ -37,7 +36,7 @@ public interface VisitService extends OpenmrsService {
 	 * Gets all visit types.
 	 * 
 	 * @return a list of visit type objects.
-	 * <strong>Should</strong> get all visit types
+	 * @should get all visit types
 	 */
 	@Authorized( { PrivilegeConstants.GET_VISIT_TYPES })
 	List<VisitType> getAllVisitTypes();
@@ -48,7 +47,7 @@ public interface VisitService extends OpenmrsService {
 	 * @param includeRetired
 	 * @return List of all visit types
 	 * @since 1.9
-	 * <strong>Should</strong> get all visit types based on include retired flag.
+	 * @should get all visit types based on include retired flag.
 	 */
 	@Authorized( { PrivilegeConstants.MANAGE_VISIT_TYPES })
 	public List<VisitType> getAllVisitTypes(boolean includeRetired);
@@ -58,7 +57,7 @@ public interface VisitService extends OpenmrsService {
 	 * 
 	 * @param visitTypeId the visit type id.
 	 * @return the visit type object found with the given id, else null.
-	 * <strong>Should</strong> get correct visit type
+	 * @should get correct visit type
 	 */
 	@Authorized( { PrivilegeConstants.GET_VISIT_TYPES })
 	VisitType getVisitType(Integer visitTypeId);
@@ -68,7 +67,7 @@ public interface VisitService extends OpenmrsService {
 	 * 
 	 * @param uuid the visit type UUID.
 	 * @return the visit type object found with the given uuid, else null.
-	 * <strong>Should</strong> get correct visit type
+	 * @should get correct visit type
 	 */
 	@Authorized( { PrivilegeConstants.GET_VISIT_TYPES })
 	VisitType getVisitTypeByUuid(String uuid);
@@ -78,7 +77,7 @@ public interface VisitService extends OpenmrsService {
 	 * 
 	 * @param fuzzySearchPhrase the search phrase to use.
 	 * @return a list of all visit types with names similar to or containing the given phrase
-	 * <strong>Should</strong> get correct visit types
+	 * @should get correct visit types
 	 */
 	@Authorized( { PrivilegeConstants.GET_VISIT_TYPES })
 	List<VisitType> getVisitTypes(String fuzzySearchPhrase);
@@ -88,10 +87,10 @@ public interface VisitService extends OpenmrsService {
 	 * 
 	 * @param visitType the visit type to create or update.
 	 * @return the created or updated visit type.
-	 * <strong>Should</strong> save new visit type
-	 * <strong>Should</strong> save edited visit type
-	 * <strong>Should</strong> throw error when name is null
-	 * <strong>Should</strong> throw error when name is empty string
+	 * @should save new visit type
+	 * @should save edited visit type
+	 * @should throw error when name is null
+	 * @should throw error when name is empty string
 	 */
 	@Authorized( { PrivilegeConstants.MANAGE_VISIT_TYPES })
 	VisitType saveVisitType(VisitType visitType) throws APIException;
@@ -102,7 +101,7 @@ public interface VisitService extends OpenmrsService {
 	 * @param visitType the visit type to retire.
 	 * @param reason the reason why the visit type is retired.
 	 * @return the visit type that has been retired.
-	 * <strong>Should</strong> retire given visit type
+	 * @should retire given visit type
 	 */
 	@Authorized( { PrivilegeConstants.MANAGE_VISIT_TYPES })
 	VisitType retireVisitType(VisitType visitType, String reason);
@@ -112,7 +111,7 @@ public interface VisitService extends OpenmrsService {
 	 * 
 	 * @param visitType the visit type to unretire.
 	 * @return the unretired visit type
-	 * <strong>Should</strong> unretire given visit type
+	 * @should unretire given visit type
 	 */
 	@Authorized( { PrivilegeConstants.MANAGE_VISIT_TYPES })
 	VisitType unretireVisitType(VisitType visitType);
@@ -121,7 +120,7 @@ public interface VisitService extends OpenmrsService {
 	 * Completely removes a visit type from the database. This is not reversible.
 	 * 
 	 * @param visitType the visit type to delete from the database.
-	 * <strong>Should</strong> delete given visit type
+	 * @should delete given visit type
 	 */
 	@Authorized( { PrivilegeConstants.MANAGE_VISIT_TYPES })
 	void purgeVisitType(VisitType visitType);
@@ -131,7 +130,7 @@ public interface VisitService extends OpenmrsService {
 	 * 
 	 * @return a list of visit objects.
 	 * @throws APIException
-	 * <strong>Should</strong> return all unvoided visits
+	 * @should return all unvoided visits
 	 */
 	@Authorized(PrivilegeConstants.GET_VISITS)
 	public List<Visit> getAllVisits() throws APIException;
@@ -152,7 +151,7 @@ public interface VisitService extends OpenmrsService {
 	 * @param uuid the visit UUID.
 	 * @return the visit object found with the given uuid, else null.
 	 * @throws APIException
-	 * <strong>Should</strong> return a visit matching the specified uuid
+	 * @should return a visit matching the specified uuid
 	 */
 	@Authorized(PrivilegeConstants.GET_VISITS)
 	public Visit getVisitByUuid(String uuid) throws APIException;
@@ -163,15 +162,15 @@ public interface VisitService extends OpenmrsService {
 	 * @param visit the visit to create or update.
 	 * @return the created or updated visit.
 	 * @throws APIException
-	 * <strong>Should</strong> add a new visit to the database
-	 * <strong>Should</strong> update an existing visit in the database
-	 * <strong>Should</strong> fail if validation errors are found
-	 * <strong>Should</strong> pass if no validation errors are found
-	 * <strong>Should</strong> be able to add an attribute to a visit
-	 * <strong>Should</strong> void an attribute if max occurs is 1 and same attribute type already exists
-	 * <strong>Should</strong> save a visit though changedBy and dateCreated are not set for VisitAttribute
+	 * @should add a new visit to the database
+	 * @should update an existing visit in the database
+	 * @should fail if validation errors are found
+	 * @should pass if no validation errors are found
+	 * @should be able to add an attribute to a visit
+	 * @should void an attribute if max occurs is 1 and same attribute type already exists
+	 * @should save a visit though changedBy and dateCreated are not set for VisitAttribute
 	 *         explicitly
-	 * <strong>Should</strong> should save new visit with encounters successfully
+	 * @should should save new visit with encounters successfully
 	 */
 	@Authorized( { PrivilegeConstants.ADD_VISITS, PrivilegeConstants.EDIT_VISITS })
 	public Visit saveVisit(Visit visit) throws APIException;
@@ -182,10 +181,10 @@ public interface VisitService extends OpenmrsService {
 	 * @param visit the visit whose stopDate is to be set
 	 * @param stopDate the date and time the visit is ending. if null, current date is used
 	 * @return the visit that was ended
-	 * <strong>Should</strong> set the stopDateTime of visit
-	 * <strong>Should</strong> set stopdatetime as current date if stopdate is null
-	 * <strong>Should</strong> not fail if no validation errors are found
-	 * <strong>Should</strong> fail if validation errors are found
+	 * @should set the stopDateTime of visit
+	 * @should set stopdatetime as current date if stopdate is null
+	 * @should not fail if no validation errors are found
+	 * @should fail if validation errors are found
 	 */
 	@Authorized( { PrivilegeConstants.EDIT_VISITS })
 	public Visit endVisit(Visit visit, Date stopDate) throws APIException;
@@ -197,8 +196,8 @@ public interface VisitService extends OpenmrsService {
 	 * @param reason the reason why the visit is voided
 	 * @return the visit that has been voided
 	 * @throws APIException
-	 * <strong>Should</strong> void the visit and set the voidReason
-	 * <strong>Should</strong> void encounters with visit
+	 * @should void the visit and set the voidReason
+	 * @should void encounters with visit
 	 */
 	@Authorized(PrivilegeConstants.DELETE_VISITS)
 	public Visit voidVisit(Visit visit, String reason) throws APIException;
@@ -209,8 +208,8 @@ public interface VisitService extends OpenmrsService {
 	 * @param visit the visit to unvoid
 	 * @return the unvoided visit
 	 * @throws APIException
-	 * <strong>Should</strong> unvoid the visit and unset all the void related fields
-	 * <strong>Should</strong> unvoid encounters voided with visit
+	 * @should unvoid the visit and unset all the void related fields
+	 * @should unvoid encounters voided with visit
 	 */
 	@Authorized(PrivilegeConstants.DELETE_VISITS)
 	public Visit unvoidVisit(Visit visit) throws APIException;
@@ -220,8 +219,8 @@ public interface VisitService extends OpenmrsService {
 	 * 
 	 * @param visit the visit to delete from the database.
 	 * @throws APIException
-	 * <strong>Should</strong> erase the visit from the database
-	 * <strong>Should</strong> fail if the visit has encounters associated to it
+	 * @should erase the visit from the database
+	 * @should fail if the visit has encounters associated to it
 	 */
 	@Authorized(PrivilegeConstants.PURGE_VISITS)
 	public void purgeVisit(Visit visit) throws APIException;
@@ -242,16 +241,16 @@ public interface VisitService extends OpenmrsService {
 	 * @return a list of visits
 	 * @see #getActiveVisitsByPatient(Patient)
 	 * @throws APIException
-	 * <strong>Should</strong> get visits by visit type
-	 * <strong>Should</strong> get visits by patients
-	 * <strong>Should</strong> get visits by locations
-	 * <strong>Should</strong> get visits by indications
-	 * <strong>Should</strong> get visits started between the given start dates
-	 * <strong>Should</strong> get visits ended between the given end dates
-	 * <strong>Should</strong> get visits that are still open even if minStartDatetime is specified
-	 * <strong>Should</strong> return all visits if includeVoided is set to true
-	 * <strong>Should</strong> get all visits with given attribute values
-	 * <strong>Should</strong> not find any visits if none have given attribute values
+	 * @should get visits by visit type
+	 * @should get visits by patients
+	 * @should get visits by locations
+	 * @should get visits by indications
+	 * @should get visits started between the given start dates
+	 * @should get visits ended between the given end dates
+	 * @should get visits that are still open even if minStartDatetime is specified
+	 * @should return all visits if includeVoided is set to true
+	 * @should get all visits with given attribute values
+	 * @should not find any visits if none have given attribute values
 	 */
 	@Authorized(PrivilegeConstants.GET_VISITS)
 	public List<Visit> getVisits(Collection<VisitType> visitTypes, Collection<Patient> patients,
@@ -260,25 +259,12 @@ public interface VisitService extends OpenmrsService {
 	        boolean includeInactive, boolean includeVoided) throws APIException;
 	
 	/**
-	 * Gets the visits matching the specified search criteria
-	 * 
- 	 * @param visitSearchCriteria
-	 * @return
-	 * @throws APIException
-	 * 
-	 * @since 2.6.8
-	 * @since 2.7.0
-	 */	
-	@Authorized(PrivilegeConstants.GET_VISITS)
-	public List<Visit> getVisits(VisitSearchCriteria visitSearchCriteria) throws APIException;
-	
-	/**
 	 * Gets all unvoided visits for the specified patient
 	 * 
 	 * @param patient the patient whose visits to get
 	 * @return a list of visits
 	 * @throws APIException
-	 * <strong>Should</strong> return all unvoided visits for the specified patient
+	 * @should return all unvoided visits for the specified patient
 	 */
 	@Authorized(PrivilegeConstants.GET_VISITS)
 	public List<Visit> getVisitsByPatient(Patient patient) throws APIException;
@@ -301,9 +287,9 @@ public interface VisitService extends OpenmrsService {
 	 * @param includeVoided
 	 * @return a list of visits
 	 * @throws APIException
-	 * <strong>Should</strong> return all active unvoided visits for the specified patient
-	 * <strong>Should</strong> return all unvoided visits for the specified patient
-	 * <strong>Should</strong> return all active visits for the specified patient
+	 * @should return all active unvoided visits for the specified patient
+	 * @should return all unvoided visits for the specified patient
+	 * @should return all active visits for the specified patient
 	 */
 	@Authorized(PrivilegeConstants.GET_VISITS)
 	public List<Visit> getVisitsByPatient(Patient patient, boolean includeInactive, boolean includeVoided)
@@ -311,7 +297,7 @@ public interface VisitService extends OpenmrsService {
 	
 	/**
 	 * @return all {@link VisitAttributeType}s
-	 * <strong>Should</strong> return all visit attribute types including retired ones
+	 * @should return all visit attribute types including retired ones
 	 */
 	@Authorized(PrivilegeConstants.GET_VISIT_ATTRIBUTE_TYPES)
 	List<VisitAttributeType> getAllVisitAttributeTypes();
@@ -319,8 +305,8 @@ public interface VisitService extends OpenmrsService {
 	/**
 	 * @param id
 	 * @return the {@link VisitAttributeType} with the given internal id
-	 * <strong>Should</strong> return the visit attribute type with the given id
-	 * <strong>Should</strong> return null if no visit attribute type exists with the given id
+	 * @should return the visit attribute type with the given id
+	 * @should return null if no visit attribute type exists with the given id
 	 */
 	@Authorized(PrivilegeConstants.GET_VISIT_ATTRIBUTE_TYPES)
 	VisitAttributeType getVisitAttributeType(Integer id);
@@ -328,8 +314,8 @@ public interface VisitService extends OpenmrsService {
 	/**
 	 * @param uuid
 	 * @return the {@link VisitAttributeType} with the given uuid
-	 * <strong>Should</strong> return the visit attribute type with the given uuid
-	 * <strong>Should</strong> return null if no visit attribute type exists with the given uuid
+	 * @should return the visit attribute type with the given uuid
+	 * @should return null if no visit attribute type exists with the given uuid
 	 */
 	@Authorized(PrivilegeConstants.GET_VISIT_ATTRIBUTE_TYPES)
 	VisitAttributeType getVisitAttributeTypeByUuid(String uuid);
@@ -339,8 +325,8 @@ public interface VisitService extends OpenmrsService {
 	 * 
 	 * @param visitAttributeType
 	 * @return the VisitAttributeType created/saved
-	 * <strong>Should</strong> create a new visit attribute type
-	 * <strong>Should</strong> edit an existing visit attribute type
+	 * @should create a new visit attribute type
+	 * @should edit an existing visit attribute type
 	 */
 	@Authorized(PrivilegeConstants.MANAGE_VISIT_ATTRIBUTE_TYPES)
 	VisitAttributeType saveVisitAttributeType(VisitAttributeType visitAttributeType);
@@ -350,7 +336,7 @@ public interface VisitService extends OpenmrsService {
 	 * 
 	 * @param visitAttributeType
 	 * @return the visitAttribute retired
-	 * <strong>Should</strong> retire a visit attribute type
+	 * @should retire a visit attribute type
 	 */
 	@Authorized(PrivilegeConstants.MANAGE_VISIT_ATTRIBUTE_TYPES)
 	VisitAttributeType retireVisitAttributeType(VisitAttributeType visitAttributeType, String reason);
@@ -360,7 +346,7 @@ public interface VisitService extends OpenmrsService {
 	 * 
 	 * @param visitAttributeType
 	 * @return the VisitAttributeType unretired
-	 * <strong>Should</strong> unretire a retired visit attribute type
+	 * @should unretire a retired visit attribute type
 	 */
 	@Authorized(PrivilegeConstants.MANAGE_VISIT_ATTRIBUTE_TYPES)
 	VisitAttributeType unretireVisitAttributeType(VisitAttributeType visitAttributeType);
@@ -369,7 +355,7 @@ public interface VisitService extends OpenmrsService {
 	 * Completely removes a visit attribute type from the database
 	 * 
 	 * @param visitAttributeType
-	 * <strong>Should</strong> completely remove a visit attribute type
+	 * @should completely remove a visit attribute type
 	 */
 	@Authorized(PrivilegeConstants.PURGE_VISIT_ATTRIBUTE_TYPES)
 	void purgeVisitAttributeType(VisitAttributeType visitAttributeType);
@@ -377,8 +363,8 @@ public interface VisitService extends OpenmrsService {
 	/**
 	 * @param uuid
 	 * @return the {@link VisitAttribute} with the given uuid
-	 * <strong>Should</strong> get the visit attribute with the given uuid
-	 * <strong>Should</strong> return null if no visit attribute has the given uuid
+	 * @should get the visit attribute with the given uuid
+	 * @should return null if no visit attribute has the given uuid
 	 */
 	@Authorized(PrivilegeConstants.GET_VISITS)
 	VisitAttribute getVisitAttributeByUuid(String uuid);
@@ -389,7 +375,7 @@ public interface VisitService extends OpenmrsService {
 	 * If startDatetime is null, the default will be end of the current day.
 	 * 
 	 * @param maximumStartDate Visits started on or before this date time value will get stopped
-	 * <strong>Should</strong> close all unvoided active visit matching the specified visit types
+	 * @should close all unvoided active visit matching the specified visit types
 	 */
 	@Authorized(PrivilegeConstants.EDIT_VISITS)
 	public void stopVisits(Date maximumStartDate);

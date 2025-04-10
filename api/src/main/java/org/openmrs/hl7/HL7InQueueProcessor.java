@@ -9,9 +9,9 @@
  */
 package org.openmrs.hl7;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.api.context.Context;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
 import ca.uhn.hl7v2.HL7Exception;
@@ -27,11 +27,9 @@ import ca.uhn.hl7v2.HL7Exception;
 @Transactional
 public class HL7InQueueProcessor /* implements Runnable */{
 	
-	private static final Logger log = LoggerFactory.getLogger(HL7InQueueProcessor.class);
+	private final Log log = LogFactory.getLog(this.getClass());
 	
 	private static Boolean isRunning = false; // allow only one running
-
-	private static final Object lock = new Object();
 	
 	private static Integer count = 0;
 	
@@ -55,8 +53,10 @@ public class HL7InQueueProcessor /* implements Runnable */{
 	 */
 	public void processHL7InQueue(HL7InQueue hl7InQueue) {
 		
-		log.debug("Processing HL7 inbound queue (id={} ,key={})", hl7InQueue.getHL7InQueueId(),
-		    hl7InQueue.getHL7SourceKey());
+		if (log.isDebugEnabled()) {
+			log.debug("Processing HL7 inbound queue (id=" + hl7InQueue.getHL7InQueueId() + ",key="
+			        + hl7InQueue.getHL7SourceKey() + ")");
+		}
 		
 		try {
 			Context.getHL7Service().processHL7InQueue(hl7InQueue);
@@ -99,7 +99,7 @@ public class HL7InQueueProcessor /* implements Runnable */{
 	 * Starts up a thread to process all existing HL7InQueue entries
 	 */
 	public void processHL7InQueue() throws HL7Exception {
-		synchronized (lock) {
+		synchronized (isRunning) {
 			if (isRunning) {
 				log.warn("HL7 processor aborting (another processor already running)");
 				return;

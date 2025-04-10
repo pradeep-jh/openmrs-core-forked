@@ -23,7 +23,6 @@ import org.openmrs.VisitAttributeType;
 import org.openmrs.VisitType;
 import org.openmrs.api.APIException;
 import org.openmrs.api.VisitService;
-import org.openmrs.parameter.VisitSearchCriteria;
 
 /**
  * Database access functions for visits.
@@ -106,25 +105,13 @@ public interface VisitDAO {
 	 * @param includeVoided specifies if voided visits should also be returned
 	 * @return a list of visits
 	 * @throws DAOException
-	 * <strong>Should</strong> return all unvoided visits if includeEnded is set to true
-	 * <strong>Should</strong> return only active visits if includeEnded is set to false
+	 * @should return all unvoided visits if includeEnded is set to true
+	 * @should return only active visits if includeEnded is set to false
 	 */
 	public List<Visit> getVisits(Collection<VisitType> visitTypes, Collection<Patient> patients,
 	        Collection<Location> locations, Collection<Concept> indications, Date minStartDatetime, Date maxStartDatetime,
 	        Date minEndDatetime, Date maxEndDatetime, Map<VisitAttributeType, String> serializedAttributeValues,
 	        boolean includeInactive, boolean includeVoided) throws DAOException;
-	
-	/**
-	 * Gets the visits matching the specified search criteria
-	 * 
-	 * @param criteria the search criteria
-	 * @return a list of visits
-	 * @throws DAOException
-	 * 
-	 * @since 2.6.8
-	 * @since 2.7.0
-	 */
-	public List<Visit> getVisits(VisitSearchCriteria criteria) throws DAOException;
 	
 	/**
 	 * @see VisitService#getAllVisitAttributeTypes()
@@ -165,7 +152,7 @@ public interface VisitDAO {
 	 * @param visitTypes a collection of visit types to match against
 	 * @param maximumStartDate the next visit should have been created before or at this date time
 	 * @return a {@link Visit}
-	 * <strong>Should</strong> return the next unvoided active visit matching the specified types and startDate
+	 * @should return the next unvoided active visit matching the specified types and startDate
 	 */
 	public Visit getNextVisit(Visit previousVisit, Collection<VisitType> visitTypes, Date maximumStartDate);
 	

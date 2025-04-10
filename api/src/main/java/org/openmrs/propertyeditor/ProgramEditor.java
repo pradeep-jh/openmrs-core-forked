@@ -11,11 +11,11 @@ package org.openmrs.propertyeditor;
 
 import java.beans.PropertyEditorSupport;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.Concept;
 import org.openmrs.Program;
 import org.openmrs.api.context.Context;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
 /**
@@ -30,18 +30,17 @@ import org.springframework.util.StringUtils;
  */
 public class ProgramEditor extends PropertyEditorSupport {
 	
-	private static final Logger log = LoggerFactory.getLogger(ProgramEditor.class);
+	private Log log = LogFactory.getLog(this.getClass());
 	
 	public ProgramEditor() {
 	}
 	
 	/**
-	 * <strong>Should</strong> set using concept id
-	 * <strong>Should</strong> set using concept uuid
-	 * <strong>Should</strong> set using program id
-	 * <strong>Should</strong> set using program uuid
+	 * @should set using concept id
+	 * @should set using concept uuid
+	 * @should set using program id
+	 * @should set using program uuid
 	 */
-	@Override
 	public void setAsText(String text) throws IllegalArgumentException {
 		if (StringUtils.hasText(text)) {
 			try {
@@ -74,7 +73,6 @@ public class ProgramEditor extends PropertyEditorSupport {
 		}
 	}
 	
-	@Override
 	public String getAsText() {
 		Program p = (Program) getValue();
 		if (p == null) {

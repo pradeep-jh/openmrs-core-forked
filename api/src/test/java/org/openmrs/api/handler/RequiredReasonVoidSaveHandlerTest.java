@@ -9,19 +9,18 @@
  */
 package org.openmrs.api.handler;
 
-import org.junit.jupiter.api.Test;
+import java.util.Date;
+
+import org.junit.Test;
 import org.openmrs.Encounter;
 import org.openmrs.Patient;
-import org.openmrs.PersonAddress;
+import org.openmrs.Person;
 import org.openmrs.User;
 import org.openmrs.Voidable;
 import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
-
-import java.util.Date;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 
 /**
  * Tests for the {@link RequireVoidReasonSaveHandler} class.
@@ -31,41 +30,45 @@ public class RequiredReasonVoidSaveHandlerTest extends BaseContextSensitiveTest 
 	/**
 	 * @see RequireVoidReasonSaveHandler#handle(Voidable,User,Date,String)
 	 */
-	@Test
-	public void handle_shouldThrowAPIExceptionIfPatientVoidReasonIsNull() {
+	@Test(expected = APIException.class)
+	@Verifies(value = "should throw APIException if Patient voidReason is null", method = "handle(Voidable,User,Date,String)")
+	public void handle_shouldThrowAPIExceptionIfPatientVoidReasonIsNull() throws Exception {
 		Patient p = Context.getPatientService().getPatient(2);
 		p.setVoided(true);
 		p.setVoidReason(null);
-		assertThrows(APIException.class, () -> Context.getPatientService().savePatient(p));
+		Context.getPatientService().savePatient(p);
 	}
 	
 	/**
 	 * @see RequireVoidReasonSaveHandler#handle(Voidable,User,Date,String)
 	 */
-	@Test
-	public void handle_shouldThrowAPIExceptionIfEncounterVoidReasonIsEmpty() {
+	@Test(expected = APIException.class)
+	@Verifies(value = "should throw APIException if Encounter voidReason is empty", method = "handle(Voidable,User,Date,String)")
+	public void handle_shouldThrowAPIExceptionIfEncounterVoidReasonIsEmpty() throws Exception {
 		Encounter e = Context.getEncounterService().getEncounter(3);
 		e.setVoided(true);
 		e.setVoidReason("");
-		assertThrows(APIException.class, () -> Context.getEncounterService().saveEncounter(e));
+		Context.getEncounterService().saveEncounter(e);
 	}
 	
 	/**
 	 * @see RequireVoidReasonSaveHandler#handle(Voidable,User,Date,String)
 	 */
-	@Test
-	public void handle_shouldThrowAPIExceptionIfObsVoidReasonIsBlank() {
+	@Test(expected = APIException.class)
+	@Verifies(value = "should throw APIException if Encounter voidReason is blank", method = "handle(Voidable,User,Date,String)")
+	public void handle_shouldThrowAPIExceptionIfObsVoidReasonIsBlank() throws Exception {
 		Encounter e = Context.getEncounterService().getEncounter(3);
 		e.setVoided(true);
 		e.setVoidReason("  ");
-		assertThrows(APIException.class, () -> Context.getEncounterService().saveEncounter(e));
+		Context.getEncounterService().saveEncounter(e);
 	}
 	
 	/**
 	 * @see RequireVoidReasonSaveHandler#handle(Voidable,User,Date,String)
 	 */
 	@Test
-	public void handle_shouldNotThrowExceptionIfVoidReasonIsNotBlank() {
+	@Verifies(value = "should not throw Exception if voidReason is not blank", method = "handle(Voidable,User,Date,String)")
+	public void handle_shouldNotThrowExceptionIfVoidReasonIsNotBlank() throws Exception {
 		Encounter e = Context.getEncounterService().getEncounter(3);
 		e.setVoided(true);
 		e.setVoidReason("Some Reason");
@@ -76,10 +79,12 @@ public class RequiredReasonVoidSaveHandlerTest extends BaseContextSensitiveTest 
 	 * @see RequireVoidReasonSaveHandler#handle(Voidable,User,Date,String)
 	 */
 	@Test
-	public void handle_shouldNotThrowExceptionIfVoidReasonIsNullForUnsupportedTypes() {
-		PersonAddress pa = Context.getPersonService().getPersonAddressByUuid("3350d0b5-821c-4e5e-ad1d-a9bce331e118");
-		pa.setVoided(true);
-		pa.setVoidReason(null);
-		Context.getPersonService().savePersonAddress(pa);
+	@Verifies(value = "not throw Exception if voidReason is null for unsupported types", method = "handle(Voidable,User,Date,String)")
+	public void handle_shouldNotThrowExceptionIfVoidReasonIsNullForUnsupportedTypes() throws Exception {
+		Person p = Context.getPersonService().getPerson(1);
+		p.setVoided(true);
+		p.setVoidReason(null);
+		p.setVoidReason("voidReason");
+		Context.getPersonService().savePerson(p);
 	}
 }

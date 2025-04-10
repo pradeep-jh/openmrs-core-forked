@@ -21,9 +21,8 @@ public abstract class BaseOpenmrsDatatype<T extends OpenmrsObject> extends Seria
 	
 	/**
 	 * @see org.openmrs.customdatatype.SerializingCustomDatatype#serialize(java.lang.Object)
-	 * <strong>Should</strong> return the uuid of the object
+	 * @should return the uuid of the object
 	 */
-	@Override
 	public String serialize(T typedValue) {
 		if (typedValue == null) {
 			return null;

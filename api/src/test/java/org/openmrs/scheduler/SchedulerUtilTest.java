@@ -9,12 +9,13 @@
  */
 package org.openmrs.scheduler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 import java.util.Calendar;
 import java.util.Date;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+import org.openmrs.test.Verifies;
 
 public class SchedulerUtilTest {
 	
@@ -24,13 +25,14 @@ public class SchedulerUtilTest {
 	 * @see SchedulerUtil#getNextExecution(TaskDefinition)
 	 */
 	@Test
-	public void getNextExecution_shouldGetTheCorrectRepeatInterval() {
+	@Verifies(value = "should get the correct repeat interval", method = "getNextExecution(TaskDefinition)")
+	public void getNextExecution_shouldGetTheCorrectRepeatInterval() throws Exception {
 		
 		// Represents the start time of the task (right now)
 		Calendar startTime = Calendar.getInstance();
 		
 		// Execute task every 4 minutes
-		Long repeatInterval = (long) (4 * 60);
+		Long repeatInterval = new Long(4 * 60);
 		
 		// Create the new task
 		TaskDefinition taskDefinition = new TaskDefinition();

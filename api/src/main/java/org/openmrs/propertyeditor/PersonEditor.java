@@ -11,6 +11,8 @@ package org.openmrs.propertyeditor;
 
 import java.beans.PropertyEditorSupport;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.Person;
 import org.openmrs.api.PersonService;
 import org.openmrs.api.context.Context;
@@ -25,10 +27,12 @@ import org.springframework.util.StringUtils;
  * @see Person
  */
 public class PersonEditor extends PropertyEditorSupport {
-
+	
+	private Log log = LogFactory.getLog(this.getClass());
+	
 	/**
-	 * <strong>Should</strong> set using id
-	 * <strong>Should</strong> set using uuid
+	 * @should set using id
+	 * @should set using uuid
 	 *
 	 * @see java.beans.PropertyEditorSupport#setAsText(java.lang.String)
 	 */
@@ -41,10 +45,11 @@ public class PersonEditor extends PropertyEditorSupport {
 				setValue(ps.getPerson(personId));
 			}
 			catch (NumberFormatException e) {
+				// assume text entered is a uuid
 				Person person = ps.getPersonByUuid(text);
 				setValue(person);
 				if (person == null) {
-					throw new IllegalArgumentException("Failed to find person for value [" + text + "]");
+					log.trace("Unable to get Person by primary key or uuid using input: " + text);
 				}
 			}
 		} else {

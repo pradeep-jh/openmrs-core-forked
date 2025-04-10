@@ -10,28 +10,23 @@
 package org.openmrs.api.context;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.Vector;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.Location;
-import org.openmrs.PrivilegeListener;
 import org.openmrs.Role;
 import org.openmrs.User;
-import org.openmrs.UserSessionListener;
-import org.openmrs.UserSessionListener.Event;
-import org.openmrs.UserSessionListener.Status;
 import org.openmrs.api.APIAuthenticationException;
-import org.openmrs.api.LocationService;
+import org.openmrs.api.db.ContextDAO;
 import org.openmrs.util.LocaleUtility;
 import org.openmrs.util.OpenmrsConstants;
 import org.openmrs.util.RoleConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Represents an OpenMRS <code>User Context</code> which stores the current user information. Only
@@ -49,7 +44,7 @@ public class UserContext implements Serializable {
 	/**
 	 * Logger - shared by entire class
 	 */
-	private static final Logger log = LoggerFactory.getLogger(UserContext.class);
+	private static final Log log = LogFactory.getLog(UserContext.class);
 	
 	/**
 	 * User object containing details about the authenticated user
@@ -59,7 +54,7 @@ public class UserContext implements Serializable {
 	/**
 	 * User's permission proxies
 	 */
-	private List<String> proxies = Collections.synchronizedList(new ArrayList<>());
+	private List<String> proxies = new Vector<String>();
 	
 	/**
 	 * User's locale
@@ -82,53 +77,33 @@ public class UserContext implements Serializable {
 	private Integer locationId;
 	
 	/**
-	 * The authentication scheme for this user
+	 * Default public constructor
 	 */
-	private final AuthenticationScheme authenticationScheme;
-	
-	/**
-	 * Creates a user context based on the provided auth. scheme.
-	 *
-	 * @param authenticationScheme The auth. scheme that applies for this user context.
-	 * @since 2.3.0
-	 */
-	public UserContext(AuthenticationScheme authenticationScheme) {
-		this.authenticationScheme = authenticationScheme;
+	public UserContext() {
 	}
 	
 	/**
-	 * Authenticate user with the provided credentials. The authentication scheme must be Spring wired, see {@link Context#getAuthenticationScheme()}.
+	 * Authenticate the user to this UserContext.
 	 *
-	 * @param credentials The credentials to use to authenticate
-	 * @return The authenticated client information
-	 * @throws ContextAuthenticationException if authentication fails
-	 * @since 2.3.0
+	 * @see org.openmrs.api.context.Context#authenticate(String, String)
+	 * @param username String login name
+	 * @param password String login password
+	 * @param contextDAO ContextDAO implementation to use for authentication
+	 * @return User that has been authenticated
+	 * @throws ContextAuthenticationException
 	 */
-	public Authenticated authenticate(Credentials credentials)
-		throws ContextAuthenticationException {
-		
-		log.debug("Authenticating client '{}' with scheme '{}'", credentials.getClientName(),
-			credentials.getAuthenticationScheme());
-		
-		Authenticated authenticated = null;
-		try {
-			authenticated = authenticationScheme.authenticate(credentials);
-			this.user = authenticated.getUser();
-			notifyUserSessionListener(this.user, Event.LOGIN, Status.SUCCESS);
-		}
-		catch (ContextAuthenticationException e) {
-			User loggingInUser = new User();
-			loggingInUser.setUsername(credentials.getClientName());
-			notifyUserSessionListener(loggingInUser, Event.LOGIN, Status.FAIL);
-			throw e;
+	public User authenticate(String username, String password, ContextDAO contextDAO) throws ContextAuthenticationException {
+		if (log.isDebugEnabled()) {
+			log.debug("Authenticating with username: " + username);
 		}
 		
-		setUserLocation(true);
-		setUserLocale(true);
+		this.user = contextDAO.authenticate(username, password);
+		setUserLocation();
+		if (log.isDebugEnabled()) {
+			log.debug("Authenticated as: " + this.user);
+		}
 		
-		log.debug("Authenticated as: {}", this.user);
-		
-		return authenticated;
+		return this.user;
 	}
 	
 	/**
@@ -139,13 +114,14 @@ public class UserContext implements Serializable {
 	 * @since 1.5
 	 */
 	public void refreshAuthenticatedUser() {
-		log.debug("Refreshing authenticated user");
+		if (log.isDebugEnabled()) {
+			log.debug("Refreshing authenticated user");
+		}
 		
 		if (user != null) {
 			user = Context.getUserService().getUser(user.getUserId());
 			//update the stored location in the user's session
-			setUserLocation(false);
-			setUserLocale(false);
+			setUserLocation();
 		}
 	}
 	
@@ -162,7 +138,9 @@ public class UserContext implements Serializable {
 			throw new APIAuthenticationException("You must be a superuser to assume another user's identity");
 		}
 		
-		log.debug("Turning the authenticated user into user with systemId: {}", systemId);
+		if (log.isDebugEnabled()) {
+			log.debug("Turning the authenticated user into user with systemId: " + systemId);
+		}
 		
 		User userToBecome = Context.getUserService().getUserByUsername(systemId);
 		
@@ -174,22 +152,20 @@ public class UserContext implements Serializable {
 		if (userToBecome.getAllRoles() != null) {
 			userToBecome.getAllRoles().size();
 		}
-		
 		if (userToBecome.getUserProperties() != null) {
 			userToBecome.getUserProperties().size();
 		}
-		
 		if (userToBecome.getPrivileges() != null) {
 			userToBecome.getPrivileges().size();
 		}
 		
 		this.user = userToBecome;
+		//update the user's location
+		setUserLocation();
 		
-		//update the user's location and locale
-		setUserLocation(false);
-		setUserLocale(false);
-		
-		log.debug("Becoming user: {}", user);
+		if (log.isDebugEnabled()) {
+			log.debug("Becoming user: " + user);
+		}
 		
 		return userToBecome;
 	}
@@ -215,11 +191,7 @@ public class UserContext implements Serializable {
 	 */
 	public void logout() {
 		log.debug("setting user to null on logout");
-		notifyUserSessionListener(user, Event.LOGOUT, Status.SUCCESS);
 		user = null;
-		locationId = null;
-		locale = null;
-		proxies.clear();
 	}
 	
 	/**
@@ -239,12 +211,9 @@ public class UserContext implements Serializable {
 	 * @param privilege to give to users
 	 */
 	public void addProxyPrivilege(String privilege) {
-		
-		if (privilege == null) {
-			throw new IllegalArgumentException("UserContext.addProxyPrivilege does not accept null privileges");
+		if (log.isDebugEnabled()) {
+			log.debug("Adding proxy privilege: " + privilege);
 		}
-		
-		log.debug("Adding proxy privilege: {}", privilege);
 		
 		proxies.add(privilege);
 	}
@@ -255,8 +224,13 @@ public class UserContext implements Serializable {
 	 * @param privilege Privilege to remove in string form
 	 */
 	public void removeProxyPrivilege(String privilege) {
-		log.debug("Removing proxy privilege: {}", privilege);
-		proxies.remove(privilege);
+		if (log.isDebugEnabled()) {
+			log.debug("Removing proxy privilege: " + privilege);
+		}
+		
+		if (proxies.contains(privilege)) {
+			proxies.remove(privilege);
+		}
 	}
 	
 	/**
@@ -294,19 +268,19 @@ public class UserContext implements Serializable {
 	 *
 	 * @param user
 	 * @return all expanded roles for a user
-	 * <strong>Should</strong> not fail with null user
-	 * <strong>Should</strong> add anonymous role to all users
-	 * <strong>Should</strong> add authenticated role to all authenticated users
-	 * <strong>Should</strong> return same roles as user getAllRoles method
+	 * @should not fail with null user
+	 * @should add anonymous role to all users
+	 * @should add authenticated role to all authenticated users
+	 * @should return same roles as user getAllRoles method
 	 */
 	public Set<Role> getAllRoles(User user) throws Exception {
-		Set<Role> roles = new HashSet<>();
+		Set<Role> roles = new HashSet<Role>();
 		
 		// add the Anonymous Role
 		roles.add(getAnonymousRole());
 		
 		// add the Authenticated role
-		if (getAuthenticatedUser() != null && getAuthenticatedUser().equals(user)) {
+		if (user != null && getAuthenticatedUser() != null && getAuthenticatedUser().equals(user)) {
 			roles.addAll(user.getAllRoles());
 			roles.add(getAuthenticatedRole());
 		}
@@ -315,46 +289,50 @@ public class UserContext implements Serializable {
 	}
 	
 	/**
-	 * Tests whether currently authenticated user has a particular privilege
+	 * Tests whether or not currently authenticated user has a particular privilege
 	 *
 	 * @param privilege
 	 * @return true if authenticated user has given privilege
-	 * <strong>Should</strong> authorize if authenticated user has specified privilege
-	 * <strong>Should</strong> authorize if authenticated role has specified privilege
-	 * <strong>Should</strong> authorize if proxied user has specified privilege
-	 * <strong>Should</strong> authorize if anonymous user has specified privilege
-	 * <strong>Should</strong> not authorize if authenticated user does not have specified privilege
-	 * <strong>Should</strong> not authorize if authenticated role does not have specified privilege
-	 * <strong>Should</strong> not authorize if proxied user does not have specified privilege
-	 * <strong>Should</strong> not authorize if anonymous user does not have specified privilege
+	 * @should authorize if authenticated user has specified privilege
+	 * @should authorize if authenticated role has specified privilege
+	 * @should authorize if proxied user has specified privilege
+	 * @should authorize if anonymous user has specified privilege
+	 * @should not authorize if authenticated user does not have specified privilege
+	 * @should not authorize if authenticated role does not have specified privilege
+	 * @should not authorize if proxied user does not have specified privilege
+	 * @should not authorize if anonymous user does not have specified privilege
 	 */
 	public boolean hasPrivilege(String privilege) {
-		log.debug("Checking '{}' against proxies: {}", privilege, proxies);
+		
+		// if a user has logged in, check their privileges
+		if (isAuthenticated()
+		        && (getAuthenticatedUser().hasPrivilege(privilege) || getAuthenticatedRole().hasPrivilege(privilege))) {
+			
+			// check user's privileges
+			Context.getUserService().notifyPrivilegeListeners(getAuthenticatedUser(), privilege, true);
+			return true;
+			
+		}
+		
+		if (log.isDebugEnabled()) {
+			log.debug("Checking '" + privilege + "' against proxies: " + proxies);
+		}
+		
 		// check proxied privileges
-		for (String s : new ArrayList<>(proxies)) {
+		for (String s : proxies) {
 			if (s.equals(privilege)) {
-				notifyPrivilegeListeners(getAuthenticatedUser(), privilege, true);
+				Context.getUserService().notifyPrivilegeListeners(getAuthenticatedUser(), privilege, true);
 				return true;
 			}
 		}
 		
-		// if a user has logged in, check their privileges
-		if (isAuthenticated()
-			&& (getAuthenticatedUser().hasPrivilege(privilege) || getAuthenticatedRole().hasPrivilege(privilege))) {
-			
-			// check user's privileges
-			notifyPrivilegeListeners(getAuthenticatedUser(), privilege, true);
-			return true;
-			
-		}
-		
 		if (getAnonymousRole().hasPrivilege(privilege)) {
-			notifyPrivilegeListeners(getAuthenticatedUser(), privilege, true);
+			Context.getUserService().notifyPrivilegeListeners(getAuthenticatedUser(), privilege, true);
 			return true;
 		}
 		
 		// default return value
-		notifyPrivilegeListeners(getAuthenticatedUser(), privilege, false);
+		Context.getUserService().notifyPrivilegeListeners(getAuthenticatedUser(), privilege, false);
 		return false;
 	}
 	
@@ -362,7 +340,7 @@ public class UserContext implements Serializable {
 	 * Convenience method to get the Role in the system designed to be given to all users
 	 *
 	 * @return Role
-	 * <strong>Should</strong> fail if database doesn't contain anonymous role
+	 * @should fail if database doesn't contain anonymous role
 	 */
 	private Role getAnonymousRole() {
 		if (anonymousRole != null) {
@@ -371,8 +349,7 @@ public class UserContext implements Serializable {
 		
 		anonymousRole = Context.getUserService().getRole(RoleConstants.ANONYMOUS);
 		if (anonymousRole == null) {
-			throw new RuntimeException(
-				"Database out of sync with code: " + RoleConstants.ANONYMOUS + " role does not exist");
+			throw new RuntimeException("Database out of sync with code: " + RoleConstants.ANONYMOUS + " role does not exist");
 		}
 		
 		return anonymousRole;
@@ -383,7 +360,7 @@ public class UserContext implements Serializable {
 	 * authenticated in some manner
 	 *
 	 * @return Role
-	 * <strong>Should</strong> fail if database doesn't contain authenticated role
+	 * @should fail if database doesn't contain authenticated role
 	 */
 	private Role getAuthenticatedRole() {
 		if (authenticatedRole != null) {
@@ -393,7 +370,7 @@ public class UserContext implements Serializable {
 		authenticatedRole = Context.getUserService().getRole(RoleConstants.AUTHENTICATED);
 		if (authenticatedRole == null) {
 			throw new RuntimeException("Database out of sync with code: " + RoleConstants.AUTHENTICATED
-				+ " role does not exist");
+			        + " role does not exist");
 		}
 		
 		return authenticatedRole;
@@ -440,98 +417,30 @@ public class UserContext implements Serializable {
 	 * Convenience method that sets the default location of the currently authenticated user using
 	 * the value of the user's default location property
 	 */
-	private void setUserLocation(boolean useDefault) {
-		// location should be null if no user is logged in
-		if (this.user == null) {
-			this.locationId = null;
-			return;
-		}
-		
-		// intended to be when the user initially authenticates
-		if (this.locationId == null && useDefault) {
-			this.locationId = getDefaultLocationId(this.user);
-		}
-	}
-
-	/**
-	 * Convenience method that sets the default locale used by the currently authenticated user, using
-	 * the value of the user's default local property
-	 */
-	private void setUserLocale(boolean useDefault) {
-		// local should be null if no user is logged in
-		if (this.user == null) {
-			this.locale = null;
-			return;
-		}
-
-		// intended to be when the user initially authenticates
-		if (user.getUserProperties().containsKey("defaultLocale")) {
-			String localeString = user.getUserProperty("defaultLocale");
-			locale = LocaleUtility.fromSpecification(localeString);
-		}
-
-		if (locale == null && useDefault) {
-			locale = LocaleUtility.getDefaultLocale();
-		}
-
-	}
-	
-	protected Integer getDefaultLocationId(User user) {
-		String defaultLocation = user.getUserProperty(OpenmrsConstants.USER_PROPERTY_DEFAULT_LOCATION);
-		if (StringUtils.isNotBlank(defaultLocation)) {
-			LocationService ls = Context.getLocationService();
-			//only go ahead if it has actually changed OR if wasn't set before
-			try {
-				int defaultId = Integer.parseInt(defaultLocation);
-				if (this.locationId == null || this.locationId != defaultId) {
-					// validate that the id is a valid id
-					if (ls.getLocation(defaultId) != null) {
-						return defaultId;
+	private void setUserLocation() {
+		if (this.user != null) {
+			String locationId = this.user.getUserProperty(OpenmrsConstants.USER_PROPERTY_DEFAULT_LOCATION);
+			if (StringUtils.isNotBlank(locationId)) {
+				//only go ahead if it has actually changed OR if wasn't set before
+				if (this.locationId == null || this.locationId != Integer.parseInt(locationId)) {
+					try {
+						this.locationId = Context.getLocationService().getLocation(Integer.valueOf(locationId))
+						        .getLocationId();
+					}
+					catch (NumberFormatException e) {
+						//Drop the stored value since we have no match for the set id
+						if (this.locationId != null) {
+							this.locationId = null;
+						}
+						log.warn("The value of the default Location property of the user with id:" + this.user.getUserId()
+						        + " should be an integer", e);
 					}
 				}
+			} else {
+				if (this.locationId != null) {
+					this.locationId = null;
+				}
 			}
-			catch (NumberFormatException ignored) {
-			}
-
-			Location possibleLocation = ls.getLocationByUuid(defaultLocation);
-
-			if (possibleLocation != null && (this.locationId == null || !this.locationId.equals(possibleLocation.getId()))) {
-				return possibleLocation.getId();
-			}
-
-			log.warn("The default location for user '{}' is set to '{}', which is not a valid location",
-				user.getUsername(), defaultLocation);
-		}
-		
-		return null;
-	}
-	
-	/**
-	 * Notifies privilege listener beans about any privilege check.
-	 * <p>
-	 * It is called by {@link UserContext#hasPrivilege(java.lang.String)}.
-	 *
-	 * @param user         the authenticated user or <code>null</code> if not authenticated
-	 * @param privilege    the checked privilege
-	 * @param hasPrivilege <code>true</code> if the authenticated user has the required privilege or
-	 *                     if it is a proxy privilege
-	 * @see PrivilegeListener
-	 * @since 1.8.4, 1.9.1, 1.10
-	 */
-	private void notifyPrivilegeListeners(User user, String privilege, boolean hasPrivilege) {
-		for (PrivilegeListener privilegeListener : Context.getRegisteredComponents(PrivilegeListener.class)) {
-			try {
-				privilegeListener.privilegeChecked(user, privilege, hasPrivilege);
-			}
-			catch (Exception e) {
-				log.error("Privilege listener has failed", e);
-			}
-		}
-	}
-	
-	private void notifyUserSessionListener(User user, Event event, Status status) {
-		for (UserSessionListener userSessionListener : Context.getRegisteredComponents(UserSessionListener.class)) {
-			userSessionListener.loggedInOrOut(user, event, status);
 		}
 	}
 }

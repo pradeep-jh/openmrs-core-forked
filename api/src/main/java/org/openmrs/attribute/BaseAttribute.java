@@ -9,12 +9,7 @@
  */
 package org.openmrs.attribute;
 
-import javax.persistence.Column;
-import javax.persistence.MappedSuperclass;
-
-import org.hibernate.envers.Audited;
-import org.hibernate.search.annotations.Field;
-import org.openmrs.BaseChangeableOpenmrsData;
+import org.openmrs.BaseOpenmrsData;
 import org.openmrs.customdatatype.CustomDatatypeUtil;
 import org.openmrs.customdatatype.Customizable;
 import org.openmrs.customdatatype.InvalidCustomValueException;
@@ -29,17 +24,13 @@ import org.openmrs.util.OpenmrsUtil;
  * @since 1.9
  */
 @SuppressWarnings("rawtypes")
-@MappedSuperclass
-@Audited
-public abstract class BaseAttribute<AT extends AttributeType, OwningType extends Customizable<?>> extends BaseChangeableOpenmrsData implements Attribute<AT, OwningType>, Comparable<Attribute> {
+public abstract class BaseAttribute<AT extends AttributeType, OwningType extends Customizable<?>> extends BaseOpenmrsData implements Attribute<AT, OwningType>, Comparable<Attribute> {
 	
 	private OwningType owner;
 	
 	private AT attributeType;
 	
 	// value pulled from the database
-	@Field
-	@Column(name = "value_reference", nullable = false, length = 65535)
 	private String valueReference;
 	
 	// temporarily holds a typed value, either when getValue() is called the first time (causing valueReference to be converted) or when setValue has been called, but this attribute has not yet been committed to persistent storage
@@ -58,7 +49,6 @@ public abstract class BaseAttribute<AT extends AttributeType, OwningType extends
 	/**
 	 * @see org.openmrs.attribute.Attribute#setOwner(org.openmrs.customdatatype.Customizable)
 	 */
-	@Override
 	public void setOwner(OwningType owner) {
 		this.owner = owner;
 	}
@@ -130,7 +120,6 @@ public abstract class BaseAttribute<AT extends AttributeType, OwningType extends
 	/**
 	 * @return the dirty
 	 */
-	@Override
 	public boolean isDirty() {
 		return dirty;
 	}
@@ -145,7 +134,7 @@ public abstract class BaseAttribute<AT extends AttributeType, OwningType extends
 		if (other == null) {
 			return -1;
 		}
-		int retValue = getVoided().compareTo(other.getVoided());
+		int retValue = isVoided().compareTo(other.isVoided());
 		if (retValue == 0) {
 			retValue = OpenmrsUtil.compareWithNullAsGreatest(getAttributeType().getId(), other.getAttributeType().getId());
 		}

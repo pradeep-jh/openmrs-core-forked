@@ -52,24 +52,16 @@
 		<property name="maxUploadSize"><value>75000000</value></property>
 	</bean>
 	
-	<bean id="contentNegotiationManager"
-		  class="org.springframework.web.accept.ContentNegotiationManagerFactoryBean">
-		<property name="defaultContentType" value="application/json" />
-		<property name="favorPathExtension" value="true" />
-
+	<bean class="org.springframework.web.servlet.view.ContentNegotiatingViewResolver">
 		<property name="mediaTypes">
 			<map>
 				<entry key="json" value="application/json" />
 				<entry key="xml" value="application/xml" />
 			</map>
 		</property>
-	</bean>
-	
-	<bean class="org.springframework.web.servlet.view.ContentNegotiatingViewResolver">
-		<property name="contentNegotiationManager" ref="contentNegotiationManager" />
 		<property name="defaultViews">
 			<list>
-				<bean class="org.springframework.web.servlet.view.json.MappingJackson2JsonView">
+				<bean class="org.springframework.web.servlet.view.json.MappingJacksonJsonView">
 					<property name="extractValueFromSingleKeyModel" value="true" />
 				</bean>
 				<bean class="org.springframework.web.servlet.view.xml.MarshallingView">
@@ -86,12 +78,17 @@
 		<property name="unmarshaller" ref="xStreamMarshaller" />
 	</bean>
 	
+	<bean id="defaultMethodParamResolver" class="org.springframework.web.servlet.mvc.multiaction.ParameterMethodNameResolver">
+		<property name="paramName"><value>method</value></property>
+		<property name="defaultMethodName"><value>handleRequest</value></property>
+	</bean>
+	
 	<!--  Exception handler mappings --> 
  		 
  	<bean class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver"> 
  		<property name="exceptionMappings"> 
- 			<map>
-				<entry key="java.lang.Exception" value="uncaughtException"/>
+ 			<map> 
+ 				<entry key="org.openmrs.api.APIException" value="uncaughtException"/> 
  			</map> 
  		</property> 
  		<property name="order" value="100" /> 
@@ -99,22 +96,14 @@
 	
 	<!-- So that controllers can use annotations like @Controller and @RequestMapping
 -->
-	<bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping">
+	<bean class="org.springframework.web.servlet.mvc.annotation.DefaultAnnotationHandlerMapping">
 		<!-- makes annotations more important than default mappings -->
 		<property name="order"><value>98</value></property>
 	</bean>
 
 	<bean class="org.springframework.web.servlet.mvc.SimpleControllerHandlerAdapter"/>
 
-	<bean id="openmrsObjectMapperFactoryBean" class="org.springframework.http.converter.json.Jackson2ObjectMapperFactoryBean">
-		<property name="modulesToInstall" value="org.openmrs.util.OpenmrsJacksonLocaleModule" />
-	</bean>
-	
-	<bean id="jacksonMessageConverter" class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
-		<property name="objectMapper" ref="openmrsObjectMapperFactoryBean" />
-	</bean>
-
-	<bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter">
+	<bean class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">
 		<property name="webBindingInitializer">
 			<bean class="org.openmrs.web.OpenmrsBindingInitializer"/>
 		</property>
@@ -124,7 +113,7 @@
 				<bean class="org.springframework.http.converter.StringHttpMessageConverter" />
 				<bean class="org.springframework.http.converter.FormHttpMessageConverter" />
 				<bean class="org.springframework.http.converter.xml.SourceHttpMessageConverter" />
-				<ref bean="jacksonMessageConverter" />
+				<bean class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter" />
 				<ref bean="xmlMarshallingHttpMessageConverter" />
 			</list>
 		</property>

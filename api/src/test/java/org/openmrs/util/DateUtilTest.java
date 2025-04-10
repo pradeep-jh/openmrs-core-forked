@@ -9,19 +9,19 @@
  */
 package org.openmrs.util;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
 
 import java.util.Date;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 public class DateUtilTest {
 
 	@Test
-	public void truncateToSeconds_shouldDropMilliseconds() {
-		Date withMilliseconds = new Date(123L);
-		Date withoutMilliseconds = new Date(0L);
+	public void truncateToSeconds_shouldDropMilliseconds() throws Exception {
+		Date withMilliseconds = new Date(123l);
+		Date withoutMilliseconds = new Date(0l);
 		assertThat(DateUtil.truncateToSeconds(withMilliseconds), is(withoutMilliseconds));
 		assertThat(DateUtil.truncateToSeconds(withoutMilliseconds), is(withoutMilliseconds));
 	}

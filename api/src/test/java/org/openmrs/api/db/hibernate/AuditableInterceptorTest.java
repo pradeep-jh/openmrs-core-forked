@@ -9,58 +9,55 @@
  */
 package org.openmrs.api.db.hibernate;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.Serializable;
 import java.util.Date;
 
 import org.hibernate.type.Type;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.Auditable;
 import org.openmrs.ConceptNumeric;
+import org.openmrs.User;
 import org.openmrs.Person;
 import org.openmrs.PersonAddress;
 import org.openmrs.PersonName;
-import org.openmrs.User;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.context.Daemon;
 import org.openmrs.scheduler.Task;
 import org.openmrs.scheduler.tasks.AbstractTask;
 import org.openmrs.scheduler.timer.TimerSchedulerTask;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
 
 public class AuditableInterceptorTest extends BaseContextSensitiveTest {
 	
 	/**
 	 * @see AuditableInterceptor#onFlushDirty(Object,Serializable,Object[],Object[],String[],Type[])
+	 * @verifies return false for non Auditable objects
 	 */
 	@Test
-	public void onFlushDirty_shouldReturnFalseForNonAuditableObjects() {
+	public void onFlushDirty_shouldReturnFalseForNonAuditableObjects() throws Exception {
 		AuditableInterceptor interceptor = new AuditableInterceptor();
 		
 		Object o = new Object();
 		
 		boolean returnValue = interceptor.onFlushDirty(o, null, null, null, null, null);
 		
-		assertFalse(returnValue, "false should have been returned because we didn't pass in an Auditable or OpenmrsObject");
+		Assert.assertFalse("false should have been returned because we didn't pass in an Auditable or OpenmrsObject",
+		    returnValue);
 	}
 	
 	/**
 	 * @see AuditableInterceptor#onFlushDirty(Object,Serializable,Object[],Object[],String[],Type[])
+	 * @verifies set the changedBy field
 	 */
 	@Test
-	public void onFlushDirty_shouldSetTheChangedByField() {
+	public void onFlushDirty_shouldSetTheChangedByField() throws Exception {
 		AuditableInterceptor interceptor = new AuditableInterceptor();
 		
 		User u = new User();
 		
 		// sanity check
-		assertTrue(u instanceof Auditable);
+		Assert.assertTrue(u instanceof Auditable);
 		
 		String[] propertyNames = new String[] { "changedBy", "dateChanged" };
 		Object[] currentState = new Object[] { "", null };
@@ -68,20 +65,21 @@ public class AuditableInterceptorTest extends BaseContextSensitiveTest {
 		
 		interceptor.onFlushDirty(u, null, currentState, previousState, propertyNames, null);
 		
-		assertNotNull(currentState[0]);
+		Assert.assertNotNull(currentState[0]);
 	}
 	
 	/**
 	 * @see AuditableInterceptor#onFlushDirty(Object,Serializable,Object[],Object[],String[],Type[])
+	 * @verifies set the dateChanged field
 	 */
 	@Test
-	public void onFlushDirty_shouldSetTheDateChangedField() {
+	public void onFlushDirty_shouldSetTheDateChangedField() throws Exception {
 		AuditableInterceptor interceptor = new AuditableInterceptor();
 		
 		User u = new User();
 		
 		// sanity check
-		assertTrue(u instanceof Auditable);
+		Assert.assertTrue(u instanceof Auditable);
 		
 		String[] propertyNames = new String[] { "changedBy", "dateChanged" };
 		Object[] currentState = new Object[] { "", null };
@@ -89,11 +87,11 @@ public class AuditableInterceptorTest extends BaseContextSensitiveTest {
 		
 		interceptor.onFlushDirty(u, null, currentState, previousState, propertyNames, null);
 		
-		assertNotNull(currentState[1]);
+		Assert.assertNotNull(currentState[1]);
 	}
 	
 	@Test
-	public void onFlushDirty_shouldAddPersonChangedByForPerson() {
+	public void onFlushDirty_shouldAddPersonChangedByForPerson() throws Exception {
 		AuditableInterceptor interceptor = new AuditableInterceptor();
 		
 		Person person = new Person();
@@ -102,11 +100,11 @@ public class AuditableInterceptorTest extends BaseContextSensitiveTest {
 		Object[] currentState = new Object[] { null };
 		
 		interceptor.onFlushDirty(person, null, currentState, null, propertyNames, null);
-		assertNotNull(currentState[0]);
+		Assert.assertNotNull(currentState[0]);
 	}
 	
 	@Test
-	public void onFlushDirty_shouldAddPersonDateChangedForPerson() {
+	public void onFlushDirty_shouldAddPersonDateChangedForPerson() throws Exception {
 		AuditableInterceptor interceptor = new AuditableInterceptor();
 		
 		Person person = new Person();
@@ -116,20 +114,21 @@ public class AuditableInterceptorTest extends BaseContextSensitiveTest {
 		Object[] currentState = new Object[] { null };
 		
 		interceptor.onFlushDirty(person, null, currentState, null, propertyNames, null);
-		assertNotNull(currentState[0]);
+		Assert.assertNotNull(currentState[0]);
 	}
 	
 	/**
 	 * @see AuditableInterceptor#onFlushDirty(Object,Serializable,Object[],Object[],String[],Type[])
+	 * @verifies set the dateChanged field
 	 */
 	@Test
-	public void onFlushDirty_shouldNotFailWithNullPreviousState() {
+	public void onFlushDirty_shouldNotFailWithNullPreviousState() throws Exception {
 		AuditableInterceptor interceptor = new AuditableInterceptor();
 		
 		User u = new User();
 		
 		// sanity check
-		assertTrue(u instanceof Auditable);
+		Assert.assertTrue(u instanceof Auditable);
 		
 		String[] propertyNames = new String[] { "changedBy", "dateChanged" };
 		Object[] currentState = new Object[] { "", null };
@@ -141,9 +140,10 @@ public class AuditableInterceptorTest extends BaseContextSensitiveTest {
 	 * This test makes sure that the AuditableInterceptor is registered on the session
 	 * 
 	 * @see AuditableInterceptor#onFlushDirty(Object,Serializable,Object[],Object[],String[],Type[])
+	 * @verifies be called when saving an Auditable
 	 */
 	@Test
-	public void onFlushDirty_shouldBeCalledWhenSavingAnAuditable() {
+	public void onFlushDirty_shouldBeCalledWhenSavingAnAuditable() throws Exception {
 		User u = Context.getUserService().getUser(1);
 		
 		u.setUsername("asdf");
@@ -154,11 +154,12 @@ public class AuditableInterceptorTest extends BaseContextSensitiveTest {
 		
 		Date afterDate = u.getDateChanged();
 		
-		assertNotSame(beforeDate, afterDate);
+		Assert.assertNotSame(beforeDate, afterDate);
 	}
 	
 	/**
 	 * @see AuditableInterceptor#onFlushDirty(Object,Serializable,null,null,null,null)
+	 * @verifies should not fail when the daemon user modifies something
 	 */
 	@Test
 	public void onFlushDirty_shouldNotFailWhenTheDaemonUserModifiesSomething() throws Throwable {
@@ -170,7 +171,7 @@ public class AuditableInterceptorTest extends BaseContextSensitiveTest {
 				Date dateChangedBefore = weight.getDateChanged();
 				weight.setHiAbsolute(75d);
 				Context.getConceptService().saveConcept(weight);
-				assertNotSame(dateChangedBefore, weight.getDateChanged());
+				Assert.assertNotSame(dateChangedBefore, weight.getDateChanged());
 			}
 		}).runTheTask();
 	}
@@ -192,9 +193,10 @@ public class AuditableInterceptorTest extends BaseContextSensitiveTest {
 	
 	/**
 	 * @see AuditableInterceptor#onSave(Object,Serializable,Object[],String[],Type[])
+	 * @verifies return true if dateCreated was null
 	 */
 	@Test
-	public void onSave_shouldReturnTrueIfDateCreatedWasNull() {
+	public void onSave_shouldReturnTrueIfDateCreatedWasNull() throws Exception {
 		AuditableInterceptor interceptor = new AuditableInterceptor();
 		
 		User u = new User();
@@ -203,14 +205,15 @@ public class AuditableInterceptorTest extends BaseContextSensitiveTest {
 		Object[] currentState = new Object[] { 0, null };
 		
 		boolean result = interceptor.onSave(u, 0, currentState, propertyNames, null);
-		assertTrue(result);
+		Assert.assertTrue(result);
 	}
 	
 	/**
 	 * @see AuditableInterceptor#onSave(Object,Serializable,Object[],String[],Type[])
+	 * @verifies return true if creator was null
 	 */
 	@Test
-	public void onSave_shouldReturnTrueIfCreatorWasNull() {
+	public void onSave_shouldReturnTrueIfCreatorWasNull() throws Exception {
 		AuditableInterceptor interceptor = new AuditableInterceptor();
 		
 		User u = new User();
@@ -219,14 +222,15 @@ public class AuditableInterceptorTest extends BaseContextSensitiveTest {
 		Object[] currentState = new Object[] { null, new Date() };
 		
 		boolean result = interceptor.onSave(u, 0, currentState, propertyNames, null);
-		assertTrue(result);
+		Assert.assertTrue(result);
 	}
 	
 	/**
 	 * @see AuditableInterceptor#onSave(Object,Serializable,Object[],String[],Type[])
+	 * @verifies return false if dateCreated and creator was not null
 	 */
 	@Test
-	public void onSave_shouldReturnFalseIfDateCreatedAndCreatorWasNotNull() {
+	public void onSave_shouldReturnFalseIfDateCreatedAndCreatorWasNotNull() throws Exception {
 		AuditableInterceptor interceptor = new AuditableInterceptor();
 		
 		User u = new User();
@@ -235,14 +239,15 @@ public class AuditableInterceptorTest extends BaseContextSensitiveTest {
 		Object[] currentState = new Object[] { 0, new Date() };
 		
 		boolean result = interceptor.onSave(u, 0, currentState, propertyNames, null);
-		assertFalse(result);
+		Assert.assertFalse(result);
 	}
 	
 	/**
 	 * @see AuditableInterceptor#onSave(Object,Serializable,Object[],String[],Type[])
+	 * @verifies be called when saving OpenmrsObject
 	 */
 	@Test
-	public void onSave_shouldBeCalledWhenSavingOpenmrsObject() {
+	public void onSave_shouldBeCalledWhenSavingOpenmrsObject() throws Exception {
 		User u = new User();
 		
 		u.setSystemId("user");
@@ -250,39 +255,39 @@ public class AuditableInterceptorTest extends BaseContextSensitiveTest {
 		
 		Context.getUserService().createUser(u, "Admin123");
 		
-		assertSame(Context.getAuthenticatedUser(), u.getCreator());
-		assertNotNull(u.getDateCreated());
+		Assert.assertSame(Context.getAuthenticatedUser(), u.getCreator());
+		Assert.assertNotNull(u.getDateCreated());
 	}
 	
 	@Test
 	public void onSave_shouldPopulateDateCreatedForPersonIfNull() {
 		Person person = createPersonWithNameAndAddress();
 		Context.getPersonService().savePerson(person);
-		assertNotNull(person.getDateCreated());
-		assertNotNull(person.getPersonDateCreated());
+		Assert.assertNotNull(person.getDateCreated());
+		Assert.assertNotNull(person.getPersonDateCreated());
 	}
 	
 	@Test
 	public void onSave_shouldPopulateCreatorForPersonIfNull() {
 		Person person = createPersonWithNameAndAddress();
 		Context.getPersonService().savePerson(person);
-		assertNotNull(person.getCreator());
-		assertNotNull(person.getPersonCreator());
+		Assert.assertNotNull(person.getCreator());
+		Assert.assertNotNull(person.getPersonCreator());
 	}
 	
 	@Test
-	public void onSave_shouldPopulatePersonChangedByandPersonDateChangedIfPersonAlreadyExists() {
+	public void onSave_shouldPopulatePersonChangedByandPersonDateChangedIfPersonAlreadyExists() throws Exception {
 		Person person = Context.getPersonService().getPerson(1);
 		
-		assertNull(person.getPersonChangedBy());
-		assertNull(person.getPersonDateChanged());
+		Assert.assertNull(person.getPersonChangedBy());
+		Assert.assertNull(person.getPersonDateChanged());
 		
 		person.setGender("F");
 		Context.flushSession();
 		Context.getPersonService().savePerson(person);
 		
-		assertNotNull(person.getPersonChangedBy());
-		assertNotNull(person.getPersonDateChanged());
+		Assert.assertNotNull(person.getPersonChangedBy());
+		Assert.assertNotNull(person.getPersonDateChanged());
 	}
 	
 	private Person createPersonWithNameAndAddress() {

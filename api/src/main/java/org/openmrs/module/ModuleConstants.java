@@ -16,16 +16,13 @@ import java.util.Map;
  * Constants used by the module system in openmrs
  */
 public class ModuleConstants {
-
-	private ModuleConstants() {
-	}
 	
 	/**
 	 * A map from "moduleid" to "required version" for all core modules that are required by
 	 * openmrs. A module with at least the given version is required to start before openmrs will
 	 * fully start.
 	 */
-	public static final Map<String, String> CORE_MODULES = new HashMap<>();
+	public static final Map<String, String> CORE_MODULES = new HashMap<String, String>();
 	
 	/**
 	 * Used to determine if the {@link #CORE_MODULES} list should be used or not. For unit testing

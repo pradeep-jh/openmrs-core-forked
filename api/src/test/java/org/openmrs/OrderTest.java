@@ -9,14 +9,11 @@
  */
 package org.openmrs;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Field;
 import java.text.DateFormat;
@@ -28,13 +25,14 @@ import java.util.List;
 
 import org.apache.commons.beanutils.MethodUtils;
 import org.apache.commons.lang3.time.DateUtils;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.openmrs.Order.Urgency;
 import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
 import org.openmrs.order.OrderUtilTest;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
 import org.openmrs.util.Reflect;
 
 /**
@@ -47,24 +45,17 @@ public class OrderTest extends BaseContextSensitiveTest {
 	
 	
 	private final static String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
-
-	private DateFormat ymd;
-
-	private Order o;
-
-	@BeforeEach
-	public void setUp() throws Exception {
-		ymd = new SimpleDateFormat("yyyy-MM-dd");
-		o = new Order();
-	}
-
+	
+	@Rule
+	public ExpectedException expectedException = ExpectedException.none();
 	
 	protected static void assertThatAllFieldsAreCopied(Order original, String methodName, String... otherfieldsToExclude)
 	        throws Exception {
 		if (methodName == null) {
 			methodName = "copy";
 		}
-		List<String> fieldsToExclude = new ArrayList<>(Arrays.asList("log", "serialVersionUID", "orderId", "uuid"));
+		List<String> fieldsToExclude = new ArrayList<String>();
+		fieldsToExclude.addAll(Arrays.asList("log", "serialVersionUID", "orderId", "uuid"));
 		if (otherfieldsToExclude != null) {
 			fieldsToExclude.addAll(Arrays.asList(otherfieldsToExclude));
 		}
@@ -94,130 +85,79 @@ public class OrderTest extends BaseContextSensitiveTest {
 		
 		Order copy = (Order) MethodUtils.invokeExactMethod(original, methodName, null);
 		for (Field field : fields) {
-			field.setAccessible(true);
 			Object copyValue = field.get(copy);
 			if (fieldsToExclude.contains(field.getName())) {
 				continue;
 			}
-			assertNotNull(copyValue, "Order." + methodName + " should set " + field.getName() + " on the new Order");
-			assertEquals(field.get(original), copyValue, "Order." + methodName + " should set " + field.getName() + " on the new Order");
+			assertNotNull("Order." + methodName + " should set " + field.getName() + " on the new Order", copyValue);
+			assertEquals("Order." + methodName + " should set " + field.getName() + " on the new Order", field.get(original),
+			    copyValue);
 		}
 	}
-
+	
 	/**
-	 * @see Order#isDiscontinued(Date)
+	 * Tests the {@link Order#isDiscontinuedRightNow()} method TODO this should be split into many
+	 * different tests
+	 * 
+	 * @throws Exception
 	 */
 	@Test
-	public void isDiscontinued_shouldNotDiscontinueGivenOrderWithoutDates() throws Exception {
-		assertFalse(o.isDiscontinued(ymd.parse("2007-10-26")), "order without dates shouldn't be discontinued");
-	}
-
-	/**
-	 * @see Order#isDiscontinued(Date)
-	 */
-	@Test
-	public void isDiscontinued_shouldNotDiscontinueBeforeActivationDate() throws Exception {
+	public void shouldIsDiscontinued() throws Exception {
+		DateFormat ymd = new SimpleDateFormat("yyyy-MM-dd");
+		
+		Order o = new Order();
+		assertFalse("order without dates shouldn't be discontinued", o.isDiscontinued(ymd.parse("2007-10-26")));
+		
 		o.setDateActivated(ymd.parse("2007-01-01"));
-
-		assertFalse(o.isDiscontinued(ymd.parse("2006-10-26")), "shouldn't be discontinued before date activated");
-	}
-
-	/**
-	 * @see Order#isDiscontinued(Date)
-	 */
-	@Test
-	public void isDiscontinued_shouldNotDiscontinueGivenActivatedOrderWithoutEndDate() throws Exception {
-		o.setDateActivated(ymd.parse("2007-01-01"));
-
-		assertFalse(o.isDiscontinued(ymd.parse("2007-10-26")), "order without no end dates shouldn't be discontinued");
-	}
-
-	/**
-	 * @see Order#isDiscontinued(Date)
-	 */
-	@Test
-	public void isDiscontinued_shouldNotDiscontinueActivatedOrderBeforeAutoExpireDate() throws Exception {
-		o.setDateActivated(ymd.parse("2007-01-01"));
+		assertFalse("shouldn't be discontinued before date activated", o.isDiscontinued(ymd.parse("2006-10-26")));
+		assertFalse("order without no end dates shouldn't be discontinued", o.isDiscontinued(ymd.parse("2007-10-26")));
+		
 		o.setAutoExpireDate(ymd.parse("2007-12-31"));
-
-		assertFalse(o.isDiscontinued(ymd.parse("2007-10-26")), "shouldn't be discontinued before autoExpireDate");
-	}
-
-	/**
-	 * @see Order#isDiscontinued(Date)
-	 */
-	@Test
-	public void isDiscontinued_shouldNotDiscontinueActivatedOrderAfterAutoExpireDate() throws Exception {
-		o.setDateActivated(ymd.parse("2007-01-01"));
-		o.setAutoExpireDate(ymd.parse("2007-12-31"));
-
-		assertFalse(o.isDiscontinued(ymd.parse("2008-10-26")), "shouldn't be discontinued after autoExpireDate");
-	}
-
-	/**
-	 * @see Order#isDiscontinued(Date)
-	 */
-	@Test
-	public void isDiscontinued_shouldNotDiscontinueActivatedOrderBeforeDateStopped() throws Exception {
-		o.setDateActivated(ymd.parse("2007-01-01"));
-		o.setAutoExpireDate(ymd.parse("2007-12-31"));
+		assertFalse("shouldn't be discontinued before date activated", o.isDiscontinued(ymd.parse("2006-10-26")));
+		assertFalse("shouldn't be discontinued before autoExpireDate", o.isDiscontinued(ymd.parse("2007-10-26")));
+		assertFalse("shouldn't be discontinued after autoExpireDate", o.isDiscontinued(ymd.parse("2008-10-26")));
+		
 		OrderUtilTest.setDateStopped(o, ymd.parse("2007-11-01"));
-
-		assertFalse(o.isDiscontinued(ymd.parse("2007-10-26")), "shouldn't be discontinued before dateStopped");
+		assertFalse("shouldn't be discontinued before date activated", o.isDiscontinued(ymd.parse("2006-10-26")));
+		assertFalse("shouldn't be discontinued before dateStopped", o.isDiscontinued(ymd.parse("2007-10-26")));
+		assertTrue("should be discontinued after dateStopped", o.isDiscontinued(ymd.parse("2007-11-26")));
+		
 	}
-
+	
 	/**
-	 * @see Order#isDiscontinued(Date)
+	 * Tests the {@link Order#isActive()} method TODO this should be split into many different tests
+	 * 
+	 * @throws Exception
 	 */
 	@Test
-	public void isDiscontinued_shouldDiscontinueActivatedOrderAfterDateStopped() throws Exception {
-		o.setDateActivated(ymd.parse("2007-01-01"));
-		o.setAutoExpireDate(ymd.parse("2007-12-31"));
-		OrderUtilTest.setDateStopped(o, ymd.parse("2007-11-01"));
-
-		assertTrue(o.isDiscontinued(ymd.parse("2007-11-26")), "should be discontinued after dateStopped");
-	}
-
-	/**
-	 * @see Order#isActive()
-	 */
-	@Test
-	public void isActive_shouldBeCurrentAfterDateActivated() throws Exception {
+	public void shouldCheckIfOrderIsActive() throws Exception {
+		DateFormat ymd = new SimpleDateFormat("yyyy-MM-dd");
+		
+		Order o = new Order();
 		//assertTrue("dateActivated==null && no end date should always be current", o.isActive(ymd.parse("2007-10-26")));
+		
 		o.setDateActivated(ymd.parse("2007-01-01"));
-
-		assertFalse(o.isActive(ymd.parse("2006-10-26")), "shouldn't be current before dateActivated");
-		assertTrue(o.isActive(ymd.parse("2007-10-26")), "should be current after dateActivated");
-	}
-
-	/**
-	 * @see Order#isActive()
-	 */
-	@Test
-	public void isActive_shouldBeCurrentBetweenDateActivatedAndAutoExpireDate() throws Exception {
-		o.setDateActivated(ymd.parse("2007-01-01"));
+		assertFalse("shouldn't be current before dateActivated", o.isActive(ymd.parse("2006-10-26")));
+		assertTrue("should be current after dateActivated", o.isActive(ymd.parse("2007-10-26")));
+		
 		o.setAutoExpireDate(ymd.parse("2007-12-31"));
-
-		assertFalse(o.isActive(ymd.parse("2006-10-26")), "shouldn't be current before dateActivated");
-		assertTrue(o.isActive(ymd.parse("2007-10-26")), "should be current between dateActivated and autoExpireDate");
-		assertFalse(o.isActive(ymd.parse("2008-10-26")), "shouldn't be current after autoExpireDate");
-	}
-
-	/**
-	 * @see Order#isActive()
-	 */
-	@Test
-	public void isActive_shouldBeCurrentBetweenDateActivatedAndDateStopped() throws Exception {
-		o.setDateActivated(ymd.parse("2007-01-01"));
-		o.setAutoExpireDate(ymd.parse("2007-12-31"));
+		assertFalse("shouldn't be current before dateActivated", o.isActive(ymd.parse("2006-10-26")));
+		assertTrue("should be current between dateActivated and autoExpireDate", o.isActive(ymd.parse("2007-10-26")));
+		assertFalse("shouldn't be current after autoExpireDate", o.isActive(ymd.parse("2008-10-26")));
+		
 		OrderUtilTest.setDateStopped(o, ymd.parse("2007-11-01"));
-
-		assertFalse(o.isActive(ymd.parse("2006-10-26")), "shouldn't be current before dateActivated");
-		assertTrue(o.isActive(ymd.parse("2007-10-26")), "should be current between dateActivated and dateStopped");
-		assertFalse(o.isActive(ymd.parse("2007-11-26")), "shouldn't be current after dateStopped");
+		assertFalse("shouldn't be current before dateActivated", o.isActive(ymd.parse("2006-10-26")));
+		assertTrue("should be current between dateActivated and dateStopped", o.isActive(ymd.parse("2007-10-26")));
+		assertFalse("shouldn't be current after dateStopped", o.isActive(ymd.parse("2007-11-26")));
+		
+		OrderUtilTest.setDateStopped(o, ymd.parse("2007-11-01"));
+		assertFalse("shouldn't be current before dateActivated", o.isActive(ymd.parse("2006-10-26")));
+		assertTrue("should be current between dateActivated and dateStopped", o.isActive(ymd.parse("2007-10-26")));
+		assertFalse("shouldn't be current after dateStopped", o.isActive(ymd.parse("2007-11-26")));
 	}
-
+	
 	/**
+	 * @verifies set all the relevant fields
 	 * @see Order#cloneForDiscontinuing()
 	 */
 	@Test
@@ -235,19 +175,21 @@ public class OrderTest extends BaseContextSensitiveTest {
 		
 		assertEquals(anOrder.getConcept(), orderThatCanDiscontinueTheOrder.getConcept());
 		
-		assertEquals(anOrder, orderThatCanDiscontinueTheOrder.getPreviousOrder(), "should set previous order to anOrder");
+		assertEquals("should set previous order to anOrder", anOrder, orderThatCanDiscontinueTheOrder.getPreviousOrder());
 		
-		assertEquals(orderThatCanDiscontinueTheOrder.getAction(), Order.Action.DISCONTINUE, "should set new order action to new");
+		assertEquals("should set new order action to new", orderThatCanDiscontinueTheOrder.getAction(),
+		    Order.Action.DISCONTINUE);
 		
 		assertEquals(anOrder.getCareSetting(), orderThatCanDiscontinueTheOrder.getCareSetting());
 		
 		assertEquals(anOrder.getOrderType(), orderThatCanDiscontinueTheOrder.getOrderType());
 		
-		assertNull(orderThatCanDiscontinueTheOrder.getOrderGroup(), "Discontinued order should not have orderGroup");
+		assertNull("Discontinued order should not have orderGroup", orderThatCanDiscontinueTheOrder.getOrderGroup());
 		
 	}
 	
 	/**
+	 * @verifies copy all fields
 	 * @see Order#copy()
 	 */
 	@Test
@@ -257,6 +199,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies set all the relevant fields
 	 * @see Order#cloneForRevision()
 	 */
 	@Test
@@ -274,6 +217,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies true if it is the same or is a subtype
 	 * @see Order#isType(OrderType)
 	 */
 	@Test
@@ -292,6 +236,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies false if it neither the same nor a subtype
 	 * @see Order#isType(OrderType)
 	 */
 	@Test
@@ -303,6 +248,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies set the relevant fields for a DC order
 	 * @see Order#cloneForRevision()
 	 */
 	@Test
@@ -326,6 +272,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false if other order is null
 	 * @see Order#hasSameOrderableAs(Order)
 	 */
 	@Test
@@ -337,6 +284,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false if the concept of the orders do not match
 	 * @see Order#hasSameOrderableAs(Order)
 	 */
 	@Test
@@ -351,6 +299,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return true if the orders have the same concept
 	 * @see Order#hasSameOrderableAs(Order)
 	 */
 	@Test
@@ -365,6 +314,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return scheduledDate if Urgency is Scheduled
 	 * @see Order#getEffectiveStartDate()
 	 */
 	@Test
@@ -379,6 +329,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return dateActivated if Urgency is not Scheduled
 	 * @see Order#getEffectiveStartDate()
 	 */
 	@Test
@@ -392,6 +343,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return dateStopped if dateStopped is not null
 	 * @see Order#getEffectiveStopDate()
 	 */
 	@Test
@@ -405,6 +357,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return autoExpireDate if dateStopped is null
 	 * @see Order#getEffectiveStopDate()
 	 */
 	@Test
@@ -417,6 +370,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false for a voided order
 	 * @see Order#isFuture(java.util.Date)
 	 */
 	@Test
@@ -428,6 +382,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false if dateActivated is null
 	 * @see Order#isFuture(java.util.Date)
 	 */
 	@Test
@@ -438,6 +393,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false for a voided order
 	 * @see Order#isDiscontinued(java.util.Date)
 	 */
 	@Test
@@ -451,6 +407,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false if date stopped and auto expire date are both null
 	 * @see Order#isDiscontinued(java.util.Date)
 	 */
 	@Test
@@ -463,6 +420,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false if auto expire date is null and date stopped is equal to check date
 	 * @see Order#isDiscontinued(java.util.Date)
 	 */
 	@Test
@@ -476,6 +434,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false if auto expire date is null and date stopped is after check date
 	 * @see Order#isDiscontinued(java.util.Date)
 	 */
 	@Test
@@ -488,6 +447,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false if dateActivated is after check date
 	 * @see Order#isDiscontinued(java.util.Date)
 	 */
 	@Test
@@ -499,6 +459,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return true if auto expire date is null and date stopped is before check date
 	 * @see Order#isDiscontinued(java.util.Date)
 	 */
 	@Test
@@ -511,6 +472,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies fail if date stopped is after auto expire date
 	 * @see Order#isDiscontinued(java.util.Date)
 	 */
 	@Test
@@ -519,11 +481,14 @@ public class OrderTest extends BaseContextSensitiveTest {
 		order.setDateActivated(DateUtils.parseDate("2014-11-01 11:11:10", DATE_FORMAT));
 		order.setAutoExpireDate(DateUtils.parseDate("2014-11-01 11:11:11", DATE_FORMAT));
 		OrderUtilTest.setDateStopped(order, DateUtils.parseDate("2014-11-01 11:11:12", DATE_FORMAT));
-		APIException exception = assertThrows(APIException.class, () -> order.isDiscontinued(DateUtils.parseDate("2014-11-01 11:11:13", DATE_FORMAT)));
-		assertThat(exception.getMessage(), is(Context.getMessageSourceService().getMessage("Order.error.invalidDateStoppedAndAutoExpireDate")));
+		expectedException.expect(APIException.class);
+		expectedException.expectMessage(
+		    Context.getMessageSourceService().getMessage("Order.error.invalidDateStoppedAndAutoExpireDate"));
+		order.isDiscontinued(DateUtils.parseDate("2014-11-01 11:11:13", DATE_FORMAT));
 	}
 	
 	/**
+	 * @verifies return true if check date is after date stopped but before auto expire date
 	 * @see Order#isDiscontinued(java.util.Date)
 	 */
 	@Test
@@ -536,6 +501,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return true if check date is after both date stopped auto expire date
 	 * @see Order#isDiscontinued(java.util.Date)
 	 */
 	@Test
@@ -549,6 +515,8 @@ public class OrderTest extends BaseContextSensitiveTest {
 	
 	/**
 	 * @see Order#isDiscontinued(Date)
+	 * @verifies return true if the order is scheduled for the future and activated on check date
+	 *           but the check date is after date stopped
 	 */
 	@Test
 	public void isDiscontinued_shouldReturnTrueIfTheOrderIsScheduledForTheFutureAndActivatedOnCheckDateButTheCheckDateIsAfterDateStopped()
@@ -573,6 +541,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false for a voided order
 	 * @see Order#isExpired(java.util.Date)
 	 */
 	@Test
@@ -586,6 +555,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false if date stopped and auto expire date are both null
 	 * @see Order#isExpired(java.util.Date)
 	 */
 	@Test
@@ -598,6 +568,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false if date stopped is null and auto expire date is equal to check date
 	 * @see Order#isExpired(java.util.Date)
 	 */
 	@Test
@@ -611,6 +582,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false if date stopped is null and auto expire date is after check date
 	 * @see Order#isExpired(java.util.Date)
 	 */
 	@Test
@@ -623,6 +595,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false if check date is after both date stopped auto expire date
 	 * @see Order#isExpired(java.util.Date)
 	 */
 	@Test
@@ -635,6 +608,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false if dateActivated is after check date
 	 * @see Order#isExpired(java.util.Date)
 	 */
 	@Test
@@ -647,6 +621,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false if check date is after date stopped but before auto expire date
 	 * @see Order#isExpired(java.util.Date)
 	 */
 	@Test
@@ -659,6 +634,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies fail if date stopped is after auto expire date
 	 * @see Order#isExpired(java.util.Date)
 	 */
 	@Test
@@ -667,11 +643,14 @@ public class OrderTest extends BaseContextSensitiveTest {
 		order.setDateActivated(DateUtils.parseDate("2014-11-01 11:11:10", DATE_FORMAT));
 		order.setAutoExpireDate(DateUtils.parseDate("2014-11-01 11:11:11", DATE_FORMAT));
 		OrderUtilTest.setDateStopped(order, DateUtils.parseDate("2014-11-01 11:11:12", DATE_FORMAT));
-		APIException exception = assertThrows(APIException.class, () -> order.isExpired(DateUtils.parseDate("2014-11-01 11:11:13", DATE_FORMAT)));
-		assertThat(exception.getMessage(), is(Context.getMessageSourceService().getMessage("Order.error.invalidDateStoppedAndAutoExpireDate")));
+		expectedException.expect(APIException.class);
+		expectedException.expectMessage(
+		    Context.getMessageSourceService().getMessage("Order.error.invalidDateStoppedAndAutoExpireDate"));
+		order.isExpired(DateUtils.parseDate("2014-11-01 11:11:13", DATE_FORMAT));
 	}
 	
 	/**
+	 * @verifies return true if date stopped is null and auto expire date is before check date
 	 * @see Order#isExpired(java.util.Date)
 	 */
 	@Test
@@ -685,6 +664,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	
 	/**
 	 * @see Order#isActivated(Date)
+	 * @verifies return true if an order was activated on the check date
 	 */
 	@Test
 	public void isActivated_shouldReturnTrueIfAnOrderWasActivatedOnTheCheckDate() throws Exception {
@@ -698,6 +678,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	
 	/**
 	 * @see Order#isActivated(Date)
+	 * @verifies return true if an order was activated before the check date
 	 */
 	@Test
 	public void isActivated_shouldReturnTrueIfAnOrderWasActivatedBeforeTheCheckDate() throws Exception {
@@ -711,6 +692,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	
 	/**
 	 * @see Order#isActivated(Date)
+	 * @verifies return false if dateActivated is null
 	 */
 	@Test
 	public void isActivated_shouldReturnFalseIfDateActivatedIsNull() throws Exception {
@@ -722,6 +704,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	
 	/**
 	 * @see Order#isActivated(Date)
+	 * @verifies return false for an order activated after the check date
 	 */
 	@Test
 	public void isActivated_shouldReturnFalseForAnOrderActivatedAfterTheCheckDate() throws Exception {
@@ -733,6 +716,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return true if an order expired on the check date
 	 * @see Order#isActive(java.util.Date)
 	 */
 	@Test
@@ -746,6 +730,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return true if an order was activated on the check date
 	 * @see Order#isActive(java.util.Date)
 	 */
 	@Test
@@ -760,6 +745,8 @@ public class OrderTest extends BaseContextSensitiveTest {
 	
 	/**
 	 * @see Order#isActive(Date)
+	 * @verifies return true if an order was activated on the check date but scheduled for the
+	 *           future
 	 */
 	@Test
 	public void isActive_shouldReturnTrueIfAnOrderWasActivatedOnTheCheckDateButScheduledForTheFuture() throws Exception {
@@ -775,6 +762,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return true if an order was discontinued on the check date
 	 * @see Order#isActive(java.util.Date)
 	 */
 	@Test
@@ -787,6 +775,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false for a discontinued order
 	 * @see Order#isActive(java.util.Date)
 	 */
 	@Test
@@ -798,6 +787,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false for an expired order
 	 * @see Order#isActive(java.util.Date)
 	 */
 	@Test
@@ -809,6 +799,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false for an order activated after the check date
 	 * @see Order#isActive(java.util.Date)
 	 */
 	@Test
@@ -821,6 +812,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false for a voided order
 	 * @see Order#isActive(java.util.Date)
 	 */
 	@Test
@@ -834,6 +826,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false for a discontinuation order
 	 * @see Order#isActive(java.util.Date)
 	 */
 	@Test
@@ -848,6 +841,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false for a voided order
 	 * @see Order#isStarted(java.util.Date)
 	 */
 	@Test
@@ -859,6 +853,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false if dateActivated is null
 	 * @see Order#isStarted(java.util.Date)
 	 */
 	@Test
@@ -869,6 +864,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false if the order is not yet activated as of the check date
 	 * @see Order#isStarted(java.util.Date)
 	 */
 	@Test
@@ -879,6 +875,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return false if the order was scheduled to start after the check date
 	 * @see Order#isStarted(java.util.Date)
 	 */
 	@Test
@@ -891,6 +888,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return true if the order was scheduled to start on the check date
 	 * @see Order#isStarted(java.util.Date)
 	 */
 	@Test
@@ -903,6 +901,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return true if the order was scheduled to start before the check date
 	 * @see Order#isStarted(java.util.Date)
 	 */
 	@Test
@@ -915,6 +914,7 @@ public class OrderTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return true if the order is started and not scheduled
 	 * @see Order#isStarted(java.util.Date)
 	 */
 	@Test

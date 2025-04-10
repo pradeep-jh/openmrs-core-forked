@@ -9,14 +9,14 @@
  */
 package org.openmrs.api.handler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.Date;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.Location;
 import org.openmrs.OpenmrsMetadata;
 import org.openmrs.User;
+import org.openmrs.test.Verifies;
 
 /**
  * Tests for {@link OpenmrsMetadataSaveHandler}
@@ -27,26 +27,28 @@ public class OpenmrsMetadataSaveHandlerTest {
 	 * @see OpenmrsMetadataSaveHandler#handle(OpenmrsMetadata,User,Date,String)
 	 */
 	@Test
-	public void handle_shouldTrimWhitespaceFromName() {
+	@Verifies(value = "should trim whitespace from name", method = "handle(OpenmrsMetadata,User,Date,String)")
+	public void handle_shouldTrimWhitespaceFromName() throws Exception {
 		String NAME = "the location name";
 		OpenmrsMetadataSaveHandler handler = new OpenmrsMetadataSaveHandler();
 		Location loc = new Location();
 		loc.setName(" " + NAME + " ");
 		handler.handle(loc, null, null, null);
-		assertEquals(NAME, loc.getName());
+		Assert.assertEquals(NAME, loc.getName());
 	}
 	
 	/**
 	 * @see OpenmrsMetadataSaveHandler#handle(OpenmrsMetadata,User,Date,String)
 	 */
 	@Test
-	public void handle_shouldTrimWhitespaceFromDescription() {
+	@Verifies(value = "should trim whitespace from description", method = "handle(OpenmrsMetadata,User,Date,String)")
+	public void handle_shouldTrimWhitespaceFromDescription() throws Exception {
 		String DESC = "the location desc";
 		OpenmrsMetadataSaveHandler handler = new OpenmrsMetadataSaveHandler();
 		Location loc = new Location();
 		loc.setName("a name");
 		loc.setDescription(" " + DESC + " ");
 		handler.handle(loc, null, null, null);
-		assertEquals(DESC, loc.getDescription());
+		Assert.assertEquals(DESC, loc.getDescription());
 	}
 }

@@ -68,7 +68,7 @@ public class Message implements Serializable {
 	 * @param attachment
 	 * @param attachmentContentType
 	 * @param attachmentFileName
-	 * <strong>Should</strong> fill in all parameters
+	 * @should fill in all parameters
 	 */
 	public Message(Integer id, String recipients, String sender, String subject, String content, String attachment,
 	    String attachmentContentType, String attachmentFileName) {
@@ -98,7 +98,7 @@ public class Message implements Serializable {
 	 * Auto generated method comment
 	 *
 	 * @param recipients
-	 * <strong>Should</strong> set multiple recipients
+	 * @should set multiple recipients
 	 */
 	public void setRecipients(String recipients) {
 		if (recipients != null) {
@@ -116,7 +116,7 @@ public class Message implements Serializable {
 	 * behavior??!).
 	 *
 	 * @param recipient a new address to assign
-	 * <strong>Should</strong> add new recipient
+	 * @should add new recipient
 	 */
 	public void addRecipient(String recipient) {
 		if (recipient != null) {
@@ -190,7 +190,7 @@ public class Message implements Serializable {
 	
 	/**
 	 * @return true if this message has an attachment
-	 * <strong>Should</strong> return true if this message has an attachment
+	 * @should return true if this message has an attachment
 	 */
 	public boolean hasAttachment() {
 		return attachment != null;

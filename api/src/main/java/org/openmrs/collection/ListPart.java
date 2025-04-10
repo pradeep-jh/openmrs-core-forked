@@ -30,7 +30,7 @@ public class ListPart<E> extends CollectionPart<E> {
 	 */
 	public ListPart(List<E> list, Long firstElement, Long maxElements, Long totalElements, Boolean totalElementsExact) {
 		super(list, firstElement, maxElements, totalElements, totalElementsExact);
-		this.list = list;
+		this.list = (List<E>) list;
 	}
 	
 	@Override
@@ -44,7 +44,7 @@ public class ListPart<E> extends CollectionPart<E> {
 	
 	public static <T> ListPart<T> newListPart(List<T> list, Long firstElement, Long maxElements, Long totalElements,
 	        Boolean totalElementsExact) {
-		return new ListPart<>(list, firstElement, maxElements, totalElements, totalElementsExact);
+		return new ListPart<T>(list, firstElement, maxElements, totalElements, totalElementsExact);
 	}
 	
 }

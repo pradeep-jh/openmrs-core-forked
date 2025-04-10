@@ -41,6 +41,7 @@ import org.openmrs.parameter.EncounterSearchCriteriaBuilder;
 @Handler(supports = {Patient.class}, order = 50)
 public class PatientDataUnvoidHandler implements UnvoidHandler<Patient> {
 	
+	@SuppressWarnings("unchecked")
 	@Override
 	public void handle(Patient patient, User originalVoidingUser, Date origParentVoidedDate, String unused) {
 		//can't be unvoiding a patient that doesn't exist in the database
@@ -54,7 +55,7 @@ public class PatientDataUnvoidHandler implements UnvoidHandler<Patient> {
 			List<Encounter> encounters = es.getEncounters(encounterSearchCriteria);
 			if (CollectionUtils.isNotEmpty(encounters)) {
 				for (Encounter encounter : encounters) {
-					if (encounter.getVoided() && encounter.getDateVoided().equals(origParentVoidedDate)
+					if (encounter.isVoided() && encounter.getDateVoided().equals(origParentVoidedDate)
 					        && encounter.getVoidedBy().equals(originalVoidingUser)) {
 						es.unvoidEncounter(encounter);
 					}
@@ -66,7 +67,7 @@ public class PatientDataUnvoidHandler implements UnvoidHandler<Patient> {
 			List<Order> orders = os.getAllOrdersByPatient(patient);
 			if (CollectionUtils.isNotEmpty(orders)) {
 				for (Order order : orders) {
-					if (order.getVoided() && order.getDateVoided().equals(origParentVoidedDate)
+					if (order.isVoided() && order.getDateVoided().equals(origParentVoidedDate)
 					        && order.getVoidedBy().equals(originalVoidingUser)) {
 						os.unvoidOrder(order);
 					}

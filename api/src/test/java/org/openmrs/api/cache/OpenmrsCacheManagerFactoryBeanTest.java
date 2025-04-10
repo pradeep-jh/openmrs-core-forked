@@ -9,17 +9,16 @@
  */
 package org.openmrs.api.cache;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.is;
+import org.junit.Test;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.CacheManager;
 
 import java.util.Collection;
 
-import org.junit.jupiter.api.Test;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.CacheManager;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.is;
 
 public class OpenmrsCacheManagerFactoryBeanTest extends BaseContextSensitiveTest{
     
@@ -27,10 +26,10 @@ public class OpenmrsCacheManagerFactoryBeanTest extends BaseContextSensitiveTest
     CacheManager cacheManager;
     
     @Test
-    public void shouldContainSpecificCacheConfigurations(){
-        String[] expectedCaches = {"conceptDatatype", "subscription", "userSearchLocales", "conceptIdsByMapping"};
-        Collection<String> actualCaches = cacheManager.getCacheNames();
-        assertThat(actualCaches.size(), is(expectedCaches.length));
-        assertThat(actualCaches, containsInAnyOrder(expectedCaches));
+    public void shouldContainsThreeCacheConfigurations(){
+        Collection<String> cacheNames = cacheManager.getCacheNames();
+        assertThat(cacheNames.size(), is(3));
+        cacheNames.forEach(cn ->
+                assertThat(cn, anyOf(is("conceptDatatype"), is("subscription"), is("userSearchLocales"))));
     }
 }

@@ -13,8 +13,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import org.openmrs.hl7.HL7Constants;
-
 import liquibase.change.custom.CustomChange;
 import liquibase.change.custom.CustomTaskChange;
 import liquibase.database.Database;
@@ -22,14 +20,20 @@ import liquibase.database.jvm.JdbcConnection;
 import liquibase.exception.CustomChangeException;
 import liquibase.exception.DatabaseException;
 import liquibase.exception.SetupException;
+
 import liquibase.exception.ValidationErrors;
 import liquibase.resource.ResourceAccessor;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.openmrs.hl7.HL7Constants;
 
 /**
  * This change set moves "deleted" HL7s from the archive table to the queue table
  */
 public class MoveDeletedHL7sChangeSet implements CustomTaskChange {
-
+	
+	protected final static Log log = LogFactory.getLog(MoveDeletedHL7sChangeSet.class);
+	
 	/**
 	 * @see CustomTaskChange#execute(Database)
 	 */
@@ -49,8 +53,8 @@ public class MoveDeletedHL7sChangeSet implements CustomTaskChange {
 		insertHL7Sql.append(HL7Constants.HL7_STATUS_DELETED);
 		insertHL7Sql.append(")");
 		
-		PreparedStatement insertStatement;
-		PreparedStatement deleteStatement;
+		PreparedStatement insertStatement = null;
+		PreparedStatement deleteStatement = null;
 		
 		try {
 			insertStatement = connection.prepareStatement(insertHL7Sql.toString());
@@ -82,8 +86,11 @@ public class MoveDeletedHL7sChangeSet implements CustomTaskChange {
 			}
 			
 		}
-		catch (SQLException | DatabaseException e) {
+		catch (SQLException e) {
 			throw new CustomChangeException("Unable to move deleted HL7s from archive table to queue table", e);
+		}
+		catch (DatabaseException dbex) {
+			throw new CustomChangeException("Unable to move deleted HL7s from archive table to queue table", dbex);
 		}
 	}
 	

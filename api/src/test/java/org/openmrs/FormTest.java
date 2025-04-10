@@ -9,9 +9,9 @@
  */
 package org.openmrs;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
+import org.openmrs.test.Verifies;
 
 /**
  * This class tests the all of the {@link Form} non-trivial object methods.
@@ -26,8 +26,9 @@ public class FormTest {
 	 * @see Form#Form(Integer)
 	 */
 	@Test
-	public void Form_shouldSetFormIdWithGivenParameter() {
+	@Verifies(value = "should set formId with given parameter", method = "Form(Integer)")
+	public void Form_shouldSetFormIdWithGivenParameter() throws Exception {
 		Form form = new Form(123);
-		assertEquals(123, form.getFormId().intValue());
+		Assert.assertEquals(123, form.getFormId().intValue());
 	}
 }

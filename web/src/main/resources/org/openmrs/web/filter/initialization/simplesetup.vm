@@ -1,4 +1,4 @@
-#parse($HEADER_TEMPLATE)
+#parse($headerTemplate)
 
     <form method="post" autocomplete="off">
         <input type="hidden" name="page" value="simplesetup.vm" />
@@ -22,7 +22,6 @@
                     <td class="yes">admin/${ADMIN_DEFAULT_PASSWORD}</td>
                 </tr>
                 <tr>
-                	<input type="hidden" name="database_connection" value="${databaseConnection}"/>
                     <td class="question">$l10n.get("install.simple.addDemoData") - ${databaseName}?</td>
                 </tr>
                 <tr>
@@ -39,4 +38,4 @@
 		</div>
 	</form>
 	
-#parse($FOOTER_TEMPLATE)
+#parse($footerTemplate)

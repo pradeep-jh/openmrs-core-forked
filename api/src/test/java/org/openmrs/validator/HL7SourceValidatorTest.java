@@ -9,12 +9,11 @@
  */
 package org.openmrs.validator;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.hl7.HL7Source;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 
@@ -25,28 +24,32 @@ public class HL7SourceValidatorTest extends BaseContextSensitiveTest {
 	
 	/**
 	 * @see HL7SourceValidator#validate(Object,Errors)
+	 * @verifies pass validation if field lengths are correct
 	 */
 	@Test
-	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() {
+	@Verifies(value = "should pass validation if field lengths are correct", method = "validate(java.lang.Object, org.springframework.validation.Errors)")
+	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() throws Exception {
 		HL7Source hl7Source = new HL7Source();
 		hl7Source.setName("name");
 		
 		Errors errors = new BindException(hl7Source, "hl7Source");
 		new HL7SourceValidator().validate(hl7Source, errors);
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see HL7SourceValidator#validate(Object,Errors)
+	 * @verifies pass validation if field lengths are correct
 	 */
 	@Test
-	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() {
+	@Verifies(value = "should fail validation if field lengths are not correct", method = "validate(java.lang.Object, org.springframework.validation.Errors)")
+	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() throws Exception {
 		HL7Source hl7Source = new HL7Source();
 		hl7Source
 		        .setName("too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text");
 		
 		Errors errors = new BindException(hl7Source, "hl7Source");
 		new HL7SourceValidator().validate(hl7Source, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 	}
 }

@@ -11,20 +11,19 @@ package org.openmrs.propertyeditor;
 
 import java.beans.PropertyEditorSupport;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.ConceptReferenceTerm;
 import org.openmrs.api.context.Context;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
 public class ConceptReferenceTermEditor extends PropertyEditorSupport {
 	
-	private static final Logger log = LoggerFactory.getLogger(ConceptReferenceTermEditor.class);
+	private final static Log log = LogFactory.getLog(ConceptReferenceTermEditor.class);
 	
 	public ConceptReferenceTermEditor() {
 	}
 	
-	@Override
 	public void setAsText(String text) throws IllegalArgumentException {
 		log.debug("Setting text: " + text);
 		if (StringUtils.hasText(text)) {
@@ -32,18 +31,13 @@ public class ConceptReferenceTermEditor extends PropertyEditorSupport {
 				setValue(Context.getConceptService().getConceptReferenceTerm(Integer.valueOf(text)));
 			}
 			catch (Exception ex) {
-				ConceptReferenceTerm value = Context.getConceptService().getConceptReferenceTermByUuid(text);
-				setValue(value);
-				if (value == null) {
-					throw new IllegalArgumentException("ConceptReferenceTerm not found: " + text, ex);
-				}
+				throw new IllegalArgumentException("ConceptReferenceTerm not found: " + text, ex);
 			}
 		} else {
 			setValue(null);
 		}
 	}
 	
-	@Override
 	public String getAsText() {
 		ConceptReferenceTerm term = (ConceptReferenceTerm) getValue();
 		if (term == null || term.getConceptReferenceTermId() == null) {

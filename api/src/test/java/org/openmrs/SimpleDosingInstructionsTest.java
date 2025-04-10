@@ -9,25 +9,24 @@
  */
 package org.openmrs;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static junit.framework.TestCase.assertEquals;
 import static org.openmrs.test.TestUtil.createDateTime;
 
-import java.text.ParseException;
 import java.util.Date;
 import java.util.Random;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.api.context.Context;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 
 public class SimpleDosingInstructionsTest extends BaseContextSensitiveTest {
 	
 	@Test
-	public void validate_shouldFailValidationIfAutoExpireDateIsNotSetAndDurationUnitsIsNotMappedToSNOMEDCTDuration() {
+	public void validate_shouldFailValidationIfAutoExpireDateIsNotSetAndDurationUnitsIsNotMappedToSNOMEDCTDuration()
+	        throws Exception {
 		DrugOrder drugOrder = createValidDrugOrder();
 		drugOrder.setDuration(30);
 		Concept unMappedDurationUnits = new Concept();
@@ -37,15 +36,14 @@ public class SimpleDosingInstructionsTest extends BaseContextSensitiveTest {
 		
 		new SimpleDosingInstructions().validate(drugOrder, errors);
 		
-		assertTrue(errors.hasFieldErrors("durationUnits"));
-		assertEquals("DrugOrder.error.durationUnitsNotMappedToSnomedCtDurationCode", errors.getFieldError(
+		Assert.assertTrue(errors.hasFieldErrors("durationUnits"));
+		Assert.assertEquals("DrugOrder.error.durationUnitsNotMappedToSnomedCtDurationCode", errors.getFieldError(
 		    "durationUnits").getCode());
 	}
 	
 	@Test
 	public void validate_shouldPassValidationIfAutoExpireDateIsSetAndDurationUnitsIsNotMappedToSNOMEDCTDuration()
-	        throws ParseException
-	        {
+	        throws Exception {
 		DrugOrder drugOrder = createValidDrugOrder();
 		drugOrder.setDuration(30);
 		Concept unMappedDurationUnits = new Concept();
@@ -55,11 +53,11 @@ public class SimpleDosingInstructionsTest extends BaseContextSensitiveTest {
 		
 		new SimpleDosingInstructions().validate(drugOrder, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	@Test
-	public void validate_shouldPassValidationIfAutoExpireDateAndDurationUnitsAreNotSet() {
+	public void validate_shouldPassValidationIfAutoExpireDateAndDurationUnitsAreNotSet() throws Exception {
 		DrugOrder drugOrder = createValidDrugOrder();
 		drugOrder.setDurationUnits(null);
 		drugOrder.setAutoExpireDate(null);
@@ -67,11 +65,11 @@ public class SimpleDosingInstructionsTest extends BaseContextSensitiveTest {
 		
 		new SimpleDosingInstructions().validate(drugOrder, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	@Test
-	public void getAutoExpireDate_shouldInferAutoExpireDateForAKnownSNOMEDCTDurationUnit() throws ParseException {
+	public void getAutoExpireDate_shouldInferAutoExpireDateForAKnownSNOMEDCTDurationUnit() throws Exception {
 		DrugOrder drugOrder = new DrugOrder();
 		drugOrder.setDateActivated(createDateTime("2014-07-01 10:00:00"));
 		drugOrder.setDuration(30);
@@ -81,7 +79,7 @@ public class SimpleDosingInstructionsTest extends BaseContextSensitiveTest {
 	}
 	
 	@Test
-	public void getAutoExpireDate_shouldInferAutoExpireDateForScheduledDrugOrder() throws ParseException {
+	public void getAutoExpireDate_shouldInferAutoExpireDateForScheduledDrugOrder() throws Exception {
 		DrugOrder drugOrder = new DrugOrder();
 		drugOrder.setDateActivated(createDateTime("2014-07-01 00:00:00"));
 		drugOrder.setScheduledDate(createDateTime("2014-07-05 00:00:00"));
@@ -93,19 +91,20 @@ public class SimpleDosingInstructionsTest extends BaseContextSensitiveTest {
 	}
 	
 	@Test
-	public void getAutoExpireDate_shouldInferAutoExpireDateIfDurationIsSet() throws ParseException {
+	public void getAutoExpireDate_shouldNotInferAutoExpireDateWhenDrugOrderHasOneOrMoreRefill() throws Exception {
 		DrugOrder drugOrder = new DrugOrder();
-		drugOrder.setDosingType(FreeTextDosingInstructions.class);
-		drugOrder.setDateActivated(createDateTime("2014-07-01 00:00:00"));
+		drugOrder.setDateActivated(createDateTime("2014-07-01 10:00:00"));
 		drugOrder.setDuration(30);
-		drugOrder.setDurationUnits(createUnits(Duration.SNOMED_CT_DAYS_CODE));
+		drugOrder.setDurationUnits(createUnits(Duration.SNOMED_CT_SECONDS_CODE));
 		drugOrder.setNumRefills(1);
-		drugOrder.setAutoExpireDateBasedOnDuration();
-		assertEquals(createDateTime("2014-07-30 23:59:59"), drugOrder.getAutoExpireDate());
+		
+		Date autoExpireDate = new SimpleDosingInstructions().getAutoExpireDate(drugOrder);
+		
+		assertEquals(null, autoExpireDate);
 	}
 	
 	@Test
-	public void getAutoExpireDate_shouldNotInferAutoExpireDateWhenDurationDoesNotExist() throws ParseException {
+	public void getAutoExpireDate_shouldNotInferAutoExpireDateWhenDurationDoesNotExist() throws Exception {
 		DrugOrder drugOrder = new DrugOrder();
 		drugOrder.setDateActivated(createDateTime("2014-07-01 10:00:00"));
 		drugOrder.setDurationUnits(createUnits(Duration.SNOMED_CT_SECONDS_CODE));
@@ -117,7 +116,7 @@ public class SimpleDosingInstructionsTest extends BaseContextSensitiveTest {
 	}
 	
 	@Test
-	public void getAutoExpireDate_shouldNotInferAutoExpireDateWhenDurationUnitsDoesNotExist() throws ParseException {
+	public void getAutoExpireDate_shouldNotInferAutoExpireDateWhenDurationUnitsDoesNotExist() throws Exception {
 		DrugOrder drugOrder = new DrugOrder();
 		drugOrder.setDateActivated(createDateTime("2014-07-01 10:00:00"));
 		drugOrder.setDuration(1);
@@ -130,7 +129,7 @@ public class SimpleDosingInstructionsTest extends BaseContextSensitiveTest {
 	
 	@Test
 	public void getAutoExpireDate_shouldNotInferAutoExpireDateWhenConceptMappingOfSourceSNOMEDCTDurationDoesNotExist()
-	        throws ParseException {
+	        throws Exception {
 		DrugOrder drugOrder = new DrugOrder();
 		drugOrder.setDateActivated(createDateTime("2014-07-01 10:00:00"));
 		drugOrder.setDuration(30);
@@ -191,10 +190,11 @@ public class SimpleDosingInstructionsTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies reject a duration unit with a mapping of an invalid type
 	 * @see SimpleDosingInstructions#validate(DrugOrder, org.springframework.validation.Errors)
 	 */
 	@Test
-	public void validate_shouldRejectADurationUnitWithAMappingOfAnInvalidType() {
+	public void validate_shouldRejectADurationUnitWithAMappingOfAnInvalidType() throws Exception {
 		DrugOrder drugOrder = createValidDrugOrder();
 		drugOrder.setDuration(30);
 		Concept durationUnitWithInvalidMapType = createUnits("SCT", Duration.SNOMED_CT_DAYS_CODE, "Some-uuid");
@@ -203,6 +203,6 @@ public class SimpleDosingInstructionsTest extends BaseContextSensitiveTest {
 		
 		new SimpleDosingInstructions().validate(drugOrder, errors);
 		
-		assertTrue(errors.hasErrors());
+		assertEquals(true, errors.hasErrors());
 	}
 }

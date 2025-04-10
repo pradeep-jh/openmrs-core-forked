@@ -30,7 +30,6 @@ import org.openmrs.ConceptName;
 import org.openmrs.ConceptNameTag;
 import org.openmrs.ConceptNumeric;
 import org.openmrs.ConceptProposal;
-import org.openmrs.ConceptReferenceRange;
 import org.openmrs.ConceptReferenceTerm;
 import org.openmrs.ConceptReferenceTermMap;
 import org.openmrs.ConceptSearchResult;
@@ -56,7 +55,7 @@ public interface ConceptDAO {
 	
 	/**
 	 * @see org.openmrs.api.ConceptService#purgeConcept(org.openmrs.Concept)
-	 * <strong>Should</strong> purge concept
+	 * @should purge concept
 	 */
 	public void purgeConcept(Concept concept) throws DAOException;
 	
@@ -104,7 +103,7 @@ public interface ConceptDAO {
 	 * @param searchOnPhrase This puts wildcard characters around the concept name search criteria
 	 * @return List&lt;Concept&gt;
 	 * @throws DAOException
-	 * <strong>Should</strong> not return concepts with matching names that are voided
+	 * @should not return concepts with matching names that are voided
 	 */
 	public List<Concept> getConcepts(String name, Locale loc, boolean searchOnPhrase, List<ConceptClass> classes,
 	        List<ConceptDatatype> datatypes) throws DAOException;
@@ -113,8 +112,8 @@ public interface ConceptDAO {
 	 * @see ConceptService#getConcepts(String, List, boolean, List, List, List, List, Concept,
 	 *      Integer, Integer)
 	 * @throws DAOException
-	 * <strong>Should</strong> return correct results for concept with names that contains words with more weight
-	 * <strong>Should</strong> return correct results if a concept name contains same word more than once
+	 * @should return correct results for concept with names that contains words with more weight
+	 * @should return correct results if a concept name contains same word more than once
 	 */
 	public List<ConceptSearchResult> getConcepts(String phrase, List<Locale> locales, boolean includeRetired,
 	        List<ConceptClass> requireClasses, List<ConceptClass> excludeClasses, List<ConceptDatatype> requireDatatypes,
@@ -226,7 +225,7 @@ public interface ConceptDAO {
 	
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptsByAnswer(org.openmrs.Concept)
-	 * <strong>Should</strong> return concepts for the given answer concept
+	 * @should return concepts for the given answer concept
 	 */
 	public List<Concept> getConceptsByAnswer(Concept concept) throws DAOException;
 	
@@ -323,16 +322,8 @@ public interface ConceptDAO {
 	
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptsByMapping(java.lang.String, java.lang.String)
-	 * 
-	 * @deprecated As of 2.5.0, this method has been deprecated in favor of {@link #getConceptIdsByMapping(String, String, boolean)}
 	 */
-	@Deprecated
 	public List<Concept> getConceptsByMapping(String code, String sourceName, boolean includeRetired);
-
-	/**
-	 * @see org.openmrs.api.ConceptService#getConceptIdsByMapping(String, String, boolean)
-	 */
-	public List<Integer> getConceptIdsByMapping(String code, String sourceName, boolean includeRetired);
 	
 	/**
 	 * @param uuid
@@ -413,7 +404,7 @@ public interface ConceptDAO {
 	 * 
 	 * @param concept for which the conceptDatatype should be fetched
 	 * @return the conceptDatatype currently in the database for this concept
-	 * <strong>Should</strong> get saved conceptDatatype from database
+	 * @should get saved conceptDatatype from database
 	 */
 	public ConceptDatatype getSavedConceptDatatype(Concept concept);
 	
@@ -521,12 +512,7 @@ public interface ConceptDAO {
 	 * @see ConceptService#getConceptReferenceTermByCode(String, ConceptSource)
 	 */
 	public ConceptReferenceTerm getConceptReferenceTermByCode(String code, ConceptSource conceptSource) throws DAOException;
-
-	/**
-	 * @see ConceptService#getConceptReferenceTermByCode(String, ConceptSource, boolean)
-	 */
-	public List<ConceptReferenceTerm> getConceptReferenceTermByCode(String code, ConceptSource conceptSource, boolean includeRetired) throws DAOException;
-
+	
 	/**
 	 * @see ConceptService#saveConceptReferenceTerm(ConceptReferenceTerm)
 	 */
@@ -562,9 +548,9 @@ public interface ConceptDAO {
 	 * @param term
 	 * @return true if term is in use
 	 * @throws DAOException
-	 * <strong>Should</strong> return true if a term has a conceptMap or more using it
-	 * <strong>Should</strong> return true if a term has a conceptReferenceTermMap or more using it
-	 * <strong>Should</strong> return false if a term has no maps using it
+	 * @should return true if a term has a conceptMap or more using it
+	 * @should return true if a term has a conceptReferenceTermMap or more using it
+	 * @should return false if a term has no maps using it
 	 */
 	public boolean isConceptReferenceTermInUse(ConceptReferenceTerm term) throws DAOException;
 	
@@ -575,9 +561,9 @@ public interface ConceptDAO {
 	 * @param mapType
 	 * @return true if map type is in use
 	 * @throws DAOException
-	 * <strong>Should</strong> return true if a mapType has a conceptMap or more using it
-	 * <strong>Should</strong> return true if a mapType has a conceptReferenceTermMap or more using it
-	 * <strong>Should</strong> return false if a mapType has no maps using it
+	 * @should return true if a mapType has a conceptMap or more using it
+	 * @should return true if a mapType has a conceptReferenceTermMap or more using it
+	 * @should return false if a mapType has no maps using it
 	 */
 	public boolean isConceptMapTypeInUse(ConceptMapType mapType) throws DAOException;
 	
@@ -668,21 +654,4 @@ public interface ConceptDAO {
 	 * @see ConceptService#hasAnyConceptAttribute(ConceptAttributeType)
 	 */
 	public long getConceptAttributeCount(ConceptAttributeType conceptAttributeType);
-
-	List<Concept> getConceptsByClass(ConceptClass conceptClass);
-
-	/**
-	 * @see ConceptService#saveConceptReferenceRange(ConceptReferenceRange)
-	 */
-	ConceptReferenceRange saveConceptReferenceRange(ConceptReferenceRange conceptReferenceRange);
-
-	/**
-	 * @see ConceptService#getConceptReferenceRangesByConceptId(Integer)
-	 */
-	List<ConceptReferenceRange> getConceptReferenceRangesByConceptId(Integer conceptId);
-
-	/**
-	 * @see ConceptService#getConceptReferenceRangeByUuid(String) 
-	 */
-	ConceptReferenceRange getConceptReferenceRangeByUuid(String uuid);
 }

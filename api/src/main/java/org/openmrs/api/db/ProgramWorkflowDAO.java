@@ -9,18 +9,15 @@
  */
 package org.openmrs.api.db;
 
-import org.openmrs.ProgramAttributeType;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 import org.openmrs.Cohort;
 import org.openmrs.Concept;
 import org.openmrs.ConceptStateConversion;
 import org.openmrs.Patient;
 import org.openmrs.PatientProgram;
-import org.openmrs.PatientProgramAttribute;
 import org.openmrs.PatientState;
 import org.openmrs.Program;
 import org.openmrs.ProgramWorkflow;
@@ -219,20 +216,11 @@ public interface ProgramWorkflowDAO {
 	 * Retrieves the Programs from the dB which have the given name.
 	 * @param name the name of the Programs to retrieve.
 	 * @param includeRetired whether to include retired programs or not
-	 * <strong>Should</strong> return an empty list when there is no program in the dB with given name
-	 * <strong>Should</strong> return only and exactly the programs with the given name
+	 * @should return an empty list when there is no program in the dB with given name
+	 * @should return only and exactly the programs with the given name
 	 * @return all Programs with the given name.
 	 */
 	public List<Program> getProgramsByName(String name, boolean includeRetired);
-	
-	/**
-	 * Retrieves a {@code ProgramWorkflowState} from the database by its primary key.
-	 * 
-	 * @param stateId the primary key used to retrieve program workflow state
-	 * @return the program workflow state matching given id or null if not found
-	 * @since 2.2.0
-	 */
-	public ProgramWorkflowState getState(Integer stateId);
 	
 	/**
 	 * @param uuid
@@ -241,15 +229,6 @@ public interface ProgramWorkflowDAO {
 	public ProgramWorkflowState getStateByUuid(String uuid);
 	
 	public PatientState getPatientStateByUuid(String uuid);
-	
-	/**
-	 * Retrieves a {@code ProgramWorkflow} from the database by its primary key.
-	 * 
-	 * @param workflowId the primary key used to retrieve program workflow
-	 * @return the program workflow matching given id or null if not found
-	 * @since 2.2.0
-	 */
-	public ProgramWorkflow getWorkflow(Integer workflowId);
 	
 	/**
 	 * @param uuid
@@ -280,19 +259,4 @@ public interface ProgramWorkflowDAO {
 	 * @return - A List of ProgramWorkflowStates
 	 */
 	public List<ProgramWorkflowState> getProgramWorkflowStatesByConcept(Concept concept);
-        public List<ProgramAttributeType> getAllProgramAttributeTypes();
-
-        public ProgramAttributeType getProgramAttributeType(Integer var1);
-
-        public ProgramAttributeType getProgramAttributeTypeByUuid(String var1);
-
-        public ProgramAttributeType saveProgramAttributeType(ProgramAttributeType var1);
-
-        public PatientProgramAttribute getPatientProgramAttributeByUuid(String var1);
-
-        public void purgeProgramAttributeType(ProgramAttributeType var1);
-
-        public List<PatientProgram> getPatientProgramByAttributeNameAndValue(String attributeName, String attributeValue);
-
-        public Map<Object, Object> getPatientProgramAttributeByAttributeName(List<Integer> patientIds, String attributeName);
 }

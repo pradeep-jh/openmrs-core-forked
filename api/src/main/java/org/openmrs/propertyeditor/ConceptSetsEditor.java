@@ -13,12 +13,13 @@ import java.beans.PropertyEditorSupport;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Vector;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.ConceptSet;
 import org.openmrs.api.ConceptService;
 import org.openmrs.api.context.Context;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
 /**
@@ -26,9 +27,9 @@ import org.springframework.util.StringUtils;
  */
 public class ConceptSetsEditor extends PropertyEditorSupport {
 	
-	private static final Logger log = LoggerFactory.getLogger(ConceptSetsEditor.class);
+	private Log log = LogFactory.getLog(this.getClass());
 	
-	private Collection<ConceptSet> originalConceptSets;
+	private Collection<ConceptSet> originalConceptSets = null;
 	
 	/**
 	 * Default constructor taking in the current sets on a concept
@@ -37,7 +38,7 @@ public class ConceptSetsEditor extends PropertyEditorSupport {
 	 */
 	public ConceptSetsEditor(Collection<ConceptSet> conceptSets) {
 		if (conceptSets == null) {
-			originalConceptSets = new ArrayList<>();
+			originalConceptSets = new Vector<ConceptSet>();
 		}
 		
 		this.originalConceptSets = conceptSets;
@@ -46,14 +47,13 @@ public class ConceptSetsEditor extends PropertyEditorSupport {
 	/**
 	 * @see java.beans.PropertyEditorSupport#setAsText(java.lang.String)
 	 */
-	@Override
 	public void setAsText(String text) throws IllegalArgumentException {
 		log.debug("setting conceptSets with text: " + text);
 		
 		if (StringUtils.hasText(text)) {
 			ConceptService cs = Context.getConceptService();
 			String[] conceptIds = text.split(" ");
-			List<Integer> requestConceptIds = new ArrayList<>();
+			List<Integer> requestConceptIds = new Vector<Integer>();
 			//set up parameter Set for easier add/delete functions
 			// and removal of duplicates
 			for (String id : conceptIds) {
@@ -64,10 +64,10 @@ public class ConceptSetsEditor extends PropertyEditorSupport {
 			}
 			
 			// used when adding in concept sets
-			List<Integer> originalConceptSetIds = new ArrayList<>(originalConceptSets.size());
+			List<Integer> originalConceptSetIds = new ArrayList<Integer>(originalConceptSets.size());
 			
 			// remove all sets that aren't in the request (aka, that have been deleted by the user)
-			Collection<ConceptSet> copyOfOriginalConceptSets = new ArrayList<>(originalConceptSets);
+			Collection<ConceptSet> copyOfOriginalConceptSets = new ArrayList<ConceptSet>(originalConceptSets);
 			for (ConceptSet origConceptSet : copyOfOriginalConceptSets) {
 				if (!requestConceptIds.contains(origConceptSet.getConcept().getConceptId())) {
 					originalConceptSets.remove(origConceptSet);
@@ -86,12 +86,12 @@ public class ConceptSetsEditor extends PropertyEditorSupport {
 				
 				if (!originalConceptSetIds.contains(requestConceptId)) {
 					// the null weight will be reset in the next step of normalization
-					originalConceptSets.add(new ConceptSet(cs.getConcept(requestConceptId), (double) x));
+					originalConceptSets.add(new ConceptSet(cs.getConcept(requestConceptId), new Double(x)));
 				} else {
 					// find this conceptId in the original set and set its weight
 					for (ConceptSet conceptSet : originalConceptSets) {
 						if (conceptSet.getConcept().getConceptId().equals(requestConceptId)) {
-							conceptSet.setSortWeight((double) x);
+							conceptSet.setSortWeight(new Double(x));
 						}
 					}
 				}

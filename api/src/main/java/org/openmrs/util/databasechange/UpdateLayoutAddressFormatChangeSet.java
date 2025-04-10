@@ -14,9 +14,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import liquibase.change.custom.CustomTaskChange;
 import liquibase.database.Database;
 import liquibase.database.jvm.JdbcConnection;
@@ -25,13 +22,15 @@ import liquibase.exception.DatabaseException;
 import liquibase.exception.SetupException;
 import liquibase.exception.ValidationErrors;
 import liquibase.resource.ResourceAccessor;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * This change set is run to update layout.address.format global property
  */
 public class UpdateLayoutAddressFormatChangeSet implements CustomTaskChange {
 	
-	private static final Logger log = LoggerFactory.getLogger(UpdateLayoutAddressFormatChangeSet.class);
+	private final static Log log = LogFactory.getLog(UpdateLayoutAddressFormatChangeSet.class);
 	
 	/**
 	 * @see CustomTaskChange#execute(Database)
@@ -57,7 +56,10 @@ public class UpdateLayoutAddressFormatChangeSet implements CustomTaskChange {
 				pStmt.executeBatch();
 			}
 		}
-		catch (DatabaseException | SQLException e) {
+		catch (DatabaseException e) {
+			log.warn("Error generated", e);
+		}
+		catch (SQLException e) {
 			log.warn("Error generated", e);
 		}
 		finally {

@@ -9,8 +9,6 @@
  */
 package org.openmrs;
 
-import org.hibernate.envers.Audited;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -21,8 +19,7 @@ import java.util.Set;
  *
  * @version 1.0
  */
-@Audited
-public class Form extends BaseChangeableOpenmrsMetadata {
+public class Form extends BaseOpenmrsMetadata {
 	
 	public static final long serialVersionUID = 845634L;
 	
@@ -49,7 +46,7 @@ public class Form extends BaseChangeableOpenmrsMetadata {
 	/**
 	 * Constructor with id
 	 *
-	 * <strong>Should</strong> set formId with given parameter
+	 * @should set formId with given parameter
 	 */
 	public Form(Integer formId) {
 		this.formId = formId;
@@ -139,8 +136,9 @@ public class Form extends BaseChangeableOpenmrsMetadata {
 	 */
 	public List<FormField> getOrderedFormFields() {
 		if (this.formFields != null) {
-			List<FormField> fieldList = new ArrayList<>();
-			Set<FormField> fieldSet = new HashSet<>(this.formFields);
+			List<FormField> fieldList = new ArrayList<FormField>();
+			Set<FormField> fieldSet = new HashSet<FormField>();
+			fieldSet.addAll(this.formFields);
 			
 			int fieldSize = fieldSet.size();
 			
@@ -150,8 +148,8 @@ public class Form extends BaseChangeableOpenmrsMetadata {
 				
 				for (FormField ff : fieldSet) {
 					if (ff.getFieldNumber() != null) {
-						if (ff.getFieldNumber() < fieldNum || fieldNum == 0) {
-							fieldNum = ff.getFieldNumber();
+						if (ff.getFieldNumber().intValue() < fieldNum || fieldNum == 0) {
+							fieldNum = ff.getFieldNumber().intValue();
 							next = ff;
 						}
 					} else {
@@ -185,7 +183,7 @@ public class Form extends BaseChangeableOpenmrsMetadata {
 	 */
 	public void addFormField(FormField formField) {
 		if (formFields == null) {
-			formFields = new HashSet<>();
+			formFields = new HashSet<FormField>();
 		}
 		if (!formFields.contains(formField) && formField != null) {
 			formField.setForm(this);
@@ -216,7 +214,6 @@ public class Form extends BaseChangeableOpenmrsMetadata {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		
 		return getFormId();
@@ -226,7 +223,6 @@ public class Form extends BaseChangeableOpenmrsMetadata {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setFormId(id);
 		

@@ -9,15 +9,12 @@
  */
 package org.openmrs;
 
-import org.hibernate.envers.Audited;
-
 /**
  * Mapping Class between Encounters and Providers which allows many to many relationship.
  * 
  * @since 1.9
  */
-@Audited
-public class EncounterProvider extends BaseChangeableOpenmrsData {
+public class EncounterProvider extends BaseOpenmrsData {
 	
 	public static final long serialVersionUID = 1L;
 	
@@ -40,7 +37,6 @@ public class EncounterProvider extends BaseChangeableOpenmrsData {
 	/**
 	 * @see OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		return getEncounterProviderId();
 	}
@@ -48,7 +44,6 @@ public class EncounterProvider extends BaseChangeableOpenmrsData {
 	/**
 	 * @see OpenmrsObject#setId(Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setEncounterProviderId(id);
 	}
@@ -101,7 +96,7 @@ public class EncounterProvider extends BaseChangeableOpenmrsData {
 	/**
 	 * @return copied encounter provider
 	 *
-	 * <strong>Should</strong> copy all EncounterProvider data
+	 * @should copy all EncounterProvider data
 	 */
 	public EncounterProvider copy() {
 		EncounterProvider target = new EncounterProvider();

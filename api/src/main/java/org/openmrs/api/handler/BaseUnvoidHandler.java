@@ -20,7 +20,7 @@ import org.openmrs.aop.RequiredDataAdvice;
  * This is the super interface for all unvoid* actions that take place on all services. The
  * {@link RequiredDataAdvice} class uses AOP around each method in every service to check to see if
  * its a unvoid* method. If it is a unvoid* method, this class is called to handle setting the
- * {@link Voidable#getVoided()}, {@link Voidable#setVoidReason(String)},
+ * {@link Voidable#isVoided()}, {@link Voidable#setVoidReason(String)},
  * {@link Voidable#setVoidedBy(User)}, and {@link Voidable#setDateVoided(Date)} all to null. <br>
  * <br>
  * Child collections on this {@link Voidable} that are themselves a {@link Voidable} are looped over
@@ -40,18 +40,17 @@ public class BaseUnvoidHandler implements UnvoidHandler<Voidable> {
 	 * 
 	 * @see org.openmrs.api.handler.RequiredDataHandler#handle(org.openmrs.OpenmrsObject,
 	 *      org.openmrs.User, java.util.Date, java.lang.String)
-	 * <strong>Should</strong> unset the voided bit
-	 * <strong>Should</strong> unset the voider
-	 * <strong>Should</strong> unset the dateVoided
-	 * <strong>Should</strong> unset the voidReason
-	 * <strong>Should</strong> only act on already voided objects
-	 * <strong>Should</strong> not act on objects with a different dateVoided
+	 * @should unset the voided bit
+	 * @should unset the voider
+	 * @should unset the dateVoided
+	 * @should unset the voidReason
+	 * @should only act on already voided objects
+	 * @should not act on objects with a different dateVoided
 	 */
-	@Override
 	public void handle(Voidable voidableObject, User voidingUser, Date origParentVoidedDate, String unused) {
 		
 		// only operate on voided objects
-		if (voidableObject.getVoided()
+		if (voidableObject.isVoided()
 		        && (origParentVoidedDate == null || origParentVoidedDate.equals(voidableObject.getDateVoided()))) {
 			
 			// only unvoid objects that were voided at the same time as the parent object

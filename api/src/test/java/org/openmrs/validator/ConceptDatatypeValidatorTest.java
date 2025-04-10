@@ -9,12 +9,11 @@
  */
 package org.openmrs.validator;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.ConceptDatatype;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 
@@ -27,55 +26,58 @@ public class ConceptDatatypeValidatorTest extends BaseContextSensitiveTest {
 	 * @see ConceptDatatypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfNameIsNullOrEmptyOrWhitespace() {
+	@Verifies(value = "should fail validation if name is null or empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfNameIsNullOrEmptyOrWhitespace() throws Exception {
 		ConceptDatatype cd = new ConceptDatatype();
 		cd.setName(null);
 		cd.setDescription("some text");
 		
 		Errors errors = new BindException(cd, "cd");
 		new ConceptDatatypeValidator().validate(cd, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 		
 		cd.setName("");
 		errors = new BindException(cd, "cd");
 		new ConceptDatatypeValidator().validate(cd, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 		
 		cd.setName(" ");
 		errors = new BindException(cd, "cd");
 		new ConceptDatatypeValidator().validate(cd, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 	}
 	
 	/**
 	 * @see ConceptDatatypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfDescriptionIsNullOrEmptyOrWhitespace() {
+	@Verifies(value = "should pass validation if description is null or empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfDescriptionIsNullOrEmptyOrWhitespace() throws Exception {
 		ConceptDatatype cd = new ConceptDatatype();
 		cd.setName("name");
 		cd.setDescription(null);
 		
 		Errors errors = new BindException(cd, "cd");
 		new ConceptDatatypeValidator().validate(cd, errors);
-		assertFalse(errors.hasFieldErrors("description"));
+		Assert.assertFalse(errors.hasFieldErrors("description"));
 		
 		cd.setDescription("");
 		errors = new BindException(cd, "cd");
 		new ConceptDatatypeValidator().validate(cd, errors);
-		assertFalse(errors.hasFieldErrors("description"));
+		Assert.assertFalse(errors.hasFieldErrors("description"));
 		
 		cd.setDescription(" ");
 		errors = new BindException(cd, "cd");
 		new ConceptDatatypeValidator().validate(cd, errors);
-		assertFalse(errors.hasFieldErrors("description"));
+		Assert.assertFalse(errors.hasFieldErrors("description"));
 	}
 	
 	/**
 	 * @see ConceptDatatypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfAllRequiredFieldsHaveProperValues() {
+	@Verifies(value = "should pass validation if all required fields have proper values", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfAllRequiredFieldsHaveProperValues() throws Exception {
 		ConceptDatatype cd = new ConceptDatatype();
 		cd.setName("name");
 		cd.setDescription("some text");
@@ -83,14 +85,15 @@ public class ConceptDatatypeValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(cd, "cd");
 		new ConceptDatatypeValidator().validate(cd, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see ConceptDatatypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() {
+	@Verifies(value = "should pass validation if field lengths are correct", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() throws Exception {
 		ConceptDatatype cd = new ConceptDatatype();
 		cd.setName("name");
 		cd.setDescription("some text");
@@ -100,14 +103,15 @@ public class ConceptDatatypeValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(cd, "cd");
 		new ConceptDatatypeValidator().validate(cd, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see ConceptDatatypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() {
+	@Verifies(value = "should fail validation if field lengths are not correct", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() throws Exception {
 		ConceptDatatype cd = new ConceptDatatype();
 		cd
 		        .setName("too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text");
@@ -120,9 +124,9 @@ public class ConceptDatatypeValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(cd, "cd");
 		new ConceptDatatypeValidator().validate(cd, errors);
 		
-		assertTrue(errors.hasFieldErrors("name"));
-		assertTrue(errors.hasFieldErrors("description"));
-		assertTrue(errors.hasFieldErrors("hl7Abbreviation"));
-		assertTrue(errors.hasFieldErrors("retireReason"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("description"));
+		Assert.assertTrue(errors.hasFieldErrors("hl7Abbreviation"));
+		Assert.assertTrue(errors.hasFieldErrors("retireReason"));
 	}
 }

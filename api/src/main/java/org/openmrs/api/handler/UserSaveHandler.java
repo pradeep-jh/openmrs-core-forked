@@ -12,7 +12,8 @@ package org.openmrs.api.handler;
 import java.util.ArrayList;
 import java.util.Date;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
+import org.openmrs.OpenmrsObject;
 import org.openmrs.Patient;
 import org.openmrs.User;
 import org.openmrs.annotation.Handler;
@@ -35,7 +36,6 @@ public class UserSaveHandler implements SaveHandler<User> {
 	 * @see org.openmrs.api.handler.SaveHandler#handle(org.openmrs.OpenmrsObject, org.openmrs.User,
 	 *      java.util.Date, java.lang.String)
 	 */
-	@Override
 	public void handle(User user, User creator, Date dateCreated, String other) {
 		// if the user doesn't have a system id, generate one
 		if (StringUtils.isEmpty(user.getSystemId())) {
@@ -47,7 +47,7 @@ public class UserSaveHandler implements SaveHandler<User> {
 		if (user.getPerson() != null) {
 			loadLazyHibernateCollections(user);
 			RequiredDataAdvice.recursivelyHandle(SaveHandler.class, user.getPerson(), creator, dateCreated, other,
-					new ArrayList<>());
+			    new ArrayList<OpenmrsObject>());
 		}
 	}
 	

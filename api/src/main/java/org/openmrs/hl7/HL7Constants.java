@@ -16,9 +16,6 @@ import java.util.Map;
  * Constants used by the hl7 package
  */
 public class HL7Constants {
-
-	private HL7Constants() {
-	}
 		
 	public static final Integer HL7_STATUS_PENDING = 0;
 	
@@ -119,7 +116,7 @@ public class HL7Constants {
 	public static final int MIGRATION_MAX_BATCH_SIZE = 2000;
 	
 	// List of datatypes that do not require complex definitions
-	public static final Map<String, String> simpleDatatypes = new HashMap<>();
+	public static final Map<String, String> simpleDatatypes = new HashMap<String, String>();
 	
 	static {
 		simpleDatatypes.put(HL7_TEXT, "xs:string");

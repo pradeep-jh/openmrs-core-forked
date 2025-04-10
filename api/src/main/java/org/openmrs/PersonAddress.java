@@ -9,119 +9,82 @@
  */
 package org.openmrs;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.codehaus.jackson.annotate.JsonIgnore;
-import org.hibernate.envers.Audited;
-import org.openmrs.util.OpenmrsUtil;
+import static org.apache.commons.lang.StringUtils.defaultString;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
 import java.util.Calendar;
 import java.util.Date;
 
-import static org.apache.commons.lang3.StringUtils.defaultString;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.codehaus.jackson.annotate.JsonIgnore;
+import org.openmrs.util.OpenmrsUtil;
 
 /**
  * This class is the representation of a person's address. This class is many-to-one to the Person
  * class, so a Person/Patient/User can have zero to n addresses
  */
-@Entity
-@Table(name = "person_address")
-@Audited
-public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.Serializable, Cloneable, Comparable<PersonAddress>, Address {
+public class PersonAddress extends BaseOpenmrsData implements java.io.Serializable, Cloneable, Comparable<PersonAddress>, Address {
 	
 	public static final long serialVersionUID = 343333L;
 	
-	// Fields
-	@Id
-	@Column(name = "person_address_id")
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Integer personAddressId;
+	private static final Log log = LogFactory.getLog(PersonAddress.class);
 	
-	@ManyToOne
-	@JoinColumn(name = "person_id")
+	// Fields
+
+	private Integer personAddressId;
+
 	private Person person;
 	
-	@Column(name = "preferred", length = 1, nullable = false)
 	private Boolean preferred = false;
-	
-	@Column(name = "address1")
+
 	private String address1;
-	
-	@Column(name = "address2")
+
 	private String address2;
-	
-	@Column(name = "address3")
+
 	private String address3;
-	
-	@Column(name = "address4")
+
 	private String address4;
-	
-	@Column(name = "address5")
+
 	private String address5;
-	
-	@Column(name = "address6")
+
 	private String address6;
-	
-	@Column(name = "address7")
+
 	private String address7;
-	
-	@Column(name = "address8")
+
 	private String address8;
-	
-	@Column(name = "address9")
+
 	private String address9;
-	
-	@Column(name = "address10")
+
 	private String address10;
-	
-	@Column(name = "address11")
+
 	private String address11;
-	
-	@Column(name = "address12")
+
 	private String address12;
-	
-	@Column(name = "address13")
+
 	private String address13;
-	
-	@Column(name = "address14")
+
 	private String address14;
-	
-	@Column(name = "address15")
+
 	private String address15;
 
-	@Column(name = "city_village")
 	private String cityVillage;
 
-	@Column(name = "county_district")
 	private String countyDistrict;
 
-	@Column(name = "state_province")
 	private String stateProvince;
 
-	@Column(name = "country")
 	private String country;
 
-	@Column(name = "postal_code", length = 50)
 	private String postalCode;
 
-	@Column(name = "latitude", length = 50)
 	private String latitude;
-	
-	@Column(name = "longitude", length = 50)
+
 	private String longitude;
 	
-	@Column(name = "start_date", length = 19)
 	private Date startDate;
 	
-	@Column(name = "end_date", length = 19)
 	private Date endDate;
 	
 	// Constructors
@@ -138,12 +101,12 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * @see java.lang.Object#toString()
 	 */
-	@Override
 	public String toString() {
-		return "a1:" + getAddress1() + ", a2:" + getAddress2() + ", cv:" +
-				getCityVillage() + ", sp:" + getStateProvince() + ", c:" + getCountry() +
-				", cd:" + getCountyDistrict() + ", nc:" + getAddress3() + ", pc:" +
-				getPostalCode() + ", lat:" + getLatitude() + ", long:" + getLongitude();
+		return new StringBuilder().append("a1:").append(getAddress1()).append(", a2:").append(getAddress2()).append(", cv:")
+		        .append(getCityVillage()).append(", sp:").append(getStateProvince()).append(", c:").append(getCountry())
+		        .append(", cd:").append(getCountyDistrict()).append(", nc:").append(getAddress3()).append(", pc:").append(
+		            getPostalCode()).append(", lat:").append(getLatitude()).append(", long:").append(getLongitude())
+		        .toString();
 	}
 	
 	/**
@@ -155,6 +118,7 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	 * @param otherAddress PersonAddress with which to compare
 	 * @return boolean true/false whether or not they are the same addresses
 	 */
+	@SuppressWarnings("unchecked")
 	public boolean equalsContent(PersonAddress otherAddress) {
 		return new EqualsBuilder().append(defaultString(otherAddress.getAddress1()), defaultString(address1)).append(
 		    defaultString(otherAddress.getAddress2()), defaultString(address2)).append(
@@ -188,7 +152,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	 *
 	 * @return New PersonAddress object
 	 */
-	@Override
 	public Object clone() {
 		try {
 			return super.clone();
@@ -201,7 +164,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * @return Returns the address1.
 	 */
-	@Override
 	public String getAddress1() {
 		return address1;
 	}
@@ -209,7 +171,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * @param address1 The address1 to set.
 	 */
-	@Override
 	public void setAddress1(String address1) {
 		this.address1 = address1;
 	}
@@ -217,7 +178,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * @return Returns the address2.
 	 */
-	@Override
 	public String getAddress2() {
 		return address2;
 	}
@@ -225,7 +185,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * @param address2 The address2 to set.
 	 */
-	@Override
 	public void setAddress2(String address2) {
 		this.address2 = address2;
 	}
@@ -233,7 +192,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * @return Returns the cityVillage.
 	 */
-	@Override
 	public String getCityVillage() {
 		return cityVillage;
 	}
@@ -241,7 +199,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * @param cityVillage The cityVillage to set.
 	 */
-	@Override
 	public void setCityVillage(String cityVillage) {
 		this.cityVillage = cityVillage;
 	}
@@ -249,7 +206,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * @return Returns the country.
 	 */
-	@Override
 	public String getCountry() {
 		return country;
 	}
@@ -257,7 +213,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * @param country The country to set.
 	 */
-	@Override
 	public void setCountry(String country) {
 		this.country = country;
 	}
@@ -287,7 +242,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * @return Returns the latitude.
 	 */
-	@Override
 	public String getLatitude() {
 		return latitude;
 	}
@@ -295,7 +249,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * @param latitude The latitude to set.
 	 */
-	@Override
 	public void setLatitude(String latitude) {
 		this.latitude = latitude;
 	}
@@ -303,7 +256,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * @return Returns the longitude.
 	 */
-	@Override
 	public String getLongitude() {
 		return longitude;
 	}
@@ -311,7 +263,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * @param longitude The longitude to set.
 	 */
-	@Override
 	public void setLongitude(String longitude) {
 		this.longitude = longitude;
 	}
@@ -347,7 +298,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * @return Returns the postalCode.
 	 */
-	@Override
 	public String getPostalCode() {
 		return postalCode;
 	}
@@ -355,7 +305,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * @param postalCode The postalCode to set.
 	 */
-	@Override
 	public void setPostalCode(String postalCode) {
 		this.postalCode = postalCode;
 	}
@@ -363,7 +312,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * @return Returns the stateProvince.
 	 */
-	@Override
 	public String getStateProvince() {
 		return stateProvince;
 	}
@@ -371,7 +319,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * @param stateProvince The stateProvince to set.
 	 */
-	@Override
 	public void setStateProvince(String stateProvince) {
 		this.stateProvince = stateProvince;
 	}
@@ -379,7 +326,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * @return Returns the countyDistrict.
 	 */
-	@Override
 	public String getCountyDistrict() {
 		return countyDistrict;
 	}
@@ -387,7 +333,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * @param countyDistrict The countyDistrict to set.
 	 */
-	@Override
 	public void setCountyDistrict(String countyDistrict) {
 		this.countyDistrict = countyDistrict;
 	}
@@ -415,14 +360,13 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	 * @see java.lang.Comparable#compareTo(java.lang.Object)
 	 * Note: this comparator imposes orderings that are inconsistent with equals.
 	 */
-	@Override
 	@SuppressWarnings("squid:S1210")
 	public int compareTo(PersonAddress other) {
 		int retValue = 0;
 		if (other != null) {
-			retValue = getVoided().compareTo(other.getVoided());
+			retValue = isVoided().compareTo(other.isVoided());
 			if (retValue == 0) {
-				retValue = other.getPreferred().compareTo(getPreferred());
+				retValue = other.isPreferred().compareTo(isPreferred());
 			}
 			if (retValue == 0 && getDateCreated() != null) {
 				retValue = OpenmrsUtil.compareWithNullAsLatest(getDateCreated(), other.getDateCreated());
@@ -445,7 +389,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	 * @since 1.8
 	 * @return the address3
 	 */
-	@Override
 	public String getAddress3() {
 		return address3;
 	}
@@ -454,7 +397,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	 * @since 1.8
 	 * @param address3 the address3 to set
 	 */
-	@Override
 	public void setAddress3(String address3) {
 		this.address3 = address3;
 	}
@@ -463,7 +405,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	 * @since 1.8
 	 * @return the address4
 	 */
-	@Override
 	public String getAddress4() {
 		return address4;
 	}
@@ -472,7 +413,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	 * @since 1.8
 	 * @param address4 the address4 to set
 	 */
-	@Override
 	public void setAddress4(String address4) {
 		this.address4 = address4;
 	}
@@ -481,7 +421,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	 * @since 1.8
 	 * @return the address6
 	 */
-	@Override
 	public String getAddress6() {
 		return address6;
 	}
@@ -490,7 +429,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	 * @since 1.8
 	 * @param address6 the address6 to set
 	 */
-	@Override
 	public void setAddress6(String address6) {
 		this.address6 = address6;
 	}
@@ -499,7 +437,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	 * @since 1.8
 	 * @return the address5
 	 */
-	@Override
 	public String getAddress5() {
 		return address5;
 	}
@@ -508,7 +445,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	 * @since 1.8
 	 * @param address5 the address5 to set
 	 */
-	@Override
 	public void setAddress5(String address5) {
 		this.address5 = address5;
 	}
@@ -517,7 +453,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		
 		return getPersonAddressId();
@@ -527,7 +462,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setPersonAddressId(id);
 		
@@ -596,7 +530,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * {@inheritDoc}
 	 */
-	@Override
 	public String getAddress7() {
 		return address7;
 	}
@@ -604,7 +537,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * {@inheritDoc}
 	 */
-	@Override
 	public void setAddress7(String address7) {
 		this.address7 = address7;
 	}
@@ -612,7 +544,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * {@inheritDoc}
 	 */
-	@Override
 	public String getAddress8() {
 		return address8;
 	}
@@ -620,7 +551,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * {@inheritDoc}
 	 */
-	@Override
 	public void setAddress8(String address8) {
 		this.address8 = address8;
 	}
@@ -628,7 +558,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * {@inheritDoc}
 	 */
-	@Override
 	public String getAddress9() {
 		return address9;
 	}
@@ -636,7 +565,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * {@inheritDoc}
 	 */
-	@Override
 	public void setAddress9(String address9) {
 		this.address9 = address9;
 	}
@@ -644,7 +572,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * {@inheritDoc}
 	 */
-	@Override
 	public String getAddress10() {
 		return address10;
 	}
@@ -652,7 +579,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * {@inheritDoc}
 	 */
-	@Override
 	public void setAddress10(String address10) {
 		this.address10 = address10;
 	}
@@ -660,7 +586,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * {@inheritDoc}
 	 */
-	@Override
 	public String getAddress11() {
 		return address11;
 	}
@@ -668,7 +593,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * {@inheritDoc}
 	 */
-	@Override
 	public void setAddress11(String address11) {
 		this.address11 = address11;
 	}
@@ -676,7 +600,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * {@inheritDoc}
 	 */
-	@Override
 	public String getAddress12() {
 		return address12;
 	}
@@ -684,7 +607,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * {@inheritDoc}
 	 */
-	@Override
 	public void setAddress12(String address12) {
 		this.address12 = address12;
 	}
@@ -692,7 +614,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * {@inheritDoc}
 	 */
-	@Override
 	public String getAddress13() {
 		return address13;
 	}
@@ -700,7 +621,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * {@inheritDoc}
 	 */
-	@Override
 	public void setAddress13(String address13) {
 		this.address13 = address13;
 	}
@@ -708,7 +628,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * {@inheritDoc}
 	 */
-	@Override
 	public String getAddress14() {
 		return address14;
 	}
@@ -716,7 +635,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * {@inheritDoc}
 	 */
-	@Override
 	public void setAddress14(String address14) {
 		this.address14 = address14;
 	}
@@ -724,7 +642,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * {@inheritDoc}
 	 */
-	@Override
 	public String getAddress15() {
 		return address15;
 	}
@@ -732,7 +649,6 @@ public class PersonAddress extends BaseChangeableOpenmrsData implements java.io.
 	/**
 	 * {@inheritDoc}
 	 */
-	@Override
 	public void setAddress15(String address15) {
 		this.address15 = address15;
 	}

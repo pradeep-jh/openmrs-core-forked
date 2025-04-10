@@ -9,49 +9,43 @@
  */
 package org.openmrs.util;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.net.MalformedURLException;
 
-import org.junit.jupiter.api.Test;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsNull.notNullValue;
+import static org.junit.Assert.assertThat;
 
 public class HttpUrlTest {
 	
+	public @Rule
+	ExpectedException exception = ExpectedException.none();
 	
 	@Test
-	public void constructor_shouldNotThrowExceptionIfItIsAnHttpUrl() throws MalformedURLException {
+	public void constructor_shouldNotThrowExceptionIfItIsAnHttpUrl() throws Exception {
 		HttpUrl url = new HttpUrl("http://something");
 		assertThat(url, notNullValue());
 	}
-
+	
 	@Test
-	public void constructor_shouldNotThrowExceptionIfItIsAnHttpsUrl() throws MalformedURLException {
-		HttpUrl url = new HttpUrl("https://something");
-		assertThat(url, notNullValue());
+	public void constructor_shouldThrowMalformedUrlExceptionIfTheUrlDoesNotHaveHttp() throws Exception {
+		exception.expect(MalformedURLException.class);
+		exception.expectMessage("Not a valid http url");
+		new HttpUrl("not_http");
 	}
 	
 	@Test
-	public void constructor_shouldThrowMalformedUrlExceptionIfTheUrlDoesNotHaveHttp() throws MalformedURLException {
-		MalformedURLException exception = assertThrows(MalformedURLException.class, () -> new HttpUrl("not_http"));
-		assertThat(exception.getMessage(), is("Not a valid http(s) url"));
+	public void constructor_shouldNotAllowNullUrls() throws Exception {
+		exception.expect(MalformedURLException.class);
+		exception.expectMessage("Url cannot be null");
+		new HttpUrl(null);
 	}
 	
 	@Test
-	public void constructor_shouldNotAllowNullUrls() throws MalformedURLException {
-		MalformedURLException exception = assertThrows(MalformedURLException.class, () -> new HttpUrl(null));
-		assertThat(exception.getMessage(), is("Url cannot be null"));
-	}
-	
-	@Test
-	public void toString_shouldReturnUrl() throws MalformedURLException {
+	public void toString_shouldReturnUrl() throws Exception {
 		assertThat(new HttpUrl("http://something").toString(), is("http://something"));
-	}
-
-	@Test
-	public void toString_shouldReturnUrlHttps() throws MalformedURLException {
-		assertThat(new HttpUrl("https://something").toString(), is("https://something"));
 	}
 }

@@ -9,67 +9,33 @@
  */
 package org.openmrs;
 
+import org.apache.commons.lang3.StringUtils;
+import org.openmrs.util.OpenmrsUtil;
+
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Embedded;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-
-import org.apache.commons.lang3.StringUtils;
-import org.hibernate.annotations.LazyCollection;
-import org.hibernate.annotations.LazyCollectionOption;
-import org.hibernate.envers.Audited;
-import org.openmrs.util.OpenmrsUtil;
-
 /**
  * Represent allergy
  */
-@Entity
-@Table(name = "allergy")
-@Audited
-public class Allergy extends BaseFormRecordableOpenmrsData {
+public class Allergy extends BaseOpenmrsData {
 	
 	public static final long serialVersionUID = 1;
 	
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "allergy_id")
 	private Integer allergyId;
 	
-	@ManyToOne(optional = false)
-	@JoinColumn(name = "patient_id")
 	private Patient patient;
 	
-	@Embedded
 	private Allergen allergen;
 	
-	@ManyToOne
-	@JoinColumn(name = "severity_concept_id")
 	private Concept severity;
 	
-	@Column(name = "comments", length = 1024)
-	private String comments;
+	private String comment;
 	
-
-	@OneToMany(mappedBy = "allergy", cascade = CascadeType.ALL, orphanRemoval = true)
-	@LazyCollection(LazyCollectionOption.FALSE)
-	private List<AllergyReaction> reactions = new ArrayList<>();
-	
-	@ManyToOne(optional = true)
-	@JoinColumn(name = "encounter_id")
-	private Encounter encounter;
+	private List<AllergyReaction> reactions = new ArrayList<AllergyReaction>();
 	
 	/**
 	 * Default constructor
@@ -78,17 +44,17 @@ public class Allergy extends BaseFormRecordableOpenmrsData {
 	}
 	
 	/**
-	 * @param patient the patient to set.
+	 * @param patient the patient to set
 	 * @param allergen the allergen to set
 	 * @param severity the severity to set
-	 * @param comments the comment to set
+	 * @param comment the comment to set
 	 * @param reactions the reactions to set
 	 */
-	public Allergy(Patient patient, Allergen allergen, Concept severity, String comments, List<AllergyReaction> reactions) {
+	public Allergy(Patient patient, Allergen allergen, Concept severity, String comment, List<AllergyReaction> reactions) {
 		this.patient = patient;
 		this.allergen = allergen;
 		this.severity = severity;
-		this.comments = comments;
+		this.comment = comment;
 		
 		//we do not allow to be in a state where reactions is null
 		if (reactions != null) {
@@ -149,14 +115,14 @@ public class Allergy extends BaseFormRecordableOpenmrsData {
 	
 	/**
 	 * set the allergyType of the Allergy
-	 * @param allergenType the allergyType to set
+	 * @param allergyType the allergyType to set
 	 */
 	public void setAllergenType(AllergenType allergenType) {
 		this.allergen.setAllergenType(allergenType);
 	}
 	
 	/**
-	 * set the allergyType of the Allergy. Here the allergy type will be chosen from the enum values in the {@link AllergenType}, according to the given String type. 
+	 * set the allergyType of the Allergy. Here the allergy type will be chosen from the enum values in the {@link AllergyType}, according to the given String type. 
 	 * @param type the allergyType to set   
 	 */
 	public void setAllergenType(String type) {
@@ -192,36 +158,16 @@ public class Allergy extends BaseFormRecordableOpenmrsData {
 	
 	/**
 	 * @return Returns the comment
-	 * @deprecated as of 2.3.0, replaced by {@link #getComments()}
 	 */
-	@Deprecated
 	public String getComment() {
-		return getComments();
+		return comment;
 	}
 	
 	/**
 	 * @param comment the comment to set
-	 * @deprecated as of 2.3.0, replaced by {@link #setComments(String)}
 	 */
-	@Deprecated
 	public void setComment(String comment) {
-		setComments(comment);
-	}
-	
-	/**
-	 * @return Returns the comments
-	 * @since 2.3.0
-	 */
-	public String getComments() {
-		return comments;
-	}
-	
-	/**
-	 * @param comments the comments to set
-	 * @since 2.3.0
-	 */
-	public void setComments(String comments) {
-		this.comments = comments;
+		this.comment = comment;
 	}
 	/**
 	 * @return Returns the reactions
@@ -323,7 +269,11 @@ public class Allergy extends BaseFormRecordableOpenmrsData {
 		if (!OpenmrsUtil.nullSafeEquals(getComment(), allergy.getComment())) {
 			return false;
 		}
-		return hasSameReactions(allergy);
+		if (!hasSameReactions(allergy)) {
+			return false;
+		}
+		
+		return true;
 	}
 	
 	/**
@@ -371,14 +321,14 @@ public class Allergy extends BaseFormRecordableOpenmrsData {
 	 * @throws InvocationTargetException
 	 * @throws IllegalAccessException
 	 */
-	public void copy(Allergy allergy) {
+	public void copy(Allergy allergy) throws InvocationTargetException, IllegalAccessException {
 		setAllergyId(null);
 		setUuid(UUID.randomUUID().toString());
 		setPatient(allergy.getPatient());
 		setAllergen(allergy.getAllergen());
 		setSeverity(allergy.getSeverity());
 		setComment(allergy.getComment());
-		setReactions(new ArrayList<>());
+		setReactions(new ArrayList<AllergyReaction>());
 		
 		for (AllergyReaction reaction : allergy.getReactions()) {
 			reactions.add(reaction);
@@ -388,7 +338,7 @@ public class Allergy extends BaseFormRecordableOpenmrsData {
 	}
 
     private List<Concept> getReactionConcepts(){
-        List<Concept> reactionConcepts = new ArrayList<>(getReactions().size());
+        List<Concept> reactionConcepts = new ArrayList<Concept>(getReactions().size());
         for (AllergyReaction ar : getReactions()) {
             reactionConcepts.add(ar.getReaction());
         }
@@ -433,25 +383,5 @@ public class Allergy extends BaseFormRecordableOpenmrsData {
 			return false;
 		}
 		return allergen.isSameAllergen(allergy.getAllergen());
-	}
-	
-	/**
-	 * Basic property getter for encounter
-	 * 
-	 * @return encounter - the associated encounter
-	 * @since 2.5.0
-	 */
-	public Encounter getEncounter() {
-		return encounter;
-	}
-	
-	/**
-	 * Basic property setter for encounter
-	 *  
-	 * @param encounter - the encounter to set
-	 * @since 2.5.0
-	 */
-	public void setEncounter(Encounter encounter) {
-		this.encounter = encounter;
 	}
 }

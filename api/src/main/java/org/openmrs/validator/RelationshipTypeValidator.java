@@ -9,6 +9,8 @@
  */
 package org.openmrs.validator;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.RelationshipType;
 import org.openmrs.annotation.Handler;
 import org.openmrs.api.context.Context;
@@ -25,6 +27,9 @@ import org.springframework.validation.Validator;
 @Handler(supports = { RelationshipType.class }, order = 50)
 public class RelationshipTypeValidator implements Validator {
 	
+	/** Log for this class and subclasses */
+	protected final Log log = LogFactory.getLog(getClass());
+	
 	/**
 	 * Determines if the command object being submitted is a valid type
 	 * 
@@ -37,13 +42,13 @@ public class RelationshipTypeValidator implements Validator {
 	
 	/**
 	 * @see org.springframework.validation.Validator#validate(java.lang.Object, org.springframework.validation.Errors)
-	 * <strong>Should</strong> fail validation if aIsToB(or A is To B) is null or empty or whitespace
-	 * <strong>Should</strong> fail validation if bIsToA(or B is To A) is null or empty or whitespace
-	 * <strong>Should</strong> fail validation if description is null or empty or whitespace
-	 * <strong>Should</strong> pass validation if all required fields are set
-	 * <strong>Should</strong> fail validation if relationshipTypeName already exist
-	 * <strong>Should</strong> pass validation if field lengths are correct
-	 * <strong>Should</strong> fail validation if field lengths are not correct
+	 * @should fail validation if aIsToB(or A is To B) is null or empty or whitespace
+	 * @should fail validation if bIsToA(or B is To A) is null or empty or whitespace
+	 * @should fail validation if description is null or empty or whitespace
+	 * @should pass validation if all required fields are set
+	 * @should fail validation if relationshipTypeName already exist
+	 * @should pass validation if field lengths are correct
+	 * @should fail validation if field lengths are not correct
 	 */
 	@Override
 	public void validate(Object obj, Errors errors) {

@@ -9,43 +9,21 @@
  */
 package org.openmrs;
 
-
-import org.hibernate.envers.Audited;
-
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import java.io.Serializable;
-
 /**
  * DrugIngredient
  */
-@Entity
-@Table(name = "drug_ingredient")
-@Audited
-public class DrugIngredient extends BaseOpenmrsObject implements Serializable, OpenmrsObject {
+public class DrugIngredient extends BaseOpenmrsObject implements java.io.Serializable, OpenmrsObject {
 	
 	public static final long serialVersionUID = 94023L;
 	
 	// Fields
-	@ManyToOne
-	@JoinColumn(name = "drug_id", updatable = false, insertable = false)
-	@Id
+	
 	private Drug drug;
-
-	@ManyToOne
-	@JoinColumn(name = "ingredient_id", updatable = false, insertable = false)
-	@Id
+	
 	private Concept ingredient;
-
-	@Column(name = "strength")
+	
 	private Double strength;
 	
-	@JoinColumn(name = "units", insertable = false, updatable = false)
-	@ManyToOne
 	private Concept units;
 	
 	// Constructors
@@ -55,6 +33,7 @@ public class DrugIngredient extends BaseOpenmrsObject implements Serializable, O
 	}
 	
 	// Property accessors
+	
 	/**
 	 * @return the drug
 	 */
@@ -119,7 +98,6 @@ public class DrugIngredient extends BaseOpenmrsObject implements Serializable, O
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		throw new UnsupportedOperationException();
 	}
@@ -128,7 +106,6 @@ public class DrugIngredient extends BaseOpenmrsObject implements Serializable, O
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		throw new UnsupportedOperationException();
 	}

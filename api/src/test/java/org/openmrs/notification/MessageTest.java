@@ -9,11 +9,12 @@
  */
 package org.openmrs.notification;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+import org.openmrs.test.Verifies;
 
 /**
  * Unit testing for the Message class
@@ -58,7 +59,8 @@ public class MessageTest {
 	 * @see Message#Message(Integer,String,String,String,String,String,String,String)
 	 */
 	@Test
-	public void Message_shouldFillInAllParameters() {
+	@Verifies(value = "should fill in all parameters", method = "Message(Integer,String,String,String,String,String,String,String)")
+	public void Message_shouldFillInAllParameters() throws Exception {
 		int id = 1;
 		String recipients = "recipient1@example.com,recipient2@example.com";
 		String sender = "foo@bar.com";
@@ -81,7 +83,8 @@ public class MessageTest {
 	 * @see Message#setRecipients(String)
 	 */
 	@Test
-	public void setRecipients_shouldSetMultipleRecipients() {
+	@Verifies(value = "should set multiple recipients", method = "setRecipients(String)")
+	public void setRecipients_shouldSetMultipleRecipients() throws Exception {
 		Message testMessage = createTestMessage1();
 		
 		String recipients = "recipient1@example.com,recipient2@example.com";
@@ -95,7 +98,8 @@ public class MessageTest {
 	 * @see Message#addRecipient(String)
 	 */
 	@Test
-	public void addRecipient_shouldAddNewRecipient() {
+	@Verifies(value = "should add new recipient", method = "addRecipient(String)")
+	public void addRecipient_shouldAddNewRecipient() throws Exception {
 		Message testMessage = createTestMessage1();
 		
 		String oldRecipients = testMessage.getRecipients();
@@ -110,7 +114,8 @@ public class MessageTest {
 	 * @see Message#hasAttachment()
 	 */
 	@Test
-	public void hasAttachment_shouldRReturnTrueIfThisMessageHasAnAttachment() {
+	@Verifies(value = "should r return true if this message has an attachment", method = "hasAttachment()")
+	public void hasAttachment_shouldRReturnTrueIfThisMessageHasAnAttachment() throws Exception {
 		Message testMessage1 = createTestMessage1();
 		Message testMessage2 = createTestMessage2();
 		

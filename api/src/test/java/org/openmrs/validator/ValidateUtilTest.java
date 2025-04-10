@@ -9,23 +9,20 @@
  */
 package org.openmrs.validator;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
-import org.junit.jupiter.api.Test;
-import org.openmrs.Concept;
-import org.openmrs.Drug;
+import org.junit.Test;
 import org.openmrs.Location;
 import org.openmrs.Patient;
 import org.openmrs.PatientIdentifierType;
 import org.openmrs.api.ValidationException;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Tests methods on the {@link ValidateUtil} class.
@@ -35,14 +32,16 @@ public class ValidateUtilTest extends BaseContextSensitiveTest {
 	/**
 	 * @see ValidateUtil#validate(Object)
 	 */
-	@Test
-	public void validate_shouldThrowValidationExceptionIfErrorsOccurDuringValidation() {
+	@Test(expected = ValidationException.class)
+	@Verifies(value = "should throw ValidationException if errors occur during validation", method = "validate(Object)")
+	public void validate_shouldThrowValidationExceptionIfErrorsOccurDuringValidation() throws Exception {
 		Location loc = new Location();
-		assertThrows(ValidationException.class , () -> ValidateUtil.validate(loc));
+		ValidateUtil.validate(loc);
 	}
 	
 	@Test
-	public void validate_shouldThrowAPIExceptionIfErrorsOccurDuringValidation() {
+	@Verifies(value = "should return Spring errors in ValidationException", method = "validate(Object)")
+	public void validate_shouldThrowAPIExceptionIfErrorsOccurDuringValidation() throws Exception {
 		Location loc = new Location();
 		
 		try {
@@ -59,6 +58,7 @@ public class ValidateUtilTest extends BaseContextSensitiveTest {
 	 * @see ValidateUtil#validate(Object)
 	 */
 	@Test
+	@Verifies(value = "should return immediately if validation is disabled", method = "validate(Object)")
 	public void validate_shouldReturnImmediatelyIfValidationIsDisabled() {
 		Boolean prevVal = ValidateUtil.getDisableValidation();
 		ValidateUtil.setDisableValidation(true);
@@ -73,54 +73,12 @@ public class ValidateUtilTest extends BaseContextSensitiveTest {
 
 		ValidateUtil.setDisableValidation(prevVal);
 	}
-
-	/**
-	 * @see ValidateUtil#validate(Object)
-	 */
-	@Test
-	public void validate_shouldReturnImmediatelyIfValidationIsDisabledForThread() {
-		
-		// Validation fails initially
-		ValidationException caughtException = null;
-		try {
-			assertFalse(ValidateUtil.isValidationDisabledForThread());
-			ValidateUtil.validate(new Patient());
-		}
-		catch (ValidationException e) {
-			caughtException = e;
-		}
-		assertNotNull(caughtException);
-		
-		// Validation does not fail if disabled for thread
-		caughtException = null;
-		try {
-			ValidateUtil.disableValidationForThread();
-			assertTrue(ValidateUtil.isValidationDisabledForThread());
-			ValidateUtil.validate(new Patient());
-		}
-		catch (ValidationException e) {
-			caughtException = e;
-		}
-		finally {
-			ValidateUtil.resumeValidationForThread();
-		}
-		assertNull(caughtException);
-		
-		// Validation fails again if re-enabled for thread
-		try {
-			assertFalse(ValidateUtil.isValidationDisabledForThread());
-			ValidateUtil.validate(new Patient());
-		}
-		catch (ValidationException e) {
-			caughtException = e;
-		}
-		assertNotNull(caughtException);
-	}
 	
 	/**
 	 * @see ValidateUtil#validateFieldLengths(org.springframework.validation.Errors, Class, String...)
 	 */
 	@Test
+	@Verifies(value = "fail validation if name field length is too long", method = "validateFieldLengths(org.springframework.validation.Errors, Class, String...)")
 	public void validateFieldLength_shouldRejectValueWhenNameIsToLong() {
 		PatientIdentifierType patientIdentifierType = new PatientIdentifierType();
 		patientIdentifierType.setName("asdfghjkl asdfghjkl asdfghjkl asdfghjkl asdfghjkl xx");
@@ -134,6 +92,7 @@ public class ValidateUtilTest extends BaseContextSensitiveTest {
 	 * @see ValidateUtil#validateFieldLengths(org.springframework.validation.Errors, Class, String...)
 	 */
 	@Test
+	@Verifies(value = "pass validation if name field length is equal to maximum length", method = "validateFieldLengths(org.springframework.validation.Errors, Class, String...)")
 	public void validateFieldLength_shouldNotRejectValueWhenNameIsEqualMax() {
 		PatientIdentifierType patientIdentifierType = new PatientIdentifierType();
 		patientIdentifierType.setName("asdfghjkl asdfghjkl asdfghjkl asdfghjkl asdfghjkl ");
@@ -147,6 +106,7 @@ public class ValidateUtilTest extends BaseContextSensitiveTest {
 	 * @see ValidateUtil#validateFieldLengths(org.springframework.validation.Errors, Class, String...)
 	 */
 	@Test
+	@Verifies(value = "should return immediately if validation is disabled and have no errors", method = "validateFieldLengths(org.springframework.validation.Errors, Class, String...)")
 	public void validateFieldLength_shouldReturnImmediatelyIfValidationIsDisabledAndHaveNoErrors() {
 		Boolean prevVal = ValidateUtil.getDisableValidation();
 		ValidateUtil.setDisableValidation(true);
@@ -163,9 +123,10 @@ public class ValidateUtilTest extends BaseContextSensitiveTest {
 	
 	/**
 	 * @see ValidateUtil#validate(Object,Errors)
+	 * @verifies populate errors if object invalid
 	 */
 	@Test
-	public void validate_shouldPopulateErrorsIfObjectInvalid() {
+	public void validate_shouldPopulateErrorsIfObjectInvalid() throws Exception {
 		Location loc = new Location();
 		Errors errors = new BindException(loc, "");
 		ValidateUtil.validate(loc, errors);
@@ -177,6 +138,7 @@ public class ValidateUtilTest extends BaseContextSensitiveTest {
 	 * @see ValidateUtil#validate(Object,Errors)
 	 */
 	@Test
+	@Verifies(value = "should return immediately if validation is disabled and have no errors", method = "validate(Object,Errors)")
 	public void validate_shouldReturnImmediatelyIfValidationIsDisabledAndHaveNoErrors() {
 		Boolean prevVal = ValidateUtil.getDisableValidation();
 		ValidateUtil.setDisableValidation(true);
@@ -193,19 +155,5 @@ public class ValidateUtilTest extends BaseContextSensitiveTest {
 		}
 
 		ValidateUtil.setDisableValidation(prevVal);
-	}
-
-	/**
-	 * @see ValidateUtil#validate(Object)
-	 */
-	@Test
-	public void validate_shouldReturnThrowExceptionAlongWithAppropriateMessageIfTheObjectIsInvalid() {
-		Drug drug = new Drug();
-		Concept concept = new Concept();
-		drug.setName("Sucedáneo de leche humana de término de kcal 509-528/100g, lípidos 25.80-28.90/100g, proteínas 9.50-12.0/100g, hidrato de carbono 55.20-57.90/100g, polvo, envase de lata con 400 a 454 g y medida de 4.30 a 4.50 g. - envase con 400 a 454 g - - envase con 400 a 454 g");
-		drug.setConcept(concept);
-		
-		ValidationException exception = assertThrows(ValidationException.class, () -> ValidateUtil.validate(drug));
-		assertTrue(exception.getMessage().contains("failed to validate with reason: name: This value exceeds the maximum length of 255 permitted for this field."));
 	}
 }

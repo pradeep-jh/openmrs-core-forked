@@ -9,24 +9,22 @@
  */
 package org.openmrs.scheduler;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Map;
 import java.util.Properties;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.openmrs.api.APIException;
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.api.context.Context;
 import org.openmrs.util.PrivilegeConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SchedulerUtil {
 	
-	private SchedulerUtil() {
-	}
-	
-	private static final Logger log = LoggerFactory.getLogger(SchedulerUtil.class);
+	private static Log log = LogFactory.getLog(SchedulerUtil.class);
 	
 	/**
 	 * Start the scheduler given the following start up properties.
@@ -51,16 +49,7 @@ public class SchedulerUtil {
 		// TODO: do this for all services
 		try {
 			Context.addProxyPrivilege(PrivilegeConstants.MANAGE_SCHEDULER);
-			SchedulerService schedulerService;
-			try {
-				schedulerService = Context.getSchedulerService();
-			}
-			catch (APIException e) {
-				log.warn("Could not notify the scheduler service about startup", e);
-				return;
-			}
-			
-			schedulerService.onStartup();
+			Context.getSchedulerService().onStartup();
 		}
 		finally {
 			Context.removeProxyPrivilege(PrivilegeConstants.MANAGE_SCHEDULER);
@@ -171,7 +160,7 @@ public class SchedulerUtil {
 	 * @see java.util.Timer
 	 * @param taskDefinition the task definition to be executed
 	 * @return the next "future" execution time for the given task
-	 * <strong>Should</strong> get the correct repeat interval
+	 * @should get the correct repeat interval
 	 */
 	public static Date getNextExecution(TaskDefinition taskDefinition) {
 		Calendar nextTime = Calendar.getInstance();
@@ -190,7 +179,7 @@ public class SchedulerUtil {
 				}
 				
 				// The time between successive runs (e.g. 24 hours)
-				long repeatInterval = taskDefinition.getRepeatInterval();
+				long repeatInterval = taskDefinition.getRepeatInterval().longValue();
 				if (repeatInterval == 0) {
 					// task is one-shot so just return the start time
 					return firstTime;

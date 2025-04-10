@@ -9,26 +9,23 @@
  */
 package org.openmrs;
 
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.Locale;
-import java.util.Set;
-
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.annotate.JsonIgnore;
-import org.hibernate.envers.Audited;
-import org.hibernate.envers.NotAudited;
 import org.hibernate.search.annotations.DocumentId;
 import org.hibernate.search.annotations.Indexed;
 import org.hibernate.search.annotations.IndexedEmbedded;
 import org.openmrs.api.context.Context;
 
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Set;
+
 /**
  * Drug
  */
 @Indexed
-@Audited
-public class Drug extends BaseChangeableOpenmrsMetadata {
+public class Drug extends BaseOpenmrsMetadata {
 	
 	public static final long serialVersionUID = 285L;
 	
@@ -46,8 +43,6 @@ public class Drug extends BaseChangeableOpenmrsMetadata {
 	
 	private String strength;
 	
-	private Concept doseLimitUnits;
-	
 	@IndexedEmbedded(includeEmbeddedObjectId = true)
 	private Concept concept;
 	
@@ -60,7 +55,7 @@ public class Drug extends BaseChangeableOpenmrsMetadata {
 	
 	/** default constructor */
 	public Drug() {
-		ingredients = new LinkedHashSet<>();
+		ingredients = new LinkedHashSet<DrugIngredient>();
 	}
 	
 	/** constructor with id */
@@ -211,7 +206,6 @@ public class Drug extends BaseChangeableOpenmrsMetadata {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		
 		return getDrugId();
@@ -221,7 +215,6 @@ public class Drug extends BaseChangeableOpenmrsMetadata {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setDrugId(id);
 	}
@@ -248,7 +241,7 @@ public class Drug extends BaseChangeableOpenmrsMetadata {
 	 */
 	public Set<DrugReferenceMap> getDrugReferenceMaps() {
 		if (drugReferenceMaps == null) {
-			drugReferenceMaps = new LinkedHashSet<>();
+			drugReferenceMaps = new LinkedHashSet<DrugReferenceMap>();
 		}
 		return drugReferenceMaps;
 	}
@@ -268,9 +261,9 @@ public class Drug extends BaseChangeableOpenmrsMetadata {
 	 * @param drugReferenceMap
 	 * @since 1.10
 	 *
-	 * <strong>Should</strong> set drug as the drug to which a mapping is being added
+	 * @should set drug as the drug to which a mapping is being added
 	 *
-	 * <strong>Should</strong> should not add duplicate drug reference maps
+	 * @should should not add duplicate drug reference maps
 	 */
 	public void addDrugReferenceMap(DrugReferenceMap drugReferenceMap) {
 		if (drugReferenceMap != null && !getDrugReferenceMaps().contains(drugReferenceMap)) {
@@ -280,27 +273,5 @@ public class Drug extends BaseChangeableOpenmrsMetadata {
 			}
 			getDrugReferenceMaps().add(drugReferenceMap);
 		}
-	}
-	
-	/**
-	 * Gets the doseLimitUnits which represents the units of the existing maximumDailyDose and
-	 * minimumDailyDose
-	 * 
-	 * @return the doseLimitUnits.
-	 * @since 2.3.0
-	 */
-	public Concept getDoseLimitUnits() {
-		return doseLimitUnits;
-	}
-	
-	/**
-	 * Sets the doseLimitUnits which represents the units of the existing maximumDailyDose and
-	 * minimumDailyDose
-	 * 
-	 * @param doseLimitUnits The doseLimitUnits to set.
-	 * @since 2.3.0
-	 */
-	public void setDoseLimitUnits(Concept doseLimitUnits) {
-		this.doseLimitUnits = doseLimitUnits;
 	}
 }

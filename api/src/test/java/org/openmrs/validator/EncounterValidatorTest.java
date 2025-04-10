@@ -9,25 +9,19 @@
  */
 package org.openmrs.validator;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.Encounter;
 import org.openmrs.EncounterType;
 import org.openmrs.Patient;
 import org.openmrs.Visit;
 import org.openmrs.api.context.Context;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 
@@ -36,190 +30,169 @@ import org.springframework.validation.Errors;
  */
 public class EncounterValidatorTest extends BaseContextSensitiveTest {
 	
-	
-	private EncounterValidator encounterValidator;
-	
-	private Encounter encounter;
-	
-	private Errors errors;
-	
-	@BeforeEach
-	public void setUp() {
-		encounterValidator = new EncounterValidator();
-		
-		encounter = new Encounter();
-		
-		errors = new BindException(encounter, "encounter");
-	}
-	
-	@Test
-	public void shouldFailIfGivenNull() { 
-		
-		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> encounterValidator.validate(null, errors));
-		assertThat(exception.getMessage(), is("The parameter obj should not be null and must be of type " + Encounter.class));
-	}
-	
-	@Test
-	public void shouldFailIfGivenInstanceOfOtherClassThanEncounter() { 
-		
-		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> encounterValidator.validate(new Patient(), errors));
-		assertThat(exception.getMessage(), is("The parameter obj should not be null and must be of type " + Encounter.class));
-	}
-	
 	/**
 	 * @see EncounterValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfThePatientsForTheVisitAndTheEncounterDontMatch() {
-		
+	@Verifies(value = "should fail if the patients for the visit and the encounter dont match", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfThePatientsForTheVisitAndTheEncounterDontMatch() throws Exception {
+		Encounter encounter = new Encounter();
 		encounter.setPatient(new Patient(2));
 		Visit visit = new Visit();
 		visit.setPatient(new Patient(3));
 		encounter.setVisit(visit);
-		
-		encounterValidator.validate(encounter, errors);
-		
-		assertEquals("Encounter.visit.patients.dontMatch", errors.getFieldError("visit").getCode());
+		Errors errors = new BindException(encounter, "encounter");
+		new EncounterValidator().validate(encounter, errors);
+		Assert.assertEquals("Encounter.visit.patients.dontMatch", errors.getFieldError("visit").getCode());
 	}
 	
 	/**
 	 * @see EncounterValidator#validate(Object,Errors)
 	 */
 	@Test
+	@Verifies(value = "should fail if the visit has no patient", method = "validate(Object,Errors)")
 	public void validate_shouldFailIfTheVisitHasNoPatient() {
-		
+		Encounter encounter = new Encounter();
 		encounter.setPatient(new Patient(2));
 		Visit visit = new Visit();
 		encounter.setVisit(visit);
-		
-		encounterValidator.validate(encounter, errors);
-		
-		assertEquals("Encounter.visit.patients.dontMatch", errors.getFieldError("visit").getCode());
+		Errors errors = new BindException(encounter, "encounter");
+		new EncounterValidator().validate(encounter, errors);
+		Assert.assertEquals("Encounter.visit.patients.dontMatch", errors.getFieldError("visit").getCode());
 	}
 	
 	/**
 	 * @see EncounterValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfPatientIsNotSet() {
-		
-		encounterValidator.validate(encounter, errors);
-		
-		assertTrue(errors.hasFieldErrors("patient"));
+	@Verifies(value = "should fail if patient is not set", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfPatientIsNotSet() throws Exception {
+		Encounter encounter = new Encounter();
+		Errors errors = new BindException(encounter, "encounter");
+		new EncounterValidator().validate(encounter, errors);
+		Assert.assertTrue(errors.hasFieldErrors("patient"));
 	}
 	
 	/**
 	 * @see EncounterValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfEncounterDateTimeIsBeforeVisitStartDateTime() {
+	@Verifies(value = "should fail if encounter dateTime is before visit startDateTime", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfEncounterDateTimeIsBeforeVisitStartDateTime() throws Exception {
+		Visit visit = Context.getVisitService().getVisit(1);
 		
 		Encounter encounter = Context.getEncounterService().getEncounter(3);
-		Visit visit = Context.getVisitService().getVisit(1);
 		visit.setPatient(encounter.getPatient());
 		encounter.setVisit(visit);
+		
 		//Set encounter dateTime to before the visit startDateTime.
 		Date date = new Date(visit.getStartDatetime().getTime() - 1);
 		encounter.setEncounterDatetime(date);
-		errors = new BindException(encounter, "encounter");
 		
-		encounterValidator.validate(encounter, errors);
-		
-		assertTrue(errors.hasFieldErrors("encounterDatetime"));
+		Errors errors = new BindException(encounter, "encounter");
+		new EncounterValidator().validate(encounter, errors);
+		Assert.assertEquals(true, errors.hasFieldErrors("encounterDatetime"));
 	}
 	
 	/**
 	 * @see EncounterValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfEncounterDateTimeIsAfterVisitStopDateTime() {
+	@Verifies(value = "should fail if encounter dateTime is after visit stopDateTime", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfEncounterDateTimeIsAfterVisitStopDateTime() throws Exception {
+		Visit visit = Context.getVisitService().getVisit(1);
 		
 		Encounter encounter = Context.getEncounterService().getEncounter(3);
-		Visit visit = Context.getVisitService().getVisit(1);
 		visit.setPatient(encounter.getPatient());
 		encounter.setVisit(visit);
+		
 		//Set encounter dateTime to after the visit stopDateTime.
 		visit.setStopDatetime(new Date());
 		Date date = new Date(visit.getStopDatetime().getTime() + 1);
 		encounter.setEncounterDatetime(date);
-		errors = new BindException(encounter, "encounter");
 		
-		encounterValidator.validate(encounter, errors);
-		
-		assertTrue(errors.hasFieldErrors("encounterDatetime"));
+		Errors errors = new BindException(encounter, "encounter");
+		new EncounterValidator().validate(encounter, errors);
+		Assert.assertEquals(true, errors.hasFieldErrors("encounterDatetime"));
 	}
 	
 	/**
 	 * @see EncounterValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfEncounterDateTimeIsAfterCurrentDateTime() {
+	@Verifies(value = "fail if encounter dateTime is after current dateTime", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfEncounterDateTimeIsAfterCurrentDateTime() throws Exception {
 		
 		Encounter encounter = Context.getEncounterService().getEncounter(3);
+		
 		//Set encounter dateTime after the current dateTime.
 		Calendar calendar = new GregorianCalendar();
 		calendar.add(Calendar.DAY_OF_YEAR, 1);
 		Date tomorrowDate = calendar.getTime();
 		encounter.setEncounterDatetime(tomorrowDate);
-		errors = new BindException(encounter, "encounter");
 		
-		encounterValidator.validate(encounter, errors);
-		
-		assertTrue(errors.hasFieldErrors("encounterDatetime"));
+		Errors errors = new BindException(encounter, "encounter");
+		new EncounterValidator().validate(encounter, errors);
+		Assert.assertEquals(true, errors.hasFieldErrors("encounterDatetime"));
 	}
 	
 	/**
+	 * @verifies fail if encounter dateTime is not set
 	 * @see EncounterValidator#validate(Object, org.springframework.validation.Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfEncounterDateTimeIsNotSet() {
+	public void validate_shouldFailIfEncounterDateTimeIsNotSet() throws Exception {
 		
-		encounterValidator.validate(encounter, errors);
+		Encounter encounter = new Encounter();
 		
-		assertTrue(errors.hasFieldErrors("encounterDatetime"));
+		Errors errors = new BindException(encounter, "encounter");
+		new EncounterValidator().validate(encounter, errors);
+		Assert.assertTrue(errors.hasFieldErrors("encounterDatetime"));
 	}
 	
 	/**
+	 * @verifies fail if encounter encounterType is not set
 	 * @see EncounterValidator#validate(Object, org.springframework.validation.Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfEncounterTypeIsNotSet() {
-		
-		encounterValidator.validate(encounter, errors);
-		
-		assertTrue(errors.hasFieldErrors("encounterType"));
+	@Verifies(value = "should fail if encounterType is not set", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfEncounterTypeIsNotSet() throws Exception {
+		Encounter encounter = new Encounter();
+		Errors errors = new BindException(encounter, "encounter");
+		new EncounterValidator().validate(encounter, errors);
+		Assert.assertTrue(errors.hasFieldErrors("encounterType"));
 	}
 	
 	/**
 	 * @see EncounterValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() {
-		
+	@Verifies(value = "should pass validation if field lengths are correct", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() throws Exception {
+		Encounter encounter = new Encounter();
 		encounter.setEncounterType(new EncounterType());
 		encounter.setPatient(new Patient());
 		encounter.setEncounterDatetime(new Date());
 		encounter.setVoidReason("voidReason");
-		
-		encounterValidator.validate(encounter, errors);
-		
-		assertFalse(errors.hasErrors());
+		Errors errors = new BindException(encounter, "encounter");
+		new EncounterValidator().validate(encounter, errors);
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see EncounterValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() {
-		
+	@Verifies(value = "should fail validation if field lengths are not correct", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() throws Exception {
+		Encounter encounter = new Encounter();
 		encounter.setEncounterType(new EncounterType());
 		encounter.setPatient(new Patient());
 		encounter.setEncounterDatetime(new Date());
 		encounter
 		        .setVoidReason("too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text");
-		
-		encounterValidator.validate(encounter, errors);
-		
-		assertTrue(errors.hasFieldErrors("voidReason"));
+		Errors errors = new BindException(encounter, "encounter");
+		new EncounterValidator().validate(encounter, errors);
+		Assert.assertTrue(errors.hasFieldErrors("voidReason"));
 	}
 }

@@ -48,7 +48,7 @@ public class LuhnIdentifierValidator extends BaseHyphenatedIdentifierValidator {
 				// following formula allows us to gracefully calculate a
 				// weight for non-numeric "digits" as well (from their
 				// ASCII value - 48).
-				weight = (2 * digit) - (digit / 5) * 9;
+				weight = (2 * digit) - (int) (digit / 5) * 9;
 				
 			} else {
 				
@@ -90,8 +90,8 @@ public class LuhnIdentifierValidator extends BaseHyphenatedIdentifierValidator {
 	
 	/**
 	 * @see org.openmrs.patient.IdentifierValidator#getValidIdentifier(java.lang.String)
-	 * <strong>Should</strong> get valid identifier
-	 * <strong>Should</strong> fail with invalid identifiers
+	 * @should get valid identifier
+	 * @should fail with invalid identifiers
 	 */
 	@Override
 	public String getValidIdentifier(String undecoratedIdentifier) throws UnallowedIdentifierException {
@@ -99,7 +99,8 @@ public class LuhnIdentifierValidator extends BaseHyphenatedIdentifierValidator {
 		checkAllowedIdentifier(undecoratedIdentifier);
 		
 		int checkDigit = getCheckDigit(undecoratedIdentifier);
-
-		return undecoratedIdentifier + "-" + checkDigit;
+		
+		String result = undecoratedIdentifier + "-" + checkDigit;
+		return result;
 	}
 }

@@ -9,50 +9,53 @@
  */
 package org.openmrs.propertyeditor;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
-import org.junit.jupiter.api.Test;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.junit.Assert;
+import org.junit.Test;
+import org.openmrs.test.BaseContextSensitiveTest;
 
 public class ProgramEditorTest extends BaseContextSensitiveTest {
 	
 	/**
 	 * @see ProgramEditor#setAsText(String)
+	 * @verifies set using concept id
 	 */
 	@Test
-	public void setAsText_shouldSetUsingConceptId() {
+	public void setAsText_shouldSetUsingConceptId() throws Exception {
 		ProgramEditor editor = new ProgramEditor();
 		editor.setAsText("concept.9");
-		assertNotNull(editor.getValue());
+		Assert.assertNotNull(editor.getValue());
 	}
 	
 	/**
 	 * @see ProgramEditor#setAsText(String)
+	 * @verifies set using concept uuid
 	 */
 	@Test
-	public void setAsText_shouldSetUsingConceptUuid() {
+	public void setAsText_shouldSetUsingConceptUuid() throws Exception {
 		ProgramEditor editor = new ProgramEditor();
 		editor.setAsText("concept.0a9afe04-088b-44ca-9291-0a8c3b5c96fa");
-		assertNotNull(editor.getValue());
+		Assert.assertNotNull(editor.getValue());
 	}
 	
 	/**
 	 * @see ProgramEditor#setAsText(String)
+	 * @verifies set using program id
 	 */
 	@Test
-	public void setAsText_shouldSetUsingProgramId() {
+	public void setAsText_shouldSetUsingProgramId() throws Exception {
 		ProgramEditor editor = new ProgramEditor();
 		editor.setAsText("1");
-		assertNotNull(editor.getValue());
+		Assert.assertNotNull(editor.getValue());
 	}
 	
 	/**
 	 * @see ProgramEditor#setAsText(String)
+	 * @verifies set using program uuid
 	 */
 	@Test
-	public void setAsText_shouldSetUsingProgramUuid() {
+	public void setAsText_shouldSetUsingProgramUuid() throws Exception {
 		ProgramEditor editor = new ProgramEditor();
 		editor.setAsText("da4a0391-ba62-4fad-ad66-1e3722d16380");
-		assertNotNull(editor.getValue());
+		Assert.assertNotNull(editor.getValue());
 	}
 }

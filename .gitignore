@@ -75,16 +75,6 @@ nb-configuration.xml
 /webapp/src/main/webapp/WEB-INF/dwr-modules.xml
 /webapp/src/main/webapp/WEB-INF/module_messages*
 /web/WEB-INF/dwr-modules.xml
-/openmrs-merged.properties
 #############
 
-### log files ###
-**/logs
 *.log
-#############
-
-!.editorconfig
-
-### Liquibase snapshot files ###
-liquibase/snapshots/*.xml
-#############

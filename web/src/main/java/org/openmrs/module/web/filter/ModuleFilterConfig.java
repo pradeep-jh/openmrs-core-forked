@@ -9,8 +9,8 @@
  */
 package org.openmrs.module.web.filter;
 
-import java.util.Collections;
 import java.util.Enumeration;
+import java.util.Vector;
 
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletContext;
@@ -50,7 +50,6 @@ public class ModuleFilterConfig implements FilterConfig {
 	/**
 	 * @see javax.servlet.FilterConfig#getFilterName()
 	 */
-	@Override
 	public String getFilterName() {
 		return filterDefinition.getFilterName();
 	}
@@ -58,7 +57,6 @@ public class ModuleFilterConfig implements FilterConfig {
 	/**
 	 * @see javax.servlet.FilterConfig#getInitParameter(java.lang.String)
 	 */
-	@Override
 	public String getInitParameter(String paramName) {
 		return filterDefinition.getInitParameters().get(paramName);
 	}
@@ -66,9 +64,9 @@ public class ModuleFilterConfig implements FilterConfig {
 	/**
 	 * @see javax.servlet.FilterConfig#getInitParameterNames()
 	 */
-	@Override
 	public Enumeration<String> getInitParameterNames() {
-		return Collections.enumeration(filterDefinition.getInitParameters().keySet());
+		Vector<String> v = new Vector<String>(filterDefinition.getInitParameters().keySet());
+		return v.elements();
 	}
 	
 	//******************
@@ -83,7 +81,6 @@ public class ModuleFilterConfig implements FilterConfig {
 		this.filterDefinition = filterDefinition;
 	}
 	
-	@Override
 	public ServletContext getServletContext() {
 		return servletContext;
 	}

@@ -9,40 +9,37 @@
  */
 package org.openmrs.util;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import java.io.IOException;
-
 import org.hamcrest.core.Is;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.api.APIException;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
 import org.openmrs.util.databasechange.Database1_9_7UpgradeIT;
 
 public class UpgradeUtilTest extends BaseContextSensitiveTest {
 	
 	/**
-	 * @throws IOException
+	 * @verifies return concept_id for drug_order_quantity_units
 	 * @see org.openmrs.util.UpgradeUtil#getConceptIdForUnits(String)
 	 */
 	@Test
-	public void getConceptIdForUnits_shouldReturnConcept_idForDrug_order_quantity_units() throws IOException {
+	public void getConceptIdForUnits_shouldReturnConcept_idForDrug_order_quantity_units() throws Exception {
 		Database1_9_7UpgradeIT.createOrderEntryUpgradeFileWithTestData("mg=5401" + "\n" + "drug_order_quantity_units=5403"
 		        + "\n" + "ounces=5402");
 		
 		Integer conceptId = UpgradeUtil.getConceptIdForUnits("drug_order_quantity_units");
 		
-		assertThat(conceptId, Is.is(5403));
+		Assert.assertThat(conceptId, Is.is(5403));
 	}
 	
 	/**
-	 * @throws IOException
+	 * @verifies fail if units is not specified
 	 * @see org.openmrs.util.UpgradeUtil#getConceptIdForUnits(String)
 	 */
-	@Test
-	public void getConceptIdForUnits_shouldFailIfUnitsIsNotSpecified() throws IOException {
+	@Test(expected = APIException.class)
+	public void getConceptIdForUnits_shouldFailIfUnitsIsNotSpecified() throws Exception {
 		Database1_9_7UpgradeIT.createOrderEntryUpgradeFileWithTestData("mg=540" + "\n" + "ounces=5402");
-		assertThrows(APIException.class, () -> UpgradeUtil.getConceptIdForUnits("drug_order_quantity_units"));
+		
+		UpgradeUtil.getConceptIdForUnits("drug_order_quantity_units");
 	}
 }

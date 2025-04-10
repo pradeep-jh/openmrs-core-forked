@@ -13,12 +13,10 @@ import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.JoinColumn;
-import javax.persistence.Lob;
 import javax.persistence.ManyToOne;
 import javax.persistence.MappedSuperclass;
 
 import org.codehaus.jackson.annotate.JsonIgnore;
-import org.hibernate.envers.Audited;
 import org.hibernate.search.annotations.Field;
 
 /**
@@ -31,7 +29,6 @@ import org.hibernate.search.annotations.Field;
  * @see OpenmrsMetadata
  */
 @MappedSuperclass
-@Audited
 public abstract class BaseOpenmrsMetadata extends BaseOpenmrsObject implements OpenmrsMetadata {
 	
 	//***** Properties *****
@@ -40,7 +37,6 @@ public abstract class BaseOpenmrsMetadata extends BaseOpenmrsObject implements O
 	private String name;
 	
 	@Column(name = "description", length = 255)
-	@Lob
 	private String description;
 	
 	@ManyToOne(optional = false)
@@ -84,7 +80,6 @@ public abstract class BaseOpenmrsMetadata extends BaseOpenmrsObject implements O
 	/**
 	 * @return the name
 	 */
-	@Override
 	public String getName() {
 		return name;
 	}
@@ -92,7 +87,6 @@ public abstract class BaseOpenmrsMetadata extends BaseOpenmrsObject implements O
 	/**
 	 * @param name the name to set
 	 */
-	@Override
 	public void setName(String name) {
 		this.name = name;
 	}
@@ -100,7 +94,6 @@ public abstract class BaseOpenmrsMetadata extends BaseOpenmrsObject implements O
 	/**
 	 * @return the description
 	 */
-	@Override
 	public String getDescription() {
 		return description;
 	}
@@ -108,88 +101,71 @@ public abstract class BaseOpenmrsMetadata extends BaseOpenmrsObject implements O
 	/**
 	 * @param description the description to set
 	 */
-	@Override
 	public void setDescription(String description) {
 		this.description = description;
 	}
 	
 	/**
-	 * @see org.openmrs.OpenmrsMetadata#getCreator()
+	 * @see org.openmrs.Auditable#getCreator()
 	 */
-	@Override
 	public User getCreator() {
 		return creator;
 	}
 	
 	/**
-	 * @see org.openmrs.OpenmrsMetadata#setCreator(org.openmrs.User)
+	 * @see org.openmrs.Auditable#setCreator(org.openmrs.User)
 	 */
-	@Override
 	public void setCreator(User creator) {
 		this.creator = creator;
 	}
 	
 	/**
-	 * @see org.openmrs.OpenmrsMetadata#getDateCreated()
+	 * @see org.openmrs.Auditable#getDateCreated()
 	 */
-	@Override
 	public Date getDateCreated() {
 		return dateCreated;
 	}
 	
 	/**
-	 * @see org.openmrs.OpenmrsMetadata#setDateCreated(java.util.Date)
+	 * @see org.openmrs.Auditable#setDateCreated(java.util.Date)
 	 */
-	@Override
 	public void setDateCreated(Date dateCreated) {
 		this.dateCreated = dateCreated;
 	}
 	
 	/**
-	 * @see org.openmrs.OpenmrsMetadata#getChangedBy()
-	 * @deprecated as of version 2.2
+	 * @see org.openmrs.Auditable#getChangedBy()
 	 */
-	@Override
-	@Deprecated
 	public User getChangedBy() {
 		return changedBy;
 	}
 	
 	/**
-	 * @see org.openmrs.OpenmrsMetadata#setChangedBy(User)
-	 * @deprecated as of version 2.2
+	 * @see org.openmrs.Auditable#setChangedBy(org.openmrs.User)
 	 */
-	@Override
-	@Deprecated
 	public void setChangedBy(User changedBy) {
 		this.changedBy = changedBy;
 	}
 	
 	/**
-	 * @see org.openmrs.OpenmrsMetadata#getDateChanged()
-	 * @deprecated as of version 2.2
+	 * @see org.openmrs.Auditable#getDateChanged()
 	 */
-	@Override
-	@Deprecated
 	public Date getDateChanged() {
 		return dateChanged;
 	}
 	
 	/**
-	 * @see org.openmrs.OpenmrsMetadata#setDateChanged(Date)
-	 * @deprecated as of version 2.2
+	 * @see org.openmrs.Auditable#setDateChanged(java.util.Date)
 	 */
-	@Override
-	@Deprecated
 	public void setDateChanged(Date dateChanged) {
 		this.dateChanged = dateChanged;
 	}
 	
 	/**
 	 * @deprecated as of 2.0, use {@link #getRetired()}
+	 * 
 	 * @see org.openmrs.Retireable#isRetired()
 	 */
-	@Override
 	@Deprecated
 	@JsonIgnore
 	public Boolean isRetired() {
@@ -203,7 +179,6 @@ public abstract class BaseOpenmrsMetadata extends BaseOpenmrsObject implements O
 	 * 
 	 * @see org.openmrs.Retireable#isRetired()
 	 */
-	@Override
 	public Boolean getRetired() {
 		return retired;
 	}
@@ -211,7 +186,6 @@ public abstract class BaseOpenmrsMetadata extends BaseOpenmrsObject implements O
 	/**
 	 * @see org.openmrs.Retireable#setRetired(java.lang.Boolean)
 	 */
-	@Override
 	public void setRetired(Boolean retired) {
 		this.retired = retired;
 	}
@@ -219,7 +193,6 @@ public abstract class BaseOpenmrsMetadata extends BaseOpenmrsObject implements O
 	/**
 	 * @see org.openmrs.Retireable#getDateRetired()
 	 */
-	@Override
 	public Date getDateRetired() {
 		return dateRetired;
 	}
@@ -227,7 +200,6 @@ public abstract class BaseOpenmrsMetadata extends BaseOpenmrsObject implements O
 	/**
 	 * @see org.openmrs.Retireable#setDateRetired(java.util.Date)
 	 */
-	@Override
 	public void setDateRetired(Date dateRetired) {
 		this.dateRetired = dateRetired;
 	}
@@ -235,7 +207,6 @@ public abstract class BaseOpenmrsMetadata extends BaseOpenmrsObject implements O
 	/**
 	 * @see org.openmrs.Retireable#getRetiredBy()
 	 */
-	@Override
 	public User getRetiredBy() {
 		return retiredBy;
 	}
@@ -243,7 +214,6 @@ public abstract class BaseOpenmrsMetadata extends BaseOpenmrsObject implements O
 	/**
 	 * @see org.openmrs.Retireable#setRetiredBy(org.openmrs.User)
 	 */
-	@Override
 	public void setRetiredBy(User retiredBy) {
 		this.retiredBy = retiredBy;
 	}
@@ -251,7 +221,6 @@ public abstract class BaseOpenmrsMetadata extends BaseOpenmrsObject implements O
 	/**
 	 * @see org.openmrs.Retireable#getRetireReason()
 	 */
-	@Override
 	public String getRetireReason() {
 		return retireReason;
 	}
@@ -259,7 +228,6 @@ public abstract class BaseOpenmrsMetadata extends BaseOpenmrsObject implements O
 	/**
 	 * @see org.openmrs.Retireable#setRetireReason(java.lang.String)
 	 */
-	@Override
 	public void setRetireReason(String retireReason) {
 		this.retireReason = retireReason;
 	}

@@ -9,6 +9,8 @@
  */
 package org.openmrs.validator;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.VisitType;
 import org.openmrs.annotation.Handler;
 import org.springframework.validation.Errors;
@@ -22,6 +24,9 @@ import org.springframework.validation.Validator;
  */
 @Handler(supports = { VisitType.class }, order = 50)
 public class VisitTypeValidator implements Validator {
+	
+	/** Log for this class and subclasses */
+	protected final Log log = LogFactory.getLog(getClass());
 	
 	/**
 	 * Determines if the command object being submitted is a valid type
@@ -38,11 +43,11 @@ public class VisitTypeValidator implements Validator {
 	 * 
 	 * @see org.springframework.validation.Validator#validate(java.lang.Object,
 	 *      org.springframework.validation.Errors)
-	 * <strong>Should</strong> fail validation if name is null or empty or whitespace
-	 * <strong>Should</strong> fail validation if description is null or empty or whitespace
-	 * <strong>Should</strong> pass validation if all required fields have proper values
-	 * <strong>Should</strong> pass validation if field lengths are correct
-	 * <strong>Should</strong> fail validation if field lengths are not correct
+	 * @should fail validation if name is null or empty or whitespace
+	 * @should fail validation if description is null or empty or whitespace
+	 * @should pass validation if all required fields have proper values
+	 * @should pass validation if field lengths are correct
+	 * @should fail validation if field lengths are not correct
 	 */
 	@Override
 	public void validate(Object obj, Errors errors) {

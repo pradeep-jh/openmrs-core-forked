@@ -10,15 +10,15 @@
 package org.openmrs.module.web.filter;
 
 import java.io.Serializable;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
+import java.util.Vector;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.module.Module;
 import org.openmrs.module.ModuleException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.openmrs.module.web.WebModuleUtil;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -30,18 +30,16 @@ public class ModuleFilterMapping implements Serializable {
 	
 	public static final long serialVersionUID = 1;
 	
-	private static final Logger log = LoggerFactory.getLogger(ModuleFilterMapping.class);
-	
-	private static final Deque<ModuleFilterMapping> EMPTY_DEQUE = new ArrayDeque<>(0);
+	private static Log log = LogFactory.getLog(WebModuleUtil.class);
 	
 	// Properties
 	private Module module;
 	
 	private String filterName;
 	
-	private List<String> servletNames = new ArrayList<>();
+	private List<String> servletNames = new ArrayList<String>();
 	
-	private List<String> urlPatterns = new ArrayList<>();
+	private List<String> urlPatterns = new ArrayList<String>();
 	
 	/**
 	 * Default constructor, requires a Module
@@ -139,12 +137,12 @@ public class ModuleFilterMapping implements Serializable {
 	 *         example: Passing a ModuleFilterMapping containing a urlPattern of "*" would return
 	 *         true for any requestPath Passing a ModuleFilterMapping containing a urlPattern of
 	 *         "*.jsp" would return true for any requestPath ending in ".jsp"
-	 * <strong>Should</strong> return false if the requestPath is null
-	 * <strong>Should</strong> return true if the ModuleFilterMapping contains any matching urlPatterns for this
+	 * @should return false if the requestPath is null
+	 * @should return true if the ModuleFilterMapping contains any matching urlPatterns for this
 	 *         requestPath
-	 * <strong>Should</strong> return true if the ModuleFilterMapping contains any matching servletNames for this
+	 * @should return true if the ModuleFilterMapping contains any matching servletNames for this
 	 *         requestPath
-	 * <strong>Should</strong> return false if no matches are found for this requestPath
+	 * @should return false if no matches are found for this requestPath
 	 */
 	public static boolean filterMappingPasses(ModuleFilterMapping filterMapping, String requestPath) {
 		
@@ -174,13 +172,13 @@ public class ModuleFilterMapping implements Serializable {
 	 * 
 	 * @param patternToCheck String pattern to check
 	 * @param requestPath to check
-	 * <strong>Should</strong> return false if the patternToCheck is null
-	 * <strong>Should</strong> return true if the pattern is *
-	 * <strong>Should</strong> return true if the pattern is /*
-	 * <strong>Should</strong> return true if the pattern matches the requestPath exactly
-	 * <strong>Should</strong> return true if the pattern matches everything up to a suffix of /*
-	 * <strong>Should</strong> return true if the pattern matches by extension
-	 * <strong>Should</strong> return false if no pattern matches
+	 * @should return false if the patternToCheck is null
+	 * @should return true if the pattern is *
+	 * @should return true if the pattern is /*
+	 * @should return true if the pattern matches the requestPath exactly
+	 * @should return true if the pattern matches everything up to a suffix of /*
+	 * @should return true if the pattern matches by extension
+	 * @should return false if no pattern matches
 	 */
 	public static boolean urlPatternMatches(String patternToCheck, String requestPath) {
 		
@@ -200,7 +198,11 @@ public class ModuleFilterMapping implements Serializable {
 		if (patternToCheck.endsWith("/*")) {
 			int patternLength = patternToCheck.length() - 2;
 			if (patternToCheck.regionMatches(0, requestPath, 0, patternLength)) {
-				return requestPath.length() == patternLength || '/' == requestPath.charAt(patternLength);
+				if (requestPath.length() == patternLength) {
+					return true;
+				} else if ('/' == requestPath.charAt(patternLength)) {
+					return true;
+				}
 			}
 			return false;
 		}
@@ -227,10 +229,10 @@ public class ModuleFilterMapping implements Serializable {
 	 * 
 	 * @param patternToCheck String pattern to check
 	 * @param servletName Servlet Name to check
-	 * <strong>Should</strong> return false if the patternToCheck is null
-	 * <strong>Should</strong> return true if the pattern is *
-	 * <strong>Should</strong> return true if the pattern matches the servlet name exactly
-	 * <strong>Should</strong> return false if no pattern matches
+	 * @should return false if the patternToCheck is null
+	 * @should return true if the pattern is *
+	 * @should return true if the pattern matches the servlet name exactly
+	 * @should return false if no pattern matches
 	 */
 	public static boolean servletNameMatches(String patternToCheck, String servletName) {
 		
@@ -242,9 +244,12 @@ public class ModuleFilterMapping implements Serializable {
 		log.debug("Checking servlet <" + servletName + "> against pattern <" + patternToCheck + ">");
 		
 		// Match exact or full wildcard
-		return ("*").equals(patternToCheck) || servletName.equals(patternToCheck);
+		if (("*").equals(patternToCheck) || servletName.equals(patternToCheck)) {
+			return true;
+		}
 		
 		// If none found, return false
+		return false;
 	}
 	
 	/**
@@ -265,46 +270,39 @@ public class ModuleFilterMapping implements Serializable {
 	 * 
 	 * @param module - The {@link Module} for which you want to retrieve the defined
 	 *            {@link ModuleFilterMapping}s
-	 * @return - a {@link Deque} of {@link ModuleFilterMapping}s that are defined for the passed
+	 * @return - a List of {@link ModuleFilterMapping}s that are defined for the passed
 	 *         {@link Module}
 	 */
-	public static Deque<ModuleFilterMapping> retrieveFilterMappings(Module module){
-		Deque<ModuleFilterMapping> mappings;
+	public static List<ModuleFilterMapping> retrieveFilterMappings(Module module) throws ModuleException {
+		
+		List<ModuleFilterMapping> mappings = new Vector<ModuleFilterMapping>();
 		
 		try {
 			Element rootNode = module.getConfig().getDocumentElement();
 			NodeList mappingNodes = rootNode.getElementsByTagName("filter-mapping");
 			if (mappingNodes.getLength() > 0) {
-				mappings = new ArrayDeque<>(mappingNodes.getLength());
 				for (int i = 0; i < mappingNodes.getLength(); i++) {
 					ModuleFilterMapping mapping = new ModuleFilterMapping(module);
 					Node node = mappingNodes.item(i);
 					NodeList configNodes = node.getChildNodes();
 					for (int j = 0; j < configNodes.getLength(); j++) {
 						Node configNode = configNodes.item(j);
-						switch (configNode.getNodeName()) {
-							case "filter-name":
-								mapping.setFilterName(configNode.getTextContent());
-								break;
-							case "url-pattern":
-								mapping.addUrlPattern(configNode.getTextContent());
-								break;
-							case "servlet-name":
-								mapping.addServletName(configNode.getTextContent());
-								break;
+						if ("filter-name".equals(configNode.getNodeName())) {
+							mapping.setFilterName(configNode.getTextContent());
+						} else if ("url-pattern".equals(configNode.getNodeName())) {
+							mapping.addUrlPattern(configNode.getTextContent());
+						} else if ("servlet-name".equals(configNode.getNodeName())) {
+							mapping.addServletName(configNode.getTextContent());
 						}
 					}
 					mappings.add(mapping);
 				}
-				
-				log.debug("Retrieved {} filter-mappings for {}: {}", mappings.size(), module, mappings);
-				return mappings;
 			}
 		}
 		catch (Exception e) {
 			throw new ModuleException("Unable to parse filters in module configuration.", e);
 		}
-		
-		return EMPTY_DEQUE;
+		log.debug("Retrieved " + mappings.size() + " filter-mappings for " + module.getModuleId() + ": " + mappings);
+		return mappings;
 	}
 }

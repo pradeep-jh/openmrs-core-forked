@@ -9,32 +9,39 @@
  */
 package org.openmrs.propertyeditor;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.openmrs.Cohort;
-import org.openmrs.api.CohortService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.openmrs.test.BaseContextSensitiveTest;
 
-public class CohortEditorTest extends BasePropertyEditorTest<Cohort, CohortEditor> {
+public class CohortEditorTest extends BaseContextSensitiveTest {
 	
 	protected static final String COHORT_XML = "org/openmrs/api/include/CohortServiceTest-cohort.xml";
 	
-	private static final Integer EXISTING_ID = 1;
-	
-	@Autowired
-	private CohortService cohortService;
-	
-	@BeforeEach
-	public void prepareData() {
+	@Before
+	public void prepareData() throws Exception {
 		executeDataSet(COHORT_XML);
 	}
 	
-	@Override
-	protected CohortEditor getNewEditor() {
-		return new CohortEditor();
+	/**
+	 * @see CohortEditor#setAsText(String)
+	 * @verifies set using id
+	 */
+	@Test
+	public void setAsText_shouldSetUsingId() throws Exception {
+		CohortEditor editor = new CohortEditor();
+		editor.setAsText("1");
+		Assert.assertNotNull(editor.getValue());
 	}
 	
-	@Override
-	protected Cohort getExistingObject() {
-		return cohortService.getCohort(EXISTING_ID);
+	/**
+	 * @see CohortEditor#setAsText(String)
+	 * @verifies set using uuid
+	 */
+	@Test
+	public void setAsText_shouldSetUsingUuid() throws Exception {
+		CohortEditor editor = new CohortEditor();
+		editor.setAsText("h9a9m0i6-15e6-467c-9d4b-mbi7teu9lf0f");
+		Assert.assertNotNull(editor.getValue());
 	}
 }

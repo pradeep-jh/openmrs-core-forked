@@ -17,8 +17,8 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * Wraps Response for GZipFilter
@@ -27,9 +27,9 @@ import org.slf4j.LoggerFactory;
  */
 public class GZIPResponseWrapper extends HttpServletResponseWrapper {
 	
-	private static final Logger log = LoggerFactory.getLogger(GZIPResponseWrapper.class);
+	private static final Log log = LogFactory.getLog(GZIPResponseWrapper.class);
 	
-	protected HttpServletResponse origResponse;
+	protected HttpServletResponse origResponse = null;
 	
 	protected ServletOutputStream stream = null;
 	
@@ -43,7 +43,7 @@ public class GZIPResponseWrapper extends HttpServletResponseWrapper {
 	}
 	
 	public ServletOutputStream createOutputStream() throws IOException {
-		return new GZIPResponseStream(origResponse);
+		return (new GZIPResponseStream(origResponse));
 	}
 	
 	public void finishResponse() {
@@ -51,7 +51,7 @@ public class GZIPResponseWrapper extends HttpServletResponseWrapper {
 			if (writer != null) {
 				writer.close();
 			} else {
-				if (stream != null && !((GZIPResponseStream)stream).closed()) {
+				if (stream != null) {
 					stream.close();
 				}
 			}
@@ -61,14 +61,12 @@ public class GZIPResponseWrapper extends HttpServletResponseWrapper {
 		}
 	}
 	
-	@Override
 	public void flushBuffer() throws IOException {
 		if (stream != null) {
 			stream.flush();
 		}
 	}
 	
-	@Override
 	public ServletOutputStream getOutputStream() throws IOException {
 		if (writer != null) {
 			throw new IllegalStateException("getWriter() has already been called!");
@@ -78,10 +76,9 @@ public class GZIPResponseWrapper extends HttpServletResponseWrapper {
 			stream = createOutputStream();
 		}
 		
-		return stream;
+		return (stream);
 	}
 	
-	@Override
 	public PrintWriter getWriter() throws IOException {
 		// From cmurphy@intechtual.com to fix:
 		// https://appfuse.dev.java.net/issues/show_bug.cgi?id=59
@@ -90,7 +87,7 @@ public class GZIPResponseWrapper extends HttpServletResponseWrapper {
 		}
 		
 		if (writer != null) {
-			return writer;
+			return (writer);
 		}
 		
 		if (stream != null) {
@@ -100,25 +97,21 @@ public class GZIPResponseWrapper extends HttpServletResponseWrapper {
 		stream = createOutputStream();
 		writer = new PrintWriter(new OutputStreamWriter(stream, origResponse.getCharacterEncoding()));
 		
-		return writer;
+		return (writer);
+	}
+	
+	public void setContentLength(int length) {
 	}
 	
 	/**
 	 * @see javax.servlet.http.HttpServletResponse#sendError(int, java.lang.String)
 	 */
-	@Override
 	public void sendError(int error, String message) throws IOException {
 		super.sendError(error, message);
 		this.error = error;
 		
-		log.debug("sending error: {} [{}]", error, message);
-	}
-	
-	public void setContentLength(int length) {
-		//Intentionally left blank to ignore whatever length the caller sets, because
-		//we are going to zip the response and hence end up with a smaller length.
-		//Without this empty method, the base class's setContentLength() method will be
-		//called, leading to the browser's waiting for more data than what we actually
-		//have for the compressed output, hence slowing down the response. TRUNK-5978
+		if (log.isDebugEnabled()) {
+			log.debug("sending error: " + error + " [" + message + "]");
+		}
 	}
 }

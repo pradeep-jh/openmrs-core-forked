@@ -10,12 +10,11 @@
 package org.openmrs;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.Assert.assertThat;
 
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
+import org.openmrs.test.Verifies;
 import org.openmrs.util.OpenmrsConstants;
 
 /**
@@ -28,7 +27,8 @@ public class PersonNameTest {
 	 * @see PersonName#newInstance(PersonName)
 	 */
 	@Test
-	public void newInstance_shouldCopyEveryPropertyOfGivenPersonName() {
+	@Verifies(value = "should copy every property of given personName", method = "newInstance(PersonName)")
+	public void newInstance_shouldCopyEveryPropertyOfGivenPersonName() throws Exception {
 		Integer personNameId = 333;
 		boolean preferred = true;
 		String prefix = "prefix";
@@ -61,27 +61,28 @@ public class PersonNameTest {
 		
 		PersonName copy = PersonName.newInstance(pn);
 		
-		assertEquals(personNameId, copy.getPersonNameId());
-		assertEquals(preferred, copy.getPreferred());
-		assertEquals(prefix, copy.getPrefix());
-		assertEquals(person, copy.getPerson());
-		assertEquals(givenName, copy.getGivenName());
-		assertEquals(middleName, copy.getMiddleName());
-		assertEquals(familyNamePrefix, copy.getFamilyNamePrefix());
-		assertEquals(familyName, copy.getFamilyName());
-		assertEquals(familyName2, copy.getFamilyName2());
-		assertEquals(familyNameSuffix, copy.getFamilyNameSuffix());
-		assertEquals(degree, copy.getDegree());
-		assertEquals(voided, copy.getVoided());
-		assertEquals(voidedBy, copy.getVoidedBy());
-		assertEquals(voidReason, copy.getVoidReason());
+		Assert.assertEquals(personNameId, copy.getPersonNameId());
+		Assert.assertEquals(preferred, copy.getPreferred().booleanValue());
+		Assert.assertEquals(prefix, copy.getPrefix());
+		Assert.assertEquals(person, copy.getPerson());
+		Assert.assertEquals(givenName, copy.getGivenName());
+		Assert.assertEquals(middleName, copy.getMiddleName());
+		Assert.assertEquals(familyNamePrefix, copy.getFamilyNamePrefix());
+		Assert.assertEquals(familyName, copy.getFamilyName());
+		Assert.assertEquals(familyName2, copy.getFamilyName2());
+		Assert.assertEquals(familyNameSuffix, copy.getFamilyNameSuffix());
+		Assert.assertEquals(degree, copy.getDegree());
+		Assert.assertEquals(voided, copy.getVoided().booleanValue());
+		Assert.assertEquals(voidedBy, copy.getVoidedBy());
+		Assert.assertEquals(voidReason, copy.getVoidReason());
 	}
 
 	/**
 	 * @see PersonName#equalsContent(PersonName)
 	 */
 	@Test
-	public void equalsContent_shouldReturnTrueIfAllFieldsOtherThanIdPersonAndPreferredAreEqual() {
+	@Verifies(value = "should return true if all fields other than ID, person and preferred are equal", method = "equalsContent(PersonName)")
+	public void equalsContent_shouldReturnTrueIfAllFieldsOtherThanIdPersonAndPreferredAreEqual() throws Exception {
 		PersonName pn = new PersonName(1);
 		pn.setPrefix("Count");
 		pn.setGivenName("Adam");
@@ -113,7 +114,8 @@ public class PersonNameTest {
 	 * @see PersonName#equalsContent(PersonName)
 	 */
 	@Test
-	public void equalsContent_shouldReturnFalseIfSuffixesAreNotEqual() {
+	@Verifies(value = "should return false if suffixes are not equal", method = "equalsContent(PersonName)")
+	public void equalsContent_shouldReturnFalseIfSuffixesAreNotEqual() throws Exception {
 		PersonName nameWithSenior = new PersonName(1);
 		PersonName nameWithJunior = new PersonName(2);
 		
@@ -127,7 +129,8 @@ public class PersonNameTest {
 	 * @see PersonName#equalsContent(PersonName)
 	 */
 	@Test
-	public void equalsContent_shouldReturnFalseIfPrefixesAreNotEqual() {
+	@Verifies(value = "should return false if family name prefixes are not equal", method = "equalsContent(PersonName)")
+	public void equalsContent_shouldReturnFalseIfPrefixesAreNotEqual() throws Exception {
 		PersonName nameWithVanDer = new PersonName(1);
 		PersonName nameWithDe = new PersonName(2);
 		
@@ -141,7 +144,8 @@ public class PersonNameTest {
 	 * @see PersonName#equalsContent(PersonName)
 	 */
 	@Test
-	public void equalsContent_shouldReturnFalseIfFamilyName2IsNotEqual() {
+	@Verifies(value = "should return false if family name 2 is not equal", method = "equalsContent(PersonName)")
+	public void equalsContent_shouldReturnFalseIfFamilyName2IsNotEqual() throws Exception {
 		PersonName name1 = new PersonName(1);
 		PersonName name2 = new PersonName(2);
 		
@@ -155,7 +159,8 @@ public class PersonNameTest {
 	 * @see PersonName#equalsContent(PersonName)
 	 */
 	@Test
-	public void equalsContent_shouldReturnFalseIfPrefixIsNotEqual() {
+	@Verifies(value = "should return false if prefix is not equal", method = "equalsContent(PersonName)")
+	public void equalsContent_shouldReturnFalseIfPrefixIsNotEqual() throws Exception {
 		PersonName name1 = new PersonName(1);
 		PersonName name2 = new PersonName(2);
 		
@@ -169,7 +174,8 @@ public class PersonNameTest {
 	 * @see PersonName#equalsContent(PersonName)
 	 */
 	@Test
-	public void equalsContent_shouldReturnFalseIfDegreesAreNotEqual() {
+	@Verifies(value = "should return false if degrees are not equal", method = "equalsContent(PersonName)")
+	public void equalsContent_shouldReturnFalseIfDegreesAreNotEqual() throws Exception {
 		PersonName nameWithDoctor = new PersonName(1);
 		PersonName nameWithProfessor = new PersonName(2);
 		
@@ -183,7 +189,8 @@ public class PersonNameTest {
 	 * @see PersonName#equalsContent(PersonName)
 	 */
 	@Test
-	public void equalsContent_shouldReturnTrueIfOnlyInContentFieldsDifferenceIsBetweenNullAndEmptyString() {
+	@Verifies(value = "should return true if only difference in content fields is between null and empty string", method = "equalsContent(PersonName)")
+	public void equalsContent_shouldReturnTrueIfOnlyInContentFieldsDifferenceIsBetweenNullAndEmptyString() throws Exception {
 		PersonName pn = new PersonName(1);
 		pn.setPrefix("");
 		pn.setGivenName("");
@@ -215,11 +222,12 @@ public class PersonNameTest {
 	 * @see PersonName#getFamilyName()
 	 */
 	@Test
-	public void getFamilyName_shouldReturnObscuredNameIfObscure_patientsIsSetToTrue() {
+	@Verifies(value = "should return obscured name if obscure_patients is set to true", method = "getFamilyName()")
+	public void getFamilyName_shouldReturnObscuredNameIfObscure_patientsIsSetToTrue() throws Exception {
 		OpenmrsConstants.OBSCURE_PATIENTS = true;
 		
 		OpenmrsConstants.OBSCURE_PATIENTS_FAMILY_NAME = "family name";
-		assertEquals("family name", new PersonName().getFamilyName());
+		Assert.assertEquals("family name", new PersonName().getFamilyName());
 		
 		OpenmrsConstants.OBSCURE_PATIENTS = false; // cleanup 
 	}
@@ -228,12 +236,13 @@ public class PersonNameTest {
 	 * @see PersonName#getFamilyName2()
 	 */
 	@Test
-	public void getFamilyName2_shouldReturnNullIfObscure_patientsIsSetToTrue() {
+	@Verifies(value = "should return null if obscure_patients is set to true", method = "getFamilyName2()")
+	public void getFamilyName2_shouldReturnNullIfObscure_patientsIsSetToTrue() throws Exception {
 		OpenmrsConstants.OBSCURE_PATIENTS = true;
 		
 		PersonName pn = new PersonName();
 		pn.setFamilyName2("a non-null name");
-		assertNull(pn.getFamilyName2());
+		Assert.assertNull(pn.getFamilyName2());
 		
 		OpenmrsConstants.OBSCURE_PATIENTS = false; // cleanup 
 	}
@@ -242,12 +251,13 @@ public class PersonNameTest {
 	 * @see PersonName#getFamilyNamePrefix()
 	 */
 	@Test
-	public void getFamilyNamePrefix_shouldReturnNullIfObscure_patientsIsSetToTrue() {
+	@Verifies(value = "should return null if obscure_patients is set to true", method = "getFamilyNamePrefix()")
+	public void getFamilyNamePrefix_shouldReturnNullIfObscure_patientsIsSetToTrue() throws Exception {
 		OpenmrsConstants.OBSCURE_PATIENTS = true;
 		
 		PersonName pn = new PersonName();
 		pn.setFamilyNamePrefix("a non-null name");
-		assertNull(pn.getFamilyNamePrefix());
+		Assert.assertNull(pn.getFamilyNamePrefix());
 		
 		OpenmrsConstants.OBSCURE_PATIENTS = false; // cleanup 
 	}
@@ -256,12 +266,13 @@ public class PersonNameTest {
 	 * @see PersonName#getFamilyNameSuffix()
 	 */
 	@Test
-	public void getFamilyNameSuffix_shouldReturnNullIfObscure_patientsIsSetToTrue() {
+	@Verifies(value = "should return null if obscure_patients is set to true", method = "getFamilyNameSuffix()")
+	public void getFamilyNameSuffix_shouldReturnNullIfObscure_patientsIsSetToTrue() throws Exception {
 		OpenmrsConstants.OBSCURE_PATIENTS = true;
 		
 		PersonName pn = new PersonName();
 		pn.setFamilyNameSuffix("a non-null name");
-		assertNull(pn.getFamilyNameSuffix());
+		Assert.assertNull(pn.getFamilyNameSuffix());
 		
 		OpenmrsConstants.OBSCURE_PATIENTS = false; // cleanup 
 	}
@@ -270,11 +281,12 @@ public class PersonNameTest {
 	 * @see PersonName#getGivenName()
 	 */
 	@Test
-	public void getGivenName_shouldReturnObscuredNameIfObscure_patientsIsSetToTrue() {
+	@Verifies(value = "should return obscured name if obscure_patients is set to true", method = "getGivenName()")
+	public void getGivenName_shouldReturnObscuredNameIfObscure_patientsIsSetToTrue() throws Exception {
 		OpenmrsConstants.OBSCURE_PATIENTS = true;
 		
 		OpenmrsConstants.OBSCURE_PATIENTS_GIVEN_NAME = "given name";
-		assertEquals("given name", new PersonName().getGivenName());
+		Assert.assertEquals("given name", new PersonName().getGivenName());
 		
 		OpenmrsConstants.OBSCURE_PATIENTS = false; // cleanup 
 	}
@@ -283,11 +295,12 @@ public class PersonNameTest {
 	 * @see PersonName#getMiddleName()
 	 */
 	@Test
-	public void getMiddleName_shouldReturnObscuredNameIfObscure_patientsIsSetToTrue() {
+	@Verifies(value = "should return obscured name if obscure_patients is set to true", method = "getMiddleName()")
+	public void getMiddleName_shouldReturnObscuredNameIfObscure_patientsIsSetToTrue() throws Exception {
 		OpenmrsConstants.OBSCURE_PATIENTS = true;
 		
 		OpenmrsConstants.OBSCURE_PATIENTS_MIDDLE_NAME = "middle name";
-		assertEquals("middle name", new PersonName().getMiddleName());
+		Assert.assertEquals("middle name", new PersonName().getMiddleName());
 		
 		OpenmrsConstants.OBSCURE_PATIENTS = false; // cleanup 
 	}
@@ -296,33 +309,36 @@ public class PersonNameTest {
 	 * @see PersonName#getPrefix()
 	 */
 	@Test
-	public void getPrefix_shouldReturnNullIfObscure_patientsIsSetToTrue() {
+	@Verifies(value = "should return null if obscure_patients is set to true", method = "getPrefix()")
+	public void getPrefix_shouldReturnNullIfObscure_patientsIsSetToTrue() throws Exception {
 		OpenmrsConstants.OBSCURE_PATIENTS = true;
 		
 		PersonName pn = new PersonName();
 		pn.setPrefix("a non-null name");
-		assertNull(pn.getPrefix());
+		Assert.assertNull(pn.getPrefix());
 		
 		OpenmrsConstants.OBSCURE_PATIENTS = false; // cleanup 
 	}
 	
 	/**
 	 * @see PersonName#getFullName()
+	 * @verifies not put spaces around an empty middle name
 	 */
 	@Test
-	public void getFullName_shouldNotPutSpacesAroundAnEmptyMiddleName() {
+	public void getFullName_shouldNotPutSpacesAroundAnEmptyMiddleName() throws Exception {
 		PersonName pn = new PersonName();
 		pn.setGivenName("Bob");
 		pn.setMiddleName("");
 		pn.setFamilyName("Jones");
-		assertEquals("Bob Jones", pn.getFullName());
+		Assert.assertEquals("Bob Jones", pn.getFullName());
 	}
 	
 	/**
 	 * @see PersonName#getFullName()
 	 */
 	@Test
-	public void getFullName_shouldNotReturnLongIfPersonNameFormatIsShort() {
+	@Verifies(value = "should Not Return Long If Person Name Format Is Short", method = "getFullName()")
+	public void getFullName_shouldNotReturnLongIfPersonNameFormatIsShort() throws Exception {
 		PersonName pn = new PersonName();
 		PersonName.setFormat(OpenmrsConstants.PERSON_NAME_FORMAT_LONG);
 		pn.setPrefix("Sr.");
@@ -334,11 +350,12 @@ public class PersonNameTest {
 		pn.setFamilyNameSuffix("jr.");
 		pn.setDegree("3");
 		PersonName.setFormat(OpenmrsConstants.PERSON_NAME_FORMAT_SHORT);
-		assertEquals(pn.getFullName(), "Sr. Taylor Bob Mark");
+		Assert.assertEquals(pn.getFullName(), "Sr. Taylor Bob Mark");
 	}
 	
 	@Test
-	public void getFullName_shouldNotReturnShortIfPersonNameFormatIsLong() {
+	@Verifies(value = "should Not Return Short If Person Name Format Is Long", method = "getFullName()")
+	public void getFullName_shouldNotReturnShortIfPersonNameFormatIsLong() throws Exception {
 		PersonName pn = new PersonName();
 		PersonName.setFormat(OpenmrsConstants.PERSON_NAME_FORMAT_LONG);
 		pn.setPrefix("Sr.");
@@ -349,11 +366,12 @@ public class PersonNameTest {
 		pn.setFamilyName2("Jones");
 		pn.setFamilyNameSuffix("jr.");
 		pn.setDegree("3");
-		assertEquals(pn.getFullName(), "Sr. Taylor Bob Wilson Mark Jones jr. 3");
+		Assert.assertEquals(pn.getFullName(), "Sr. Taylor Bob Wilson Mark Jones jr. 3");
 	}
 	
 	@Test
-	public void getFullName_shouldReturnShortIfPersonNameFormatIsNull() {
+	@Verifies(value = "should Return Short If Person Name Format Is null", method = "getFullName()")
+	public void getFullName_shouldReturnShortIfPersonNameFormatIsNull() throws Exception {
 		PersonName pn = new PersonName();
 		PersonName.setFormat(OpenmrsConstants.PERSON_NAME_FORMAT_LONG);
 		pn.setPrefix("Sr.");
@@ -365,7 +383,7 @@ public class PersonNameTest {
 		pn.setFamilyNameSuffix("jr.");
 		pn.setDegree("3");
 		PersonName.setFormat("");
-		assertEquals(pn.getFullName(), "Sr. Taylor Bob Mark");
+		Assert.assertEquals(pn.getFullName(), "Sr. Taylor Bob Mark");
 	}
 	
 }

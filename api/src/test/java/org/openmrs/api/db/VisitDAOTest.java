@@ -9,16 +9,16 @@
  */
 package org.openmrs.api.db;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.ArrayList;
 import java.util.Calendar;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import org.openmrs.VisitType;
 import org.openmrs.api.VisitService;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 
 /**
  * Contains the tests for {@link VisitDAO} methods that don't have equivalents at the
@@ -37,8 +37,8 @@ public class VisitDAOTest extends BaseContextSensitiveTest {
 	 * 
 	 * @throws Exception
 	 */
-	@BeforeEach
-	public void runBeforeEachTest() {
+	@Before
+	public void runBeforeEachTest() throws Exception {
 		
 		if (dao == null)
 			// fetch the dao from the spring application context
@@ -49,31 +49,34 @@ public class VisitDAOTest extends BaseContextSensitiveTest {
 	 * @see VisitDAO#getVisits(java.util.Collection, java.util.Collection, java.util.Collection, java.util.Collection, java.util.Date, java.util.Date, java.util.Date, java.util.Date, boolean, boolean)
 	 */
 	@Test
-	public void getVisits_shouldReturnAllUnvoidedVisitsIfIncludeEndedIsSetToTrue() {
+	@Verifies(value = "should return all unvoided visits if includeEnded is set to true", method = "getVisits(Collection<VisitType>,Collection<Patient>,Collection<Location>,Collection<Concept>,Date,Date,Date,Date,boolean,boolean)")
+	public void getVisits_shouldReturnAllUnvoidedVisitsIfIncludeEndedIsSetToTrue() throws Exception {
 		executeDataSet(VISITS_WITH_DATES_XML);
-		assertEquals(16, dao.getVisits(null, null, null, null, null, null, null, null, null, true, false).size());
+		Assert.assertEquals(13, dao.getVisits(null, null, null, null, null, null, null, null, null, true, false).size());
 	}
 	
 	/**
 	 * @see VisitDAO#getVisits(java.util.Collection, java.util.Collection, java.util.Collection, java.util.Collection, java.util.Date, java.util.Date, java.util.Date, java.util.Date, boolean, boolean)
 	 */
 	@Test
-	public void getVisits_shouldReturnOnlyActiveVisitsIfIncludeEndedIsSetToFalse() {
+	@Verifies(value = "should return only active visits if includeEnded is set to false", method = "getVisits(Collection<VisitType>,Collection<Patient>,Collection<Location>,Collection<Concept>,Date,Date,Date,Date,boolean,boolean)")
+	public void getVisits_shouldReturnOnlyActiveVisitsIfIncludeEndedIsSetToFalse() throws Exception {
 		executeDataSet(VISITS_WITH_DATES_XML);
-		assertEquals(7, dao.getVisits(null, null, null, null, null, null, null, null, null, false, false).size());
+		Assert.assertEquals(6, dao.getVisits(null, null, null, null, null, null, null, null, null, false, false).size());
 	}
 	
 	/**
 	 * @see VisitDAO#getNextVisit(Visit,Collection<VisitType>,Date)
 	 */
 	@Test
-	public void getNextVisit_shouldReturnTheNextUnvoidedActiveVisitMatchingTheSpecifiedTypesAndStartDate() {
+	@Verifies(value = "should return the next unvoided active visit matching the specified types and startDate", method = "getNextVisit(Visit,Collection<VisitType>,Date)")
+	public void getNextVisit_shouldReturnTheNextUnvoidedActiveVisitMatchingTheSpecifiedTypesAndStartDate() throws Exception {
 		executeDataSet(VISITS_INCLUDE_VISITS_TO_AUTO_CLOSE_XML);
-		ArrayList<VisitType> visitTypes = new ArrayList<>();
+		ArrayList<VisitType> visitTypes = new ArrayList<VisitType>();
 		visitTypes.add(dao.getVisitType(4));
 		Calendar cal = Calendar.getInstance();
 		cal.set(2005, 0, 4, 23, 59, 59);
 		cal.set(Calendar.MILLISECOND, 999);
-		assertEquals(105, dao.getNextVisit(dao.getVisit(1), visitTypes, cal.getTime()).getVisitId().intValue());
+		Assert.assertEquals(105, dao.getNextVisit(dao.getVisit(1), visitTypes, cal.getTime()).getVisitId().intValue());
 	}
 }

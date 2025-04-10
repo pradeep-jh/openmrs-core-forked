@@ -9,6 +9,8 @@
  */
 package org.openmrs.util;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.GlobalProperty;
 import org.openmrs.Location;
 import org.openmrs.api.GlobalPropertyListener;
@@ -21,6 +23,8 @@ import org.openmrs.api.context.Context;
  */
 public class LocationUtility implements GlobalPropertyListener {
 	
+	private static Log log = LogFactory.getLog(LocationUtility.class);
+	
 	/**
 	 * Cached version of the system default location. This is cached so that we don't have to look
 	 * it up in the global property table every time it is requested for
@@ -31,7 +35,7 @@ public class LocationUtility implements GlobalPropertyListener {
 	 * Gets the system default location specified as a global property.
 	 *
 	 * @return default location object.
-	 * <strong>Should</strong> return the updated defaultLocation when the value of the global property is changed
+	 * @should return the updated defaultLocation when the value of the global property is changed
 	 */
 	public static Location getDefaultLocation() {
 		if (defaultLocation == null && Context.isSessionOpen()) {
@@ -45,7 +49,7 @@ public class LocationUtility implements GlobalPropertyListener {
 	 * Convenience method that returns the default location of the authenticated user. It should
 	 * return the user's specified location from the user properties if any is set.
 	 *
-	 * <strong>Should</strong> return the user specified location if any is set
+	 * @should return the user specified location if any is set
 	 */
 	public static Location getUserDefaultLocation() {
 		return Context.getUserContext().getLocation();

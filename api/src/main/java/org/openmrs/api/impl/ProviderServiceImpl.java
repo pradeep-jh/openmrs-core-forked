@@ -13,6 +13,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.Validate;
 import org.openmrs.Person;
 import org.openmrs.Provider;
 import org.openmrs.ProviderAttribute;
@@ -59,7 +60,6 @@ public class ProviderServiceImpl extends BaseOpenmrsService implements ProviderS
 	/**
 	 * @see org.openmrs.api.ProviderService#getAllProviders(boolean)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<Provider> getAllProviders(boolean includeRetired) {
 		return dao.getAllProviders(includeRetired);
@@ -68,7 +68,6 @@ public class ProviderServiceImpl extends BaseOpenmrsService implements ProviderS
 	/**
 	 * @see org.openmrs.api.ProviderService#retireProvider(org.openmrs.Provider, java.lang.String)
 	 */
-	@Override
 	public void retireProvider(Provider provider, String reason) {
 		dao.saveProvider(provider);
 	}
@@ -76,15 +75,13 @@ public class ProviderServiceImpl extends BaseOpenmrsService implements ProviderS
 	/**
 	 * @see org.openmrs.api.ProviderService#unretireProvider(org.openmrs.Provider)
 	 */
-	@Override
 	public Provider unretireProvider(Provider provider) {
-		return Context.getProviderService().saveProvider(provider);
+		return dao.saveProvider(provider);
 	}
 	
 	/**
 	 * @see org.openmrs.api.ProviderService#purgeProvider(org.openmrs.Provider)
 	 */
-	@Override
 	public void purgeProvider(Provider provider) {
 		dao.deleteProvider(provider);
 	}
@@ -131,9 +128,7 @@ public class ProviderServiceImpl extends BaseOpenmrsService implements ProviderS
 	@Override
 	@Transactional(readOnly = true)
 	public Collection<Provider> getProvidersByPerson(Person person) {
-		if (person == null) {
-			throw new IllegalArgumentException("Person must not be null");
-		}
+		Validate.notNull(person, "Person must not be null");
 		return Context.getProviderService().getProvidersByPerson(person, true);
 	}
 	
@@ -211,15 +206,6 @@ public class ProviderServiceImpl extends BaseOpenmrsService implements ProviderS
 	@Transactional(readOnly = true)
 	public ProviderAttributeType getProviderAttributeTypeByUuid(String uuid) {
 		return dao.getProviderAttributeTypeByUuid(uuid);
-	}
-	
-	/**
-	 * @see org.openmrs.api.ProviderService#getProviderAttributeTypeByName(String)
-	 */
-	@Override
-	@Transactional(readOnly = true)
-	public ProviderAttributeType getProviderAttributeTypeByName(String name) {
-		return dao.getProviderAttributeTypeByName(name);
 	}
 	
 	/**

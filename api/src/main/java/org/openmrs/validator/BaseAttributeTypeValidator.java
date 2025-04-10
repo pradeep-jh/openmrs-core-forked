@@ -9,7 +9,9 @@
  */
 package org.openmrs.validator;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.attribute.AttributeType;
 import org.openmrs.customdatatype.CustomDatatype;
 import org.openmrs.customdatatype.CustomDatatypeHandler;
@@ -26,17 +28,20 @@ import org.springframework.validation.Validator;
  */
 public abstract class BaseAttributeTypeValidator<T extends AttributeType<?>> implements Validator {
 	
+	/** Log for this class and subclasses */
+	protected final Log log = LogFactory.getLog(getClass());
+	
 	/**
 	 * @see org.springframework.validation.Validator#validate(java.lang.Object, org.springframework.validation.Errors)
-	 * <strong>Should</strong> require name
-	 * <strong>Should</strong> require minOccurs
-	 * <strong>Should</strong> not allow maxOccurs less than 1
-	 * <strong>Should</strong> not allow maxOccurs less than minOccurs
-	 * <strong>Should</strong> require datatypeClassname
-	 * <strong>Should</strong> require DatatypeConfiguration if Datatype equals Regex-Validated Text
-	 * <strong>Should</strong> pass validation if all required values are set
-	 * <strong>Should</strong> pass validation if field lengths are correct
-	 * <strong>Should</strong> fail validation if field lengths are not correct
+	 * @should require name
+	 * @should require minOccurs
+	 * @should not allow maxOccurs less than 1
+	 * @should not allow maxOccurs less than minOccurs
+	 * @should require datatypeClassname
+	 * @should require DatatypeConfiguration if Datatype equals Regex-Validated Text
+	 * @should pass validation if all required values are set
+	 * @should pass validation if field lengths are correct
+	 * @should fail validation if field lengths are not correct
 	 */
 	@Override
 	public void validate(Object target, Errors errors) {

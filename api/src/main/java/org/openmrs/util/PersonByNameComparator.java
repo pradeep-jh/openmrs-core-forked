@@ -9,11 +9,10 @@
  */
 package org.openmrs.util;
 
-import java.io.Serializable;
-import java.util.Comparator;
-
 import org.openmrs.Person;
 import org.openmrs.PersonName;
+
+import java.util.Comparator;
 
 /**
  * A simple person comparator for sorting persons by name. Sorts names based on the following
@@ -21,14 +20,11 @@ import org.openmrs.PersonName;
  * 
  * @since 1.8
  */
-public class PersonByNameComparator implements Comparator<Person>, Serializable {
-
-	private static final long serialVersionUID = 1L;
+public class PersonByNameComparator implements Comparator<Person> {
 	
 	/**
 	 * @see java.util.Comparator#compare(java.lang.Object, java.lang.Object)
 	 */
-	@Override
 	public int compare(Person person1, Person person2) {
 		
 		return comparePersonsByName(person1, person2);
@@ -37,10 +33,10 @@ public class PersonByNameComparator implements Comparator<Person>, Serializable 
 	/**
 	 * Compares two person objects by name
 	 * 
-	 * <strong>Should</strong> return negative if personName for person1 comes before that of person2
-	 * <strong>Should</strong> return positive if personName for person1 comes after that of person2
-	 * <strong>Should</strong> return zero if the givenName middleName and familyName match
-	 * <strong>Should</strong> be case insensitive
+	 * @should return negative if personName for person1 comes before that of person2
+	 * @should return positive if personName for person1 comes after that of person2
+	 * @should return zero if the givenName middleName and familyName match
+	 * @should be case insensitive
 	 * @since 1.8
 	 */
 	public static int comparePersonsByName(Person person1, Person person2) {

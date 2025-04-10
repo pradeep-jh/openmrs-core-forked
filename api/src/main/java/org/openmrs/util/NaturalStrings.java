@@ -34,6 +34,40 @@ import java.util.Comparator;
 public final class NaturalStrings {
 	
 	/**
+	 * <p>
+	 * A string comparator that does case-sensitive comparisons and handles embedded numbers
+	 * correctly.
+	 * </p>
+	 * <p>
+	 * <b>Do not use</b> if your app might ever run on any locale that uses more than 7-bit ascii
+	 * characters.
+	 * </p>
+	 */
+	private static final Comparator<String> NATURAL_COMPARATOR_ASCII = new Comparator<String>() {
+		
+		public int compare(String o1, String o2) {
+			return compareNaturalAscii(o1, o2);
+		}
+	};
+	
+	/**
+	 * <p>
+	 * A string comparator that does case insensitive comparisons and handles embedded numbers
+	 * correctly.
+	 * </p>
+	 * <p>
+	 * <b>Do not use</b> if your app might ever run on any locale that uses more than 7-bit ascii
+	 * characters.
+	 * </p>
+	 */
+	private static final Comparator<String> IGNORE_CASE_NATURAL_COMPARATOR_ASCII = new Comparator<String>() {
+		
+		public int compare(String o1, String o2) {
+			return compareNaturalIgnoreCaseAscii(o1, o2);
+		}
+	};
+	
+	/**
 	 * This is a utility class (static methods only), don't instantiate.
 	 */
 	private NaturalStrings() {
@@ -76,7 +110,12 @@ public final class NaturalStrings {
 			// unrelated code that tries to use the comparator
 			throw new NullPointerException("collator must not be null");
 		}
-		return (o1, o2) -> compareNatural(collator, o1, o2);
+		return new Comparator<String>() {
+			
+			public int compare(String o1, String o2) {
+				return compareNatural(collator, o1, o2);
+			}
+		};
 	}
 	
 	/**
@@ -93,7 +132,7 @@ public final class NaturalStrings {
 	 * @see #getNaturalComparator(java.text.Collator)
 	 */
 	public static Comparator<String> getNaturalComparatorAscii() {
-		return NaturalStrings::compareNaturalAscii;
+		return NATURAL_COMPARATOR_ASCII;
 	}
 	
 	/**
@@ -110,7 +149,7 @@ public final class NaturalStrings {
 	 * @see #getNaturalComparator(java.text.Collator)
 	 */
 	public static Comparator<String> getNaturalComparatorIgnoreCaseAscii() {
-		return NaturalStrings::compareNaturalIgnoreCaseAscii;
+		return IGNORE_CASE_NATURAL_COMPARATOR_ASCII;
 	}
 	
 	/**

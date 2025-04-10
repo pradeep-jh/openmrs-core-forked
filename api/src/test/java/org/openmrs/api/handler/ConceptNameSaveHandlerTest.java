@@ -9,16 +9,15 @@
  */
 package org.openmrs.api.handler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 import java.util.Date;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.ConceptName;
 import org.openmrs.ConceptNameTag;
 import org.openmrs.User;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 
 /**
  * Tests the {@link ConceptNameSaveHandler} class.
@@ -29,7 +28,8 @@ public class ConceptNameSaveHandlerTest extends BaseContextSensitiveTest {
 	 * @see ConceptNameSaveHandler#handle(ConceptName,User,Date,String)
 	 */
 	@Test
-	public void handle_shouldNotFailIfTagsIsNull() {
+	@Verifies(value = "should not fail if tags is null", method = "handle(ConceptName,User,Date,String)")
+	public void handle_shouldNotFailIfTagsIsNull() throws Exception {
 		ConceptNameSaveHandler handler = new ConceptNameSaveHandler();
 		ConceptName name = new ConceptName();
 		name.setTags(null);
@@ -40,7 +40,8 @@ public class ConceptNameSaveHandlerTest extends BaseContextSensitiveTest {
 	 * @see ConceptNameSaveHandler#handle(ConceptName,User,Date,String)
 	 */
 	@Test
-	public void handle_shouldReplaceTagsWithoutIdsWithDatabaseFetchedTag() {
+	@Verifies(value = "should replace tags without ids with database fetched tag", method = "handle(ConceptName,User,Date,String)")
+	public void handle_shouldReplaceTagsWithoutIdsWithDatabaseFetchedTag() throws Exception {
 		ConceptNameSaveHandler handler = new ConceptNameSaveHandler();
 		ConceptName name = new ConceptName();
 		name.addTag("preferred"); // this tag has a null id
@@ -48,9 +49,9 @@ public class ConceptNameSaveHandlerTest extends BaseContextSensitiveTest {
 		handler.handle(name, null, null, null);
 		for (ConceptNameTag tag : name.getTags()) {
 			if (tag.getTag().equals("preferred")) {
-				assertEquals(4, tag.getConceptNameTagId().intValue());
+				Assert.assertEquals(4, tag.getConceptNameTagId().intValue());
 			} else if (tag.getTag().equals("short")) {
-				assertEquals(2, tag.getConceptNameTagId().intValue());
+				Assert.assertEquals(2, tag.getConceptNameTagId().intValue());
 			}
 		}
 	}
@@ -59,20 +60,22 @@ public class ConceptNameSaveHandlerTest extends BaseContextSensitiveTest {
 	 * @see ConceptNameSaveHandler#handle(ConceptName,User,Date,String)
 	 */
 	@Test
-	public void handle_shouldNotReplaceTagsWithoutIdsThatAreNotInTheDatabase() {
+	@Verifies(value = "should not replace tags without ids that are not in the database", method = "handle(ConceptName,User,Date,String)")
+	public void handle_shouldNotReplaceTagsWithoutIdsThatAreNotInTheDatabase() throws Exception {
 		ConceptNameSaveHandler handler = new ConceptNameSaveHandler();
 		ConceptName name = new ConceptName();
 		name.addTag(new ConceptNameTag("Some randome tag name", "")); // this tag has a null id
 		handler.handle(name, null, null, null);
 		ConceptNameTag newTag = name.getTags().iterator().next();
-		assertNull(newTag.getConceptNameTagId());
+		Assert.assertNull(newTag.getConceptNameTagId());
 	}
 	
 	/**
 	 * @see ConceptNameSaveHandler#handle(ConceptName,User,Date,String)
 	 */
 	@Test
-	public void handle_shouldNotReplaceTagsThatHaveIds() {
+	@Verifies(value = "should not replace tags that have ids", method = "handle(ConceptName,User,Date,String)")
+	public void handle_shouldNotReplaceTagsThatHaveIds() throws Exception {
 		ConceptNameSaveHandler handler = new ConceptNameSaveHandler();
 		ConceptName name = new ConceptName();
 		ConceptNameTag tag = new ConceptNameTag("some randome tag name with an id", "");
@@ -80,6 +83,6 @@ public class ConceptNameSaveHandlerTest extends BaseContextSensitiveTest {
 		name.addTag(tag);
 		handler.handle(name, null, null, null);
 		ConceptNameTag newTag = name.getTags().iterator().next();
-		assertEquals(34, newTag.getConceptNameTagId().intValue());
+		Assert.assertEquals(34, newTag.getConceptNameTagId().intValue());
 	}
 }

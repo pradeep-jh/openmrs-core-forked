@@ -9,14 +9,14 @@
  */
 package org.openmrs.patient.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import org.openmrs.patient.UnallowedIdentifierException;
+import org.openmrs.test.Verifies;
 
 /**
  * Tests the {@link LuhnIdentifierValidator}
@@ -42,7 +42,8 @@ public class LuhnIdentifierValidatorTest {
 	 * @see LuhnIdentifierValidator#getValidIdentifier(String)
 	 */
 	@Test
-	public void getValidIdentifier_shouldGetValidIdentifier() {
+	@Verifies(value = "should get valid identifier", method = "getValidIdentifier(String)")
+	public void getValidIdentifier_shouldGetValidIdentifier() throws Exception {
 		
 		//Make sure valid identifiers come back with the right check digit
 		
@@ -56,11 +57,16 @@ public class LuhnIdentifierValidatorTest {
 	 * @see LuhnIdentifierValidator#getValidIdentifier(String)
 	 */
 	@Test
-	public void getValidIdentifier_shouldFailWithInvalidIdentifiers() {
+	@Verifies(value = "should fail with invalid identifiers", method = "getValidIdentifier(String)")
+	public void getValidIdentifier_shouldFailWithInvalidIdentifiers() throws Exception {
 		//Make sure invalid identifiers throw an exception
-
-		for (String invalidIdentifier : invalidIdentifiers) {
-			assertThrows(UnallowedIdentifierException.class, () -> validator.getValidIdentifier(invalidIdentifier));
+		
+		for (int j = 0; j < invalidIdentifiers.length; j++) {
+			try {
+				validator.getValidIdentifier(invalidIdentifiers[j]);
+				fail("Identifier " + invalidIdentifiers[j] + " should have failed.");
+			}
+			catch (UnallowedIdentifierException e) {}
 		}
 	}
 	
@@ -70,24 +76,40 @@ public class LuhnIdentifierValidatorTest {
 	@Test
 	public void shouldValidate() {
 		//Make sure invalid identifiers throw an exception
-
-		for (String invalidIdentifier1 : invalidIdentifiers) {
-			assertThrows(UnallowedIdentifierException.class, () -> validator.isValid(invalidIdentifier1));
+		
+		for (int j = 0; j < invalidIdentifiers.length; j++) {
+			try {
+				validator.isValid(invalidIdentifiers[j]);
+				fail("Identifier " + invalidIdentifiers[j] + " should have failed.");
+			}
+			catch (UnallowedIdentifierException e) {}
 		}
-
-		for (String invalidIdentifier : invalidIdentifiers) {
-			assertThrows(UnallowedIdentifierException.class, () -> validator.isValid(invalidIdentifier + "-H"));
+		
+		for (int j = 0; j < invalidIdentifiers.length; j++) {
+			try {
+				validator.isValid(invalidIdentifiers[j] + "-H");
+				fail("Identifier " + invalidIdentifiers[j] + " should have failed.");
+			}
+			catch (UnallowedIdentifierException e) {}
 		}
-
-		for (String allowedIdentifier1 : allowedIdentifiers) {
-			assertThrows(UnallowedIdentifierException.class, () -> validator.isValid(allowedIdentifier1 + "-X"));
-			assertThrows(UnallowedIdentifierException.class, () -> validator.isValid(allowedIdentifier1 + "-10"));
+		
+		for (int i = 0; i < allowedIdentifiers.length; i++) {
+			try {
+				validator.isValid(allowedIdentifiers[i] + "-X");
+				fail("Identifier " + allowedIdentifiers[i] + " should have failed.");
+			}
+			catch (UnallowedIdentifierException e) {}
+			try {
+				validator.isValid(allowedIdentifiers[i] + "-10");
+				fail("Identifier " + allowedIdentifiers[i] + " should have failed.");
+			}
+			catch (UnallowedIdentifierException e) {}
 		}
 		
 		//Now test allowed identifiers that just have the wrong check digit.
-		for (String allowedIdentifier : allowedIdentifiers) {
-			assertFalse(validator.isValid(allowedIdentifier + "-" + unusedCheckDigit));
-			assertFalse(validator.isValid(allowedIdentifier + "-" + unusedCheckDigitInt));
+		for (int i = 0; i < allowedIdentifiers.length; i++) {
+			assertFalse(validator.isValid(allowedIdentifiers[i] + "-" + unusedCheckDigit));
+			assertFalse(validator.isValid(allowedIdentifiers[i] + "-" + unusedCheckDigitInt));
 		}
 		
 		//Now test allowed identifiers that have the right check digit.  Test with both

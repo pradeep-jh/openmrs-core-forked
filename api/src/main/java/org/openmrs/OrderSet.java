@@ -9,11 +9,10 @@
  */
 package org.openmrs;
 
+import org.openmrs.api.APIException;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import org.hibernate.envers.Audited;
-import org.openmrs.api.APIException;
 
 /**
  * Represents the grouping of orders into a set,
@@ -21,8 +20,7 @@ import org.openmrs.api.APIException;
  * 
  * @since 1.12
  */
-@Audited
-public class OrderSet extends BaseCustomizableMetadata<OrderSetAttribute> {
+public class OrderSet extends BaseOpenmrsMetadata {
 	
 	public static final long serialVersionUID = 72232L;
 	
@@ -42,8 +40,6 @@ public class OrderSet extends BaseCustomizableMetadata<OrderSetAttribute> {
 	
 	private List<OrderSetMember> orderSetMembers;
 	
-	private Concept category;
-
 	/**
 	 * Gets the orderSetId
 	 *
@@ -87,7 +83,7 @@ public class OrderSet extends BaseCustomizableMetadata<OrderSetAttribute> {
 	 */
 	public List<OrderSetMember> getOrderSetMembers() {
 		if (orderSetMembers == null) {
-			orderSetMembers = new ArrayList<>();
+			orderSetMembers = new ArrayList<OrderSetMember>();
 		}
 		return orderSetMembers;
 	}
@@ -100,27 +96,7 @@ public class OrderSet extends BaseCustomizableMetadata<OrderSetAttribute> {
 	public void setOrderSetMembers(List<OrderSetMember> orderSetMembers) {
 		this.orderSetMembers = orderSetMembers;
 	}
-
-	/**
-	 * Gets the category
-	 *
-	 * @return the category
-	 * @since 2.3.0
-	 */
-	public Concept getCategory () {
-		return category;
-	}
-
-	/**
-	 * Sets the category
-	 *
-	 * @param category category to set
-	 * @since 2.3.0
-	 */
-	public void setCategory(Concept category) {
-		this.category = category;
-	}
-
+	
 	/**
 	 * Adds an orderSetMember to the existing list of orderSetMembers
 	 * 
@@ -158,12 +134,10 @@ public class OrderSet extends BaseCustomizableMetadata<OrderSetAttribute> {
 		this.addOrderSetMember(orderSetMember, null);
 	}
 	
-	@Override
 	public Integer getId() {
 		return getOrderSetId();
 	}
 	
-	@Override
 	public void setId(Integer id) {
 		setOrderSetId(id);
 	}
@@ -174,9 +148,9 @@ public class OrderSet extends BaseCustomizableMetadata<OrderSetAttribute> {
 	 * @return the orderSetMembers that are not retired
 	 */
 	public List<OrderSetMember> getUnRetiredOrderSetMembers() {
-		List<OrderSetMember> osm = new ArrayList<>();
+		List<OrderSetMember> osm = new ArrayList<OrderSetMember>();
 		for (OrderSetMember orderSetMember : getOrderSetMembers()) {
-			if (!orderSetMember.getRetired()) {
+			if (!orderSetMember.isRetired()) {
 				osm.add(orderSetMember);
 			}
 		}

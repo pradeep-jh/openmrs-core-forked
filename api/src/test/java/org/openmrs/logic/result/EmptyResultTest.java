@@ -9,25 +9,30 @@
  */
 package org.openmrs.logic.result;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * Tests the {@link EmptyResult} class
  */
 public class EmptyResultTest {
 	
+	/**
+	 * @verifies {@link EmptyResult#isEmpty()}
+	 * test = should return true
+	 */
 	@Test
-	public void isEmpty_shouldReturnTrue() {
-		assertThat(new EmptyResult(), is(empty()));
+	public void isEmpty_shouldReturnTrue() throws Exception {
+		Assert.assertTrue(new EmptyResult().isEmpty());
 	}
 	
+	/**
+	 * @verifies {@link EmptyResult#isNull()}
+	 * test = should return true
+	 */
 	@Test
-	public void isNull_shouldReturnTrue() {
-		assertTrue(new EmptyResult().isNull());
+	public void isNull_shouldReturnTrue() throws Exception {
+		Assert.assertTrue(new EmptyResult().isNull());
 	}
+	
 }

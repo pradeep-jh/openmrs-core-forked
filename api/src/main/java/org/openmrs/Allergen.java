@@ -9,30 +9,18 @@
  */
 package org.openmrs;
 
-import javax.persistence.Column;
-import javax.persistence.Embeddable;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-
 import org.apache.commons.lang3.StringUtils;
+import org.openmrs.Concept;
 
 /**
  * Represent allergen
  */
-@Embeddable
 public class Allergen {
 	
-	@Enumerated(EnumType.STRING)
-	@Column(name = "allergen_type")
 	private AllergenType allergenType;
 	
-	@ManyToOne(optional = false)
-	@JoinColumn(name = "coded_allergen")
 	private Concept codedAllergen;
 	
-	@Column(name = "non_coded_allergen")
 	private String nonCodedAllergen;
 	
 	private static String OTHER_NON_CODED_CONCEPT_UUID;
@@ -118,14 +106,18 @@ public class Allergen {
      */
     public void setNonCodedAllergen(String nonCodedAllergen) {
 		this.nonCodedAllergen = nonCodedAllergen;
-		if (StringUtils.isNotBlank(nonCodedAllergen) && codedAllergen != null
-				&& !codedAllergen.getUuid().equals(getOtherNonCodedConceptUuid())) {
-			codedAllergen = null;	
+		if (StringUtils.isNotBlank(nonCodedAllergen)) {
+			if (codedAllergen != null && !codedAllergen.getUuid().equals(getOtherNonCodedConceptUuid())) {
+				codedAllergen = null;
+			}
 		}
     }
 
 	public boolean isCoded(){
-		return codedAllergen != null && !codedAllergen.getUuid().equals(getOtherNonCodedConceptUuid());
+		if (codedAllergen == null || codedAllergen.getUuid().equals(getOtherNonCodedConceptUuid())) {
+			return false;
+		}
+		return true;
 	}
 
 	@Override
@@ -141,20 +133,31 @@ public class Allergen {
 	 * 
 	 * @param allergen the given allergen to test with
 	 * 
-	 * <strong>Should</strong> return true for same coded allergen
-	 * <strong>Should</strong> return false for different coded allergen
-	 * <strong>Should</strong> return true for same non coded allergen
-	 * <strong>Should</strong> return false for different non coded allergen
+	 * @should return true for same coded allergen
+	 * @should return false for different coded allergen
+	 * @should return true for same non coded allergen
+	 * @should return false for different non coded allergen
 	 * 
 	 * @return true if the same, else false
 	 */
 	public boolean isSameAllergen(Allergen allergen) {
 		if (isCoded()) {
-			return allergen.getCodedAllergen() != null && codedAllergen.equals(allergen.getCodedAllergen());
-		}  else {
-			return nonCodedAllergen != null && allergen.getNonCodedAllergen() != null && nonCodedAllergen
-					.equalsIgnoreCase(allergen.getNonCodedAllergen());
+			if (allergen.getCodedAllergen() == null) {
+				return false;
+			}
+			if (!codedAllergen.equals(allergen.getCodedAllergen())) {
+				return false;
+			}
 		}
-
+		else {
+			if (nonCodedAllergen == null || allergen.getNonCodedAllergen() == null) {
+				return false;
+			}
+			if (!nonCodedAllergen.equalsIgnoreCase(allergen.getNonCodedAllergen())) {
+				return false;
+			}
+		}
+		
+		return true;
 	}
 }

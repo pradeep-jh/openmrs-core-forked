@@ -9,25 +9,22 @@
  */
 package org.openmrs;
 
-import java.io.Serializable;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Comparator;
-
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.codehaus.jackson.annotate.JsonIgnore;
-import org.hibernate.envers.Audited;
 import org.hibernate.search.annotations.Analyzer;
 import org.hibernate.search.annotations.Boost;
 import org.hibernate.search.annotations.DocumentId;
-import org.hibernate.search.annotations.Field;
 import org.hibernate.search.annotations.Fields;
 import org.hibernate.search.annotations.Indexed;
 import org.hibernate.search.annotations.IndexedEmbedded;
-import org.hibernate.search.annotations.SortableField;
+import org.hibernate.search.annotations.Field;
 import org.openmrs.api.db.hibernate.search.LuceneAnalyzers;
 import org.openmrs.util.OpenmrsUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Comparator;
 
 /**
  * A <code>Patient</code> can have zero to n identifying PatientIdentifier(s). PatientIdentifiers
@@ -38,12 +35,11 @@ import org.slf4j.LoggerFactory;
  * @see org.openmrs.PatientIdentifierType
  */
 @Indexed
-@Audited
-public class PatientIdentifier extends BaseChangeableOpenmrsData implements java.io.Serializable, Cloneable, Comparable<PatientIdentifier> {
+public class PatientIdentifier extends BaseOpenmrsData implements java.io.Serializable, Comparable<PatientIdentifier> {
 	
 	public static final long serialVersionUID = 1123121L;
 	
-	private static final Logger log = LoggerFactory.getLogger(PatientIdentifier.class);
+	private static final Log log = LogFactory.getLog(PatientIdentifier.class);
 	
 	// Fields
 	
@@ -62,16 +58,12 @@ public class PatientIdentifier extends BaseChangeableOpenmrsData implements java
 			@Field(name = "identifierStart", analyzer = @Analyzer(definition = LuceneAnalyzers.START_ANALYZER), boost = @Boost(2f)),
 			@Field(name = "identifierAnywhere", analyzer = @Analyzer(definition = LuceneAnalyzers.ANYWHERE_ANALYZER))
 	})
-	@SortableField(forField = "identifierExact")
 	private String identifier;
 
 	@IndexedEmbedded(includeEmbeddedObjectId = true)
 	private PatientIdentifierType identifierType;
 	
 	private Location location;
-
-	private PatientProgram patientProgram;
-	
 
 	@Field
 	private Boolean preferred = false;
@@ -113,7 +105,7 @@ public class PatientIdentifier extends BaseChangeableOpenmrsData implements java
 		// loop over all of the selected methods and compare this and other
 		for (String methodName : methods) {
 			try {
-				Method method = identifierClass.getMethod(methodName);
+				Method method = identifierClass.getMethod(methodName, new Class[] {});
 				
 				Object thisValue = method.invoke(this);
 				Object otherValue = method.invoke(otherIdentifier);
@@ -126,10 +118,13 @@ public class PatientIdentifier extends BaseChangeableOpenmrsData implements java
 			catch (NoSuchMethodException e) {
 				log.warn("No such method for comparison " + methodName, e);
 			}
-			catch (IllegalAccessException | InvocationTargetException e) {
+			catch (IllegalAccessException e) {
 				log.error("Error while comparing identifiers", e);
 			}
-
+			catch (InvocationTargetException e) {
+				log.error("Error while comparing identifiers", e);
+			}
+			
 		}
 		
 		return returnValue;
@@ -228,8 +223,6 @@ public class PatientIdentifier extends BaseChangeableOpenmrsData implements java
 	 * @deprecated since 1.12. Use DefaultComparator instead.
 	 * Note: this comparator imposes orderings that are inconsistent with equals.
 	 */
-	@Deprecated
-	@Override
 	@SuppressWarnings("squid:S1210")
 	public int compareTo(PatientIdentifier other) {
 		DefaultComparator piDefaultComparator = new DefaultComparator();
@@ -240,7 +233,6 @@ public class PatientIdentifier extends BaseChangeableOpenmrsData implements java
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		return getPatientIdentifierId();
 	}
@@ -249,7 +241,6 @@ public class PatientIdentifier extends BaseChangeableOpenmrsData implements java
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setPatientIdentifierId(id);
 	}
@@ -269,40 +260,19 @@ public class PatientIdentifier extends BaseChangeableOpenmrsData implements java
 	public void setPatientIdentifierId(Integer patientIdentifierId) {
 		this.patientIdentifierId = patientIdentifierId;
 	}
-
-	/**
-	 * bitwise copy of the PatientIdentifier object. NOTICE: THIS WILL NOT COPY THE PATIENT OBJECT. The
-	 * PatientIdentifier.patient object in this object AND the cloned object will point at the same
-	 * patient
-	 *
-	 * @return New PatientIdentifier object
-	 * @since 2.2.0
-	 */
-	@Override
-	public Object clone() {
-		try {
-			return super.clone();
-		}
-		catch (CloneNotSupportedException e) {
-			throw new InternalError("PatientIdentifier should be cloneable");
-		}
-	}
 	
 	/**
 	 Provides a default comparator.
 	 @since 1.12
 	 **/
-	public static class DefaultComparator implements Comparator<PatientIdentifier>, Serializable {
-
-		private static final long serialVersionUID = 1L;
+	public static class DefaultComparator implements Comparator<PatientIdentifier> {
 		
-		@Override
 		public int compare(PatientIdentifier pi1, PatientIdentifier pi2) {
 			int retValue = 0;
 			if (pi2 != null) {
-				retValue = pi1.getVoided().compareTo(pi2.getVoided());
+				retValue = pi1.isVoided().compareTo(pi2.isVoided());
 				if (retValue == 0) {
-					retValue = pi1.getPreferred().compareTo(pi2.getPreferred());
+					retValue = pi1.isPreferred().compareTo(pi2.isPreferred());
 				}
 				if (retValue == 0) {
 					retValue = OpenmrsUtil.compareWithNullAsLatest(pi1.getDateCreated(), pi2.getDateCreated());
@@ -334,24 +304,5 @@ public class PatientIdentifier extends BaseChangeableOpenmrsData implements java
 			
 			return retValue;
 		}
-	}
-
-
-	/**
-	 * Gets patient program associated to the identifier in context
-	 * @since 2.6.0
-	 * @return patientProgram the patient program associated to an identifier
-	 */
-	public PatientProgram getPatientProgram() {
-		return patientProgram;
-	}
-
-	/**
-	 * This method sets the patient program on a patient Identifier
-	 * @since 2.6.0
-	 * @param patientProgram The patientProgram to set.
-	 */
-	public void setPatientProgram(PatientProgram patientProgram) {
-		this.patientProgram = patientProgram;
 	}
 }

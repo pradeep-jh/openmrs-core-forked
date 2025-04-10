@@ -9,23 +9,23 @@
  */
 package org.openmrs.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class ExceptionUtilTest {
 	
 	/**
 	 * @see ExceptionUtil#rethrowIfCause(Throwable,Class)
+	 * @verifies allow an intermediate exception to be rethrown
 	 */
 	@Test
 	public void rethrowIfCause_shouldAllowAnIntermediateExceptionToBeRethrown() throws Exception {
 		try {
+			@SuppressWarnings("unchecked")
 			List<Class<? extends RuntimeException>> chain = Arrays.asList(NullPointerException.class,
 			    IllegalArgumentException.class, IllegalStateException.class);
 			throwExceptionChain(chain);
@@ -40,7 +40,7 @@ public class ExceptionUtilTest {
 				ExceptionUtil.rethrowIfCause(ex, NullPointerException.class);
 			}
 			catch (Exception cause) {
-				assertNull(cause.getCause());
+				Assert.assertNull(cause.getCause());
 				innermost = cause;
 				++numFound;
 			}
@@ -50,7 +50,7 @@ public class ExceptionUtilTest {
 				ExceptionUtil.rethrowIfCause(ex, IllegalArgumentException.class);
 			}
 			catch (Exception middle) {
-				assertEquals(innermost, middle.getCause());
+				Assert.assertEquals(innermost, middle.getCause());
 				++numFound;
 			}
 			
@@ -59,11 +59,11 @@ public class ExceptionUtilTest {
 				ExceptionUtil.rethrowIfCause(ex, IllegalStateException.class);
 			}
 			catch (Exception outer) {
-				assertEquals(ex, outer);
+				Assert.assertEquals(ex, outer);
 				++numFound;
 			}
 			
-			assertEquals(3, numFound);
+			Assert.assertEquals(3, numFound);
 		}
 	}
 	

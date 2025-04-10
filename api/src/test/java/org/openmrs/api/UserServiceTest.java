@@ -9,41 +9,26 @@
  */
 package org.openmrs.api;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.emptyString;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.openmrs.test.TestUtil.containsId;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.reflect.FieldUtils;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.AfterClass;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.openmrs.Patient;
 import org.openmrs.Person;
 import org.openmrs.PersonName;
@@ -51,65 +36,48 @@ import org.openmrs.Privilege;
 import org.openmrs.Role;
 import org.openmrs.User;
 import org.openmrs.api.context.Context;
-import org.openmrs.api.context.Credentials;
-import org.openmrs.api.context.UserContext;
-import org.openmrs.api.context.UsernamePasswordCredentials;
-import org.openmrs.api.db.DAOException;
-import org.openmrs.api.db.LoginCredential;
-import org.openmrs.api.db.UserDAO;
-import org.openmrs.messagesource.MessageSourceService;
-import org.openmrs.notification.MessageException;
-import org.openmrs.patient.impl.LuhnIdentifierValidator;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
-import org.openmrs.util.OpenmrsConstants;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.SkipBaseSetup;
+import org.openmrs.test.Verifies;
 import org.openmrs.util.PrivilegeConstants;
 import org.openmrs.util.RoleConstants;
 import org.openmrs.util.Security;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import junit.framework.Assert;
 
 /**
  * TODO add more tests to cover the methods in <code>UserService</code>
  */
 public class UserServiceTest extends BaseContextSensitiveTest {
-
+	
 	protected static final String XML_FILENAME = "org/openmrs/api/include/UserServiceTest.xml";
 	
 	protected static final String XML_FILENAME_WITH_DATA_FOR_CHANGE_PASSWORD_ACTION = "org/openmrs/api/include/UserServiceTest-changePasswordAction.xml";
-
-	protected static final String SOME_VALID_PASSWORD = "s0mePassword";
-
-	public static final String SOME_USERNAME = "butch";
 	
-	private static final boolean CurrentUser = false;
-
-	private final String ADMIN_USERNAME = "admin";
-
-	private UserService userService;
-
-	private MessageSourceService messages;
+	@Rule
+	public ExpectedException expectedException = ExpectedException.none();
 	
-	@Autowired
-	private UserDAO dao;
-	
-	@BeforeEach
-	public void setup() {
-		userService = Context.getUserService();
-		messages = Context.getMessageSourceService();
-	}
-
 	/**
 	 * Methods in this class might authenticate with a different user, so log that user out after
 	 * this whole junit class is done.
 	 */
-	@AfterAll
+	@AfterClass
 	public static void logOutAfterThisTest() {
 		Context.logout();
 	}
 	
+	/**
+	 * Test that we can create a user
+	 * 
+	 * @see UserService#saveUser(User,String)
+	 */
 	@Test
-	public void createUser_shouldCreateNewUserWithBasicElements() {
-		assertTrue(Context.isAuthenticated(), "The context needs to be correctly authenticated to by a user");
-
+	@Verifies(value = "should create new user with basic elements", method = "saveUser(User,String)")
+	public void saveUser_shouldCreateNewUserWithBasicElements() throws Exception {
+		assertTrue("The context needs to be correctly authenticated to by a user", Context.isAuthenticated());
+		
+		UserService us = Context.getUserService();
+		
 		User u = new User();
 		u.setPerson(new Person());
 		
@@ -117,20 +85,38 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 		u.setUsername("bwolfe");
 		u.getPerson().setGender("M");
 		
-		User createdUser = userService.createUser(u, "Openmr5xy");
+		User createdUser = us.createUser(u, "Openmr5xy");
 		
 		// if we're returning the object from create methods, check validity
-		assertTrue(createdUser.equals(u), "The user returned by the create user method should equal the passed in user");
+		assertTrue("The user returned by the create user method should equal the passed in user", createdUser.equals(u));
 		
-		createdUser = userService.getUserByUsername("bwolfe");
-		assertTrue(createdUser.equals(u), "The created user should equal the passed in user");
+		createdUser = us.getUserByUsername("bwolfe");
+		assertTrue("The created user should equal the passed in user", createdUser.equals(u));
 	}
 	
+	/**
+	 * Creates a user object that was a patient/person object already.
+	 * 
+	 * @throws Exception
+	 * @see UserService#saveUser(User,String)
+	 */
 	@Test
-	public void createUser_shouldShouldCreateUserWhoIsPatientAlready() throws SQLException {
+	@SkipBaseSetup
+	@Verifies(value = "should should create user who is patient already", method = "saveUser(User,String)")
+	public void saveUser_shouldShouldCreateUserWhoIsPatientAlready() throws Exception {
+		// create the basic user and give it full rights
+		initializeInMemoryDatabase();
+		
+		// authenticate to the temp database
+		authenticate();
+		
+		assertTrue("The context needs to be correctly authenticated to by a user", Context.isAuthenticated());
+		
 		// add in some basic data
 		executeDataSet(XML_FILENAME);
-
+		
+		UserService userService = Context.getUserService();
+		
 		// the user should not exist yet
 		User preliminaryFetchedUser = userService.getUser(2);
 		assertNull(preliminaryFetchedUser);
@@ -153,7 +139,7 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 		
 		// do the actual creating of the user object
 		userService.createUser(user, "Openmr5xy");
-		assertNotNull(userService.getUser(user.getUserId()), "User was not created");
+		Assert.assertNotNull("User was not created", userService.getUser(user.getUserId()));
 		
 		Integer shouldCreateUserWhoIsPatientAlreadyTestUserIdCreated = user.getUserId();
 		
@@ -162,232 +148,43 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 		// get the same user we just created and make sure the user portion exists
 		User fetchedUser = userService.getUser(shouldCreateUserWhoIsPatientAlreadyTestUserIdCreated);
 		User fetchedUser3 = userService.getUser(3);
-		if (fetchedUser3 != null) {
-			throw new RuntimeException("There is a user with id #3");
-		}
+		if (fetchedUser3 != null)
+			throw new Exception("There is a user with id #3");
 		
-		assertNotNull(fetchedUser, "Uh oh, the user object was not created");
-		assertNotNull(fetchedUser.getUsername(), "Uh oh, the username was not saved");
-		assertTrue(fetchedUser.getUsername().equals("bwolfe"), "Uh oh, the username was not saved");
-		assertTrue(fetchedUser.hasRole("Some Role"), "Uh oh, the role was not assigned");
+		assertNotNull("Uh oh, the user object was not created", fetchedUser);
+		assertNotNull("Uh oh, the username was not saved", fetchedUser.getUsername());
+		assertTrue("Uh oh, the username was not saved", fetchedUser.getUsername().equals("bwolfe"));
+		assertTrue("Uh oh, the role was not assigned", fetchedUser.hasRole("Some Role"));
 		
 		Context.clearSession();
 		
 		List<User> allUsers = userService.getAllUsers();
-		assertThat(allUsers, hasSize(greaterThanOrEqualTo(12)));
+		assertEquals(11, allUsers.size());
 		
 		// there should still only be the one patient we created in the xml file
 		List<Patient> allPatientsSet = Context.getPatientService().getAllPatients();
-		assertThat(allUsers, hasSize(greaterThanOrEqualTo(4)));
-	}
-
-	@Test
-	public void createUser_shouldNotAllowExistingUser() {
-		User someUser = userService.getUserByUsername(SOME_USERNAME);
-
-		APIException exception = assertThrows(APIException.class, () -> userService.createUser(someUser, SOME_VALID_PASSWORD));
-		assertThat(exception.getMessage(), is("This method can be used for only creating new users"));
-	}
-
-	@Test
-	public void createUser_shouldNotAllowBlankPassword() {
-		User unsavedUser = new User();
-
-		assertThrows(ValidationException.class, () -> userService.createUser(unsavedUser, ""));
-	}
-
-	@Test
-	public void createUser_shouldNotAllowNullPassword() {
-		User unsavedUser = new User();
-
-		assertThrows(ValidationException.class, () -> userService.createUser(unsavedUser, null));
-	}
-
-	@Test
-	public void createUser_shouldNotAllowForDuplicatedUsername() {
-		User someUser = userService.getUserByUsername(SOME_USERNAME);
-
-		User newUser = userWithValidPerson();
-		newUser.setUsername(someUser.getUsername());
-
-		DAOException exception = assertThrows(DAOException.class, () -> userService.createUser(newUser, SOME_VALID_PASSWORD));
-		assertThat(exception.getMessage(), is(String.format("Username %s or system id %s is already in use.",
-			newUser.getUsername(),
-			Context.getUserService().generateSystemId())));
-	}
-
-	@Test
-	public void createUser_shouldNotAllowDuplicatedSystemId() {
-		User someUser = userService.getUserByUsername(SOME_USERNAME);
-
-		User newUser = userWithValidPerson();
-		newUser.setSystemId(someUser.getSystemId());
-
-		DAOException exception = assertThrows(DAOException.class, () -> userService.createUser(newUser, SOME_VALID_PASSWORD));
-		assertThat(exception.getMessage(), is(String.format("Username %s or system id %s is already in use.", newUser.getUsername(), newUser.getSystemId())));
-	}
-
-	@Test
-	public void createUser_shouldNotAllowUsernameEqualsExistingSystemId() {
-		User someUser = userService.getUserByUsername(SOME_USERNAME);
-
-		User newUser = userWithValidPerson();
-		newUser.setUsername(someUser.getSystemId());
-
-		DAOException exception = assertThrows(DAOException.class, () -> userService.createUser(newUser, SOME_VALID_PASSWORD));
-		assertThat(exception.getMessage(), is(String.format("Username %s or system id %s is already in use.", newUser.getUsername(), Context.getUserService().generateSystemId())));
-	}
-
-	@Test
-	public void createUser_shouldNotAllowSystemIdEqualsExistingUsername() {
-		User someUser = userService.getUserByUsername(SOME_USERNAME);
-
-		User newUser = userWithValidPerson();
-		newUser.setSystemId(someUser.getUsername());
-
-		DAOException exception = assertThrows(DAOException.class, () -> userService.createUser(newUser, SOME_VALID_PASSWORD));
-		assertThat(exception.getMessage(), is(String.format("Username %s or system id %s is already in use.", newUser.getUsername(), newUser.getSystemId())));
-	}
-
-	@Test
-	public void createUser_shouldNotAllowSystemIdEqualsUsernameWithLuhnCheckDigit() {
-		User someUser = userService.getUserByUsername(SOME_USERNAME);
-
-		User newUser = userWithValidPerson();
-		newUser.setUsername(someUser.getUsername());
-		newUser.setSystemId(decorateWithLuhnIdentifier(someUser.getUsername()));
-
-		DAOException exception = assertThrows(DAOException.class, () ->  userService.createUser(newUser, SOME_VALID_PASSWORD));
-		assertThat(exception.getMessage(), is(String.format("Username %s or system id %s is already in use.", newUser.getUsername(), newUser.getSystemId())));
+		assertEquals(1, allPatientsSet.size());
 	}
 	
+	/**
+	 * Test that we can update a user
+	 * 
+	 * @see UserService#saveUser(User,String)
+	 */
 	@Test
-	public void createUser_shouldNotAllowCreatingUserWithPrivilegeCurrentUserDoesNotHave() throws IllegalAccessException {
-		//setup the currently logged in user
-		User currentUser = new User();
-		Role userRole = new Role("User Adder");
-		userRole.setRole(RoleConstants.AUTHENTICATED);
-		userRole.addPrivilege(new Privilege("Add Users"));
-		userRole.addPrivilege(new Privilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES));
-		currentUser.addRole(userRole);
-		// setup our expected exception
-		// we expect this to fail because the currently logged-in user lacks a privilege to be
-		// assigned to the new user
-		// set current user to the user defined above
-		APIException exception = assertThrows(APIException.class, () -> withCurrentUserAs(currentUser, () -> {
-			// create a role to assign to the new user
-			Role role = new Role();
-			role.setRole(RoleConstants.AUTHENTICATED);
-			// add a privilege to the role
-			role.addPrivilege(new Privilege("Custom Privilege"));
-
-			// create our new user object with the required fields
-			User u = new User();
-			u.setPerson(new Person());
-			// assign the specified role to the user
-			u.addName(new PersonName("Benjamin", "A", "Wolfe"));
-			u.setUsername("bwolfe");
-			u.getPerson().setGender("M");
-			u.addRole(role);
-			// here we expect the exception to be thrown
-			userService.createUser(u, "Openmr5xy");
-		}));
-		assertThat(exception.getMessage(), is("You must have privilege {0} in order to assign it."));
-	}
-	
-	@Test
-	public void createUser_shouldNotAllowCreatingUserWithPrivilegesCurrentUserDoesNotHave() throws IllegalAccessException {
-		//setup the currently logged in user
-		User currentUser = new User();
-		Role userRole = new Role("User Adder");
-		userRole.setRole(RoleConstants.AUTHENTICATED);
-		userRole.addPrivilege(new Privilege("Add Users"));
-		userRole.addPrivilege(new Privilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES));
-		currentUser.addRole(userRole);
-		// setup our expected exception
-		// we expect this to fail because the currently logged-in user lacks a privilege to be
-		// assigned to the new user
-		// set current user to the user defined above
-		APIException exception = assertThrows(APIException.class, () -> withCurrentUserAs(currentUser, () -> {
-			// create a role to assign to the new user
-			Role role = new Role();
-			role.setRole(RoleConstants.AUTHENTICATED);
-			// add privileges to the role
-			role.addPrivilege(new Privilege("Custom Privilege"));
-			role.addPrivilege(new Privilege("Another Privilege"));
-
-			// create our new user object with the required fields
-			User u = new User();
-			u.setPerson(new Person());
-			// assign the specified role to the user
-			u.addName(new PersonName("Benjamin", "A", "Wolfe"));
-			u.setUsername("bwolfe");
-			u.getPerson().setGender("M");
-			u.addRole(role);
-			// here we expect the exception to be thrown
-			userService.createUser(u, "Openmr5xy");
-		}));
-		assertThat(exception.getMessage(), is("You must have the following privileges in order to assign them: Another Privilege, Custom Privilege"));
-	}
-	
-	@Test
-	public void createUser_shouldNotAllowAssigningSuperUserRoleIfCurrentUserDoesNotHaveAssignSystemDeveloperPrivileges() throws IllegalAccessException {
-		//setup the currently logged in user
-		User currentUser = new User();
-		Role userRole = new Role("User Adder");
-		userRole.setRole(RoleConstants.AUTHENTICATED);
-		userRole.addPrivilege(new Privilege("Add Users"));
-		userRole.addPrivilege(new Privilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES));
-		currentUser.addRole(userRole);
-		// setup our expected exception
-		// we expect this to fail because the currently logged-in user lacks a privilege to be
-		// assigned to the new user
-		// set current user to the user defined above
-		APIException exception = assertThrows(APIException.class, () ->  withCurrentUserAs(currentUser, () -> {
-			// create a role to assign to the new user
-			// the current user cannot assign a user to the superuser role because he lacks AssignSystemDeveloper privileges
-			Role role= new Role("add user");
-			role.setRole(RoleConstants.SUPERUSER);
-			// add a privilege to the role
-			role.hasPrivilege(PrivilegeConstants.ASSIGN_SYSTEM_DEVELOPER_ROLE);			
-
-			// create our new user object with the required fields
-			User u = new User();
-			u.setPerson(new Person());
-			// assign the specified role to the user
-			u.addName(new PersonName("Benjamin", "A", "Wolfe"));
-			u.setUsername("bwolfe");
-			u.getPerson().setGender("M");
-			u.isSuperUser();
-			u.addRole(role);
-			// here we expect the exception to be thrown
-			userService.createUser(u, "Openmr5xy");
-		}));
-		assertThat(exception.getMessage(), is("You must have the role {0} in order to assign it."));
-	}
-
-	private User userWithValidPerson() {
-		Person person = new Person();
-		person.addName(new PersonName("jane", "sue", "doe"));
-		person.setGender("F");
-		return new User(person);
-	}
-
-	private String decorateWithLuhnIdentifier(String value) {
-		return new LuhnIdentifierValidator().getValidIdentifier(value);
-	}
-
-	@Test
-	public void saveUser_shouldUpdateUsersUsername() {
-		User u = userService.getUserByUsername(ADMIN_USERNAME);
-		assertNotNull(u, "There needs to be a user with username 'admin' in the database");
+	@Verifies(value = "should update users username", method = "saveUser(User,String)")
+	public void saveUser_shouldUpdateUsersUsername() throws Exception {
+		UserService us = Context.getUserService();
+		
+		User u = us.getUserByUsername("admin");
+		assertNotNull("There needs to be a user with username 'admin' in the database", u);
 		
 		u.setUsername("admin2");
-		userService.saveUser(u);
+		us.saveUser(u);
 		
-		User u2 = userService.getUserByUsername("admin2");
+		User u2 = us.getUserByUsername("admin2");
 		
-		assertEquals(u, u2, "The fetched user should equal the user we tried to update");
+		assertEquals("The fetched user should equal the user we tried to update", u, u2);
 	}
 	
 	/**
@@ -396,129 +193,83 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 	 * @see UserService#changePassword(String,String)
 	 */
 	@Test
-	public void changePassword_shouldBeAbleToUpdatePasswordMultipleTimes() {
-		User u = userService.getUserByUsername(ADMIN_USERNAME);
-		assertNotNull(u, "There needs to be a user with username 'admin' in the database");
+	@Verifies(value = "should be able to update password multiple times", method = "changePassword(String,String)")
+	public void changePassword_shouldBeAbleToUpdatePasswordMultipleTimes() throws Exception {
+		UserService us = Context.getUserService();
 		
-		userService.changePassword("test", "Tester12");
-		userService.changePassword("Tester12", "Tester13");
-	}
-	
-	@Test
-	public void changePassword_shouldRespectLockingViaRuntimeProperty() {
-		assertThat("admin", is(Context.getAuthenticatedUser().getUsername()));
-		assertTrue(Context.getAuthenticatedUser().isSuperUser());
+		User u = us.getUserByUsername("admin");
+		assertNotNull("There needs to be a user with username 'admin' in the database", u);
 		
-		User u = userService.getUserByUsername(ADMIN_USERNAME);
-		
-		assertThat(u.getUsername(), is("admin"));
-
-		Properties props = Context.getRuntimeProperties();
-		props.setProperty(UserService.ADMIN_PASSWORD_LOCKED_PROPERTY, "true");
-		Context.setRuntimeProperties(props);
-
-		APIException apiException = assertThrows(APIException.class, () -> userService.changePassword(u,"test", "SuperAdmin123"));
-		
-		assertThat(apiException.getMessage(), is("admin.password.is.locked"));
-
-		props.setProperty(UserService.ADMIN_PASSWORD_LOCKED_PROPERTY, "True");
-		Context.setRuntimeProperties(props);
-		
-		apiException = assertThrows(APIException.class, () -> userService.changePassword(u,"test", "SuperAdmin123"));
-		assertThat(apiException.getMessage(), is("admin.password.is.locked"));
-		
-		props.remove(UserService.ADMIN_PASSWORD_LOCKED_PROPERTY);
-		Context.setRuntimeProperties(props);
-
-		userService.changePassword(u,"test", "SuperAdmin123");
+		us.changePassword("test", "Tester12");
+		us.changePassword("Tester12", "Tester13");
 	}
 
+	/**
+	 * Make sure we can grant roles to users
+	 *
+	 * @see UserService#saveUser(User,String)
+	 */
 	@Test
-	public void changePassword_shouldRespectLockingViaRuntimePropertyForSystemIdAdminAndNoUsername() {
-		assertThat("admin", is(Context.getAuthenticatedUser().getUsername()));
-		assertTrue(Context.getAuthenticatedUser().isSuperUser());
-		
-		User u = userService.getUserByUsername(ADMIN_USERNAME);
-		
-		u.setSystemId("admin");
-		u.setUsername(null);
+	@Verifies(value = "should grant new roles in roles list to user", method = "saveUser(User,String)")
+	public void saveUser_shouldGrantNewRolesInRolesListToUser() throws Exception {
+		UserService us = Context.getUserService();
 
-		Properties props = Context.getRuntimeProperties();
-		props.setProperty(UserService.ADMIN_PASSWORD_LOCKED_PROPERTY, "true");
-		Context.setRuntimeProperties(props);
-
-		APIException apiException = assertThrows(APIException.class, () -> userService.changePassword(u, "test", "SuperAdmin123"));
-
-		assertThat(apiException.getMessage(), is("admin.password.is.locked"));
-	}
-
-	@Test
-	public void saveUser_shouldGrantNewRolesInRolesListToUser() {
 		// add in some basic properties
 		executeDataSet(XML_FILENAME);
 
-		User u = userService.getUserByUsername(ADMIN_USERNAME);
+		User u = us.getUserByUsername("admin");
 
 		Role role1 = new Role();
 		role1.setDescription("testing1");
 		role1.setRole("test1");
-		Privilege p1 = userService.getAllPrivileges().get(0);
-		Set<Privilege> privileges1 = new HashSet<>();
+		Privilege p1 = us.getAllPrivileges().get(0);
+		Set<Privilege> privileges1 = new HashSet<Privilege>();
 		privileges1.add(p1);
 		role1.setPrivileges(privileges1);
 
 		Role role2 = new Role();
 		role2.setDescription("testing2");
 		role2.setRole("test2");
-		Privilege p2 = userService.getAllPrivileges().get(0);
-		Set<Privilege> privileges2 = new HashSet<>();
+		Privilege p2 = us.getAllPrivileges().get(0);
+		Set<Privilege> privileges2 = new HashSet<Privilege>();
 		privileges2.add(p2);
 		role2.setPrivileges(privileges2);
 
-		userService.saveUser(u.addRole(role1));
+		us.saveUser(u.addRole(role1));
 
-		userService.saveUser(u.addRole(role2));
+		us.saveUser(u.addRole(role2));
 
 		// so the contents are fetched from the db
 		Context.evictFromSession(u);
 
-		userService.getUser(u.getUserId()).hasRole("test1");
-		userService.getUser(u.getUserId()).hasRole("test2");
+		us.getUser(u.getUserId()).hasRole("test1");
+		us.getUser(u.getUserId()).hasRole("test2");
 	}
 
 	/**
 	 * @see UserService#getUserByUsername(String)
 	 */
 	@Test
-	public void getUserByUsername_shouldGetUserByUsername() {
-		User user = userService.getUserByUsername(ADMIN_USERNAME);
-
-		assertNotNull(user, "username not found " + ADMIN_USERNAME);
+	@Verifies(value = "should get user by username", method = "getUserByUsername(String)")
+	public void getUserByUsername_shouldGetUserByUsername() throws Exception {
+		UserService us = Context.getUserService();
+		String username = "admin";
+		User user = us.getUserByUsername(username);
+		assertNotNull("username not found " + username, user);
 	}
 
 	/**
 	 * @see UserService#changePassword(String,String)
 	 */
 	@Test
-	public void changePassword_shouldMatchOnIncorrectlyHashedSha1StoredPassword() {
+	@Verifies(value = "should match on incorrectly hashed sha1 stored password", method = "changePassword(String,String)")
+	public void changePassword_shouldMatchOnIncorrectlyHashedSha1StoredPassword() throws Exception {
 		executeDataSet(XML_FILENAME);
 		Context.logout();
 		Context.authenticate("incorrectlyhashedSha1", "test");
-		Context.addProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
-		userService.changePassword("test", "Tester12");
-		Context.logout(); // so that the next test reauthenticates
-	}
 
-	/**
-	 * @see UserService#changeQuestionAnswer(String,String,String)
-	 */
-	@Test
-	public void changeQuestionAnswer_shouldMatchOnCorrectlyHashedStoredPassword() {
-		executeDataSet(XML_FILENAME);
-		Context.logout();
-		Context.authenticate("correctlyhashedSha1", "test");
-
-		userService.changeQuestionAnswer("test", "some question", "some answer");
+		UserService us = Context.getUserService();
+		us.changePassword("test", "Tester12");
 
 		Context.logout(); // so that the next test reauthenticates
 	}
@@ -527,12 +278,30 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 	 * @see UserService#changeQuestionAnswer(String,String,String)
 	 */
 	@Test
-	public void changeQuestionAnswer_shouldMatchOnIncorrectlyHashedStoredPassword() {
+	@Verifies(value = "should match on correctly hashed stored password", method = "changeQuestionAnswer(String,String,String)")
+	public void changeQuestionAnswer_shouldMatchOnCorrectlyHashedStoredPassword() throws Exception {
+		executeDataSet(XML_FILENAME);
+		Context.logout();
+		Context.authenticate("correctlyhashedSha1", "test");
+
+		UserService us = Context.getUserService();
+		us.changeQuestionAnswer("test", "some question", "some answer");
+
+		Context.logout(); // so that the next test reauthenticates
+	}
+
+	/**
+	 * @see UserService#changeQuestionAnswer(String,String,String)
+	 */
+	@Test
+	@Verifies(value = "should match on incorrectly hashed stored password", method = "changeQuestionAnswer(String,String,String)")
+	public void changeQuestionAnswer_shouldMatchOnIncorrectlyHashedStoredPassword() throws Exception {
 		executeDataSet(XML_FILENAME);
 		Context.logout();
 		Context.authenticate("incorrectlyhashedSha1", "test");
 
-		userService.changeQuestionAnswer("test", "some question", "some answer");
+		UserService us = Context.getUserService();
+		us.changeQuestionAnswer("test", "some question", "some answer");
 
 		Context.logout(); // so that the next test reauthenticates
 	}
@@ -541,12 +310,15 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 	 * @see UserService#changePassword(String,String)
 	 */
 	@Test
-	public void changePassword_shouldMatchOnCorrectlyHashedSha1StoredPassword() {
+	@Verifies(value = "should match on correctly hashed sha1 stored password", method = "changePassword(String,String)")
+	public void changePassword_shouldMatchOnCorrectlyHashedSha1StoredPassword() throws Exception {
 		executeDataSet(XML_FILENAME);
 		Context.logout();
 		Context.authenticate("correctlyhashedSha1", "test");
-		Context.addProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
-		userService.changePassword("test", "Tester12");
+
+		UserService us = Context.getUserService();
+		us.changePassword("test", "Tester12");
+
 		Context.logout(); // so that the next test reauthenticates
 	}
 
@@ -554,26 +326,30 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 	 * @see UserService#getUsers(String,List,boolean)
 	 */
 	@Test
-	public void getUsers_shouldMatchSearchToFamilyName2() {
+	@Verifies(value = "should match search to familyName2", method = "getUsers(String,List,boolean)")
+	public void getUsers_shouldMatchSearchToFamilyName2() throws Exception {
 		executeDataSet("org/openmrs/api/include/PersonServiceTest-extranames.xml");
 
-		List<User> users = userService.getUsers("Johnson", null, false);
-		assertEquals(3, users.size());
-		assertTrue(containsId(users, 2));
-		assertTrue(containsId(users, 4));
-		assertTrue(containsId(users, 5));
+		List<User> users = Context.getUserService().getUsers("Johnson", null, false);
+		Assert.assertEquals(3, users.size());
+		Assert.assertTrue(containsId(users, 2));
+		Assert.assertTrue(containsId(users, 4));
+		Assert.assertTrue(containsId(users, 5));
 	}
 
 	/**
 	 * @see UserService#changePassword(String,String)
 	 */
 	@Test
-	public void changePassword_shouldMatchOnSha512HashedPassword() {
+	@Verifies(value = "should match on sha512 hashed password", method = "changePassword(String,String)")
+	public void changePassword_shouldMatchOnSha512HashedPassword() throws Exception {
 		executeDataSet(XML_FILENAME);
 		Context.logout();
 		Context.authenticate("userWithSha512Hash", "test");
-		Context.addProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
-		userService.changePassword("test", "Tester12");
+
+		UserService us = Context.getUserService();
+		us.changePassword("test", "Tester12");
+
 		Context.logout(); // so that the next test reauthenticates
 	}
 
@@ -586,9 +362,9 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 	 * @throws Exception
 	 */
 	@Test
-	public void shouldFetchNamesForPersonsThatWereFirstFetchedAsUsers() {
+	public void shouldFetchNamesForPersonsThatWereFirstFetchedAsUsers() throws Exception {
 		Person person = Context.getPersonService().getPerson(1);
-		User user = userService.getUser(1);
+		User user = Context.getUserService().getUser(1);
 
 		user.getNames().size();
 		person.getNames().size();
@@ -598,62 +374,70 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 	 * @see UserService#getPrivilegeByUuid(String)
 	 */
 	@Test
-	public void getPrivilegeByUuid_shouldFindObjectGivenValidUuid() {
+	@Verifies(value = "should find object given valid uuid", method = "getPrivilegeByUuid(String)")
+	public void getPrivilegeByUuid_shouldFindObjectGivenValidUuid() throws Exception {
 		executeDataSet(XML_FILENAME);
 		String uuid = "d979d066-15e6-467c-9d4b-cb575ef97f0f";
-		Privilege privilege = userService.getPrivilegeByUuid(uuid);
-		assertEquals("Some Privilege", privilege.getPrivilege());
+		Privilege privilege = Context.getUserService().getPrivilegeByUuid(uuid);
+		Assert.assertEquals("Some Privilege", privilege.getPrivilege());
 	}
 
 	/**
 	 * @see UserService#getPrivilegeByUuid(String)
 	 */
 	@Test
-	public void getPrivilegeByUuid_shouldReturnNullIfNoObjectFoundWithGivenUuid() {
-		assertNull(userService.getPrivilegeByUuid("some invalid uuid"));
+	@Verifies(value = "should return null if no object found with given uuid", method = "getPrivilegeByUuid(String)")
+	public void getPrivilegeByUuid_shouldReturnNullIfNoObjectFoundWithGivenUuid() throws Exception {
+		Assert.assertNull(Context.getUserService().getPrivilegeByUuid("some invalid uuid"));
 	}
 
 	/**
 	 * @see UserService#getRoleByUuid(String)
 	 */
 	@Test
-	public void getRoleByUuid_shouldFindObjectGivenValidUuid() {
+	@Verifies(value = "should find object given valid uuid", method = "getRoleByUuid(String)")
+	public void getRoleByUuid_shouldFindObjectGivenValidUuid() throws Exception {
 		String uuid = "3480cb6d-c291-46c8-8d3a-96dc33d199fb";
-		Role role = userService.getRoleByUuid(uuid);
-		assertEquals("Provider", role.getRole());
+		Role role = Context.getUserService().getRoleByUuid(uuid);
+		Assert.assertEquals("Provider", role.getRole());
 	}
 
 	/**
 	 * @see UserService#getRoleByUuid(String)
 	 */
 	@Test
-	public void getRoleByUuid_shouldReturnNullIfNoObjectFoundWithGivenUuid() {
-		assertNull(userService.getRoleByUuid("some invalid uuid"));
+	@Verifies(value = "should return null if no object found with given uuid", method = "getRoleByUuid(String)")
+	public void getRoleByUuid_shouldReturnNullIfNoObjectFoundWithGivenUuid() throws Exception {
+		Assert.assertNull(Context.getUserService().getRoleByUuid("some invalid uuid"));
 	}
 
 	/**
 	 * @see UserService#getUserByUuid(String)
 	 */
 	@Test
-	public void getUserByUuid_shouldFindObjectGivenValidUuid() {
+	@Verifies(value = "should find object given valid uuid", method = "getUserByUuid(String)")
+	public void getUserByUuid_shouldFindObjectGivenValidUuid() throws Exception {
 		String uuid = "c1d8f5c2-e131-11de-babe-001e378eb67e";
-		User user = userService.getUserByUuid(uuid);
-		assertEquals(501, (int) user.getUserId());
+		User user = Context.getUserService().getUserByUuid(uuid);
+		Assert.assertEquals(501, (int) user.getUserId());
 	}
 
 	/**
 	 * @see UserService#getUserByUuid(String)
 	 */
 	@Test
-	public void getUserByUuid_shouldReturnNullIfNoObjectFoundWithGivenUuid() {
-		assertNull(userService.getUserByUuid("some invalid uuid"));
+	@Verifies(value = "should return null if no object found with given uuid", method = "getUserByUuid(String)")
+	public void getUserByUuid_shouldReturnNullIfNoObjectFoundWithGivenUuid() throws Exception {
+		Assert.assertNull(Context.getUserService().getUserByUuid("some invalid uuid"));
 	}
 
 	/**
 	 * @see UserService#changeHashedPassword(User,String,String)
 	 */
 	@Test
-	public void changeHashedPassword_shouldChangeTheHashedPasswordForTheGivenUser() {
+	@Verifies(value = "should change the hashed password for the given user", method = "changeHashedPassword(User,String,String)")
+	public void changeHashedPassword_shouldChangeTheHashedPasswordForTheGivenUser() throws Exception {
+		UserService userService = Context.getUserService();
 		User user = userService.getUser(1);
 		String salt = Security.getRandomToken();
 		String hash = Security.encodeString("new password" + salt);
@@ -669,7 +453,9 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 	 * @see UserService#changePassword(User,String)
 	 */
 	@Test
-	public void changePassword_shouldChangePasswordForTheGivenUserAndPassword() {
+	@Verifies(value = "should change password for the given user and password", method = "changePassword(User,String)")
+	public void changePassword_shouldChangePasswordForTheGivenUserAndPassword() throws Exception {
+		UserService userService = Context.getUserService();
 		userService.changePassword("test", "Another new password1");
 		userService.changePassword("Another new password1", "Yet another new password1"); // try to change the password with the new one
 	}
@@ -678,72 +464,94 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 	 * @see UserService#changeQuestionAnswer(User,String,String)
 	 */
 	@Test
-	@Disabled
+	@Ignore
 	// TODO fix: the question not sticking - null expected:<[the question]> but was:<[]>
-	public void changeQuestionAnswer_shouldChangeTheSecretQuestionAndAnswerForGivenUser() {
+	@Verifies(value = "should change the secret question and answer for given user", method = "changeQuestionAnswer(User,String,String)")
+	public void changeQuestionAnswer_shouldChangeTheSecretQuestionAndAnswerForGivenUser() throws Exception {
+		UserService userService = Context.getUserService();
 		User u = userService.getUser(501);
 		userService.changeQuestionAnswer(u, "the question", "the answer");
 		
 		// need to retrieve the user since the service method does not modify the given user object
 		User o = userService.getUser(501);
-		assertTrue(userService.isSecretAnswer(o, "the answer"));
+		Assert.assertTrue(userService.isSecretAnswer(o, "the answer"));
 	}
 	
 	/**
 	 * @see UserService#getAllPrivileges()
 	 */
 	@Test
-	public void getAllPrivileges_shouldReturnAllPrivilegesInTheSystem() {
+	@Verifies(value = "should return all privileges in the system", method = "getAllPrivileges()")
+	public void getAllPrivileges_shouldReturnAllPrivilegesInTheSystem() throws Exception {
 		executeDataSet(XML_FILENAME);
-		List<Privilege> privileges = userService.getAllPrivileges();
-		assertEquals(1, privileges.size());
+		List<Privilege> privileges = Context.getUserService().getAllPrivileges();
+		Assert.assertEquals(1, privileges.size());
 	}
 	
 	/**
 	 * @see UserService#getAllRoles()
 	 */
 	@Test
-	public void getAllRoles_shouldReturnAllRolesInTheSystem() {
+	@Verifies(value = "should return all roles in the system", method = "getAllRoles()")
+	public void getAllRoles_shouldReturnAllRolesInTheSystem() throws Exception {
 		executeDataSet(XML_FILENAME);
 		
-		List<Role> roles = userService.getAllRoles();
-		assertEquals(7, roles.size());
+		List<Role> roles = Context.getUserService().getAllRoles();
+		Assert.assertEquals(7, roles.size());
 	}
 	
 	/**
 	 * @see UserService#getAllUsers()
 	 */
 	@Test
-	public void getAllUsers_shouldFetchAllUsersInTheSystem() {
-		List<User> users = userService.getAllUsers();
-		assertThat(users, hasSize(greaterThanOrEqualTo(3)));
+	@Verifies(value = "should fetch all users in the system", method = "getAllUsers()")
+	public void getAllUsers_shouldFetchAllUsersInTheSystem() throws Exception {
+		List<User> users = Context.getUserService().getAllUsers();
+		Assert.assertEquals(4, users.size());
 	}
 	
 	/**
 	 * @see UserService#getAllUsers()
 	 */
 	@Test
-	@Disabled("Failing on CI in docker build for some reason - TRUNK-6083")
-	public void getAllUsers_shouldNotContainsAnyDuplicateUsers() {
+	@Verifies(value = "should not contains any duplicate users", method = "getAllUsers()")
+	public void getAllUsers_shouldNotContainsAnyDuplicateUsers() throws Exception {
 		executeDataSet(XML_FILENAME);
-		List<User> users = userService.getAllUsers();
-		assertEquals(11, users.size());
+		List<User> users = Context.getUserService().getAllUsers();
+		Assert.assertEquals(12, users.size());
 		// TODO Need to test with duplicate data in the dataset (not sure if that's possible)
 		
 	}
 	
+	/**
+	 * @verifies {@link UserService#getUserByUuid(String)} test = should fetch user with given uuid
+	 */
 	@Test
-	public void getUserByUuid_shouldFetchUserWithGivenUuid() throws SQLException {
+	@SkipBaseSetup
+	@Verifies(value = "should fetch user with given uuid", method = "getUserByUuid(String)")
+	public void getUserByUuid_shouldFetchUserWithGivenUuid() throws Exception {
+		initializeInMemoryDatabase();
 		executeDataSet(XML_FILENAME);
-
+		authenticate();
+		
+		UserService userService = Context.getUserService();
 		User user = userService.getUserByUuid("013c49c6-e132-11de-babe-001e378eb67e");
-		assertEquals(user, userService.getUser(5505), "Did not fetch user with given uuid");
+		assertEquals("Did not fetch user with given uuid", user, userService.getUser(5505));
 	}
 	
+	/**
+	 * @verifies {@link UserService#getUsersByName(String,String,null)} test = should fetch users
+	 *           exactly matching the given givenName and familyName
+	 */
 	@Test
-	public void getUsersByName_shouldFetchUsersExactlyMatchingTheGivenGivenNameAndFamilyName() throws SQLException {
+	@SkipBaseSetup
+	@Verifies(value = "should fetch users exactly matching the given givenName and familyName", method = "getUsersByName(String,String,boolean)")
+	public void getUsersByName_shouldFetchUsersExactlyMatchingTheGivenGivenNameAndFamilyName() throws Exception {
+		initializeInMemoryDatabase();
 		executeDataSet(XML_FILENAME);
-
+		authenticate();
+		
+		UserService userService = Context.getUserService();
 		// this generates an error:
 		// org.hibernate.QueryException: illegal attempt to dereference 
 		// collection [user0_.user_id.names] with element property reference [givenName] 
@@ -753,10 +561,16 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 		assertEquals(1, users.size());
 	}
 	
+	/**
+	 * @verifies {@link UserService#getUsersByName(String,String,null)} test = should fetch voided
+	 *           users whenincludeVoided is true
+	 */
 	@Test
-	public void getUsersByName_shouldFetchVoidedUsersWhenincludeVoidedIsTrue() {
+	public void getUsersByName_shouldFetchVoidedUsersWhenincludeVoidedIsTrue() throws Exception {
+		
+		UserService userService = Context.getUserService();
 		User voidedUser = userService.getUser(501);
-		// assertTrue(voidedUser.getVoided());
+		// assertTrue(voidedUser.isVoided());
 		// this generates an error:
 		// org.hibernate.QueryException: illegal attempt to dereference 
 		// collection [user0_.user_id.names] with element property reference [givenName]
@@ -766,10 +580,16 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 		assertTrue(users.contains(voidedUser));
 	}
 	
+	/**
+	 * @verifies {@link UserService#getUsersByName(String,String,null)} test = should not fetch any
+	 *           voided users when includeVoided is false
+	 */
 	@Test
-	public void getUsersByName_shouldNotFetchAnyVoidedUsersWhenIncludeVoidedIsFalse() {
+	public void getUsersByName_shouldNotFetchAnyVoidedUsersWhenIncludeVoidedIsFalse() throws Exception {
+		
+		UserService userService = Context.getUserService();
 		User voidedUser = userService.getUser(501);
-		// assertTrue(voidedUser.getVoided());
+		// assertTrue(voidedUser.isVoided());
 		// this generates an error:
 		// org.hibernate.QueryException: illegal attempt to dereference 
 		// collection [user0_.user_id.names] with element property reference [givenName]
@@ -779,10 +599,18 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 		assertFalse(users.contains(voidedUser));
 	}
 	
+	/**
+	 * @verifies {@link UserService#getUsersByName(String,String,null)} test = should not fetch any
+	 *           duplicate users
+	 */
 	@Test
-	public void getUsersByName_shouldNotFetchAnyDuplicateUsers() throws SQLException {
+	@SkipBaseSetup
+	public void getUsersByName_shouldNotFetchAnyDuplicateUsers() throws Exception {
+		initializeInMemoryDatabase();
 		executeDataSet(XML_FILENAME);
-
+		authenticate();
+		
+		UserService userService = Context.getUserService();
 		// user with ID 4 has a preferred name "John Doe" and a not preferred name "John Doe."
 		// If this method does not fetch any duplicate users, this user should only 
 		// appear once in the list of users that are returned with this method.
@@ -801,290 +629,321 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 	 * @see UserService#getPrivilege(String)
 	 */
 	@Test
-	public void getPrivilege_shouldFetchPrivilegeForGivenName() {
+	@Verifies(value = "should fetch privilege for given name", method = "getPrivilege(String)")
+	public void getPrivilege_shouldFetchPrivilegeForGivenName() throws Exception {
 		executeDataSet(XML_FILENAME);
-		Privilege privilege = userService.getPrivilege("Some Privilege");
-		assertEquals("Some Privilege", privilege.getPrivilege());
+		Privilege privilege = Context.getUserService().getPrivilege("Some Privilege");
+		Assert.assertEquals("Some Privilege", privilege.getPrivilege());
 	}
 	
 	/**
 	 * @see UserService#getRole(String)
 	 */
 	@Test
-	public void getRole_shouldFetchRoleForGivenRoleName() {
+	@Verifies(value = "should fetch role for given role name", method = "getRole(String)")
+	public void getRole_shouldFetchRoleForGivenRoleName() throws Exception {
 		executeDataSet(XML_FILENAME);
-		Role role = userService.getRole("Some Role");
-		assertEquals("Some Role", role.getRole());
+		Role role = Context.getUserService().getRole("Some Role");
+		Assert.assertEquals("Some Role", role.getRole());
 	}
 	
 	/**
 	 * @see UserService#getUser(Integer)
 	 */
 	@Test
-	public void getUser_shouldFetchUserWithGivenUserId() {
-		User user = userService.getUser(501);
-		assertEquals(501, user.getUserId().intValue());
+	@Verifies(value = "should fetch user with given userId", method = "getUser(Integer)")
+	public void getUser_shouldFetchUserWithGivenUserId() throws Exception {
+		User user = Context.getUserService().getUser(501);
+		Assert.assertEquals(501, user.getUserId().intValue());
 	}
 	
 	/**
 	 * @see UserService#getUsers(String,List,boolean)
 	 */
 	@Test
-	public void getUsers_shouldFetchUsersWithAtLeastOneOfTheGivenRoleObjects() {
+	@Verifies(value = "should fetch users with at least one of the given role objects", method = "getUsers(String,List,boolean)")
+	public void getUsers_shouldFetchUsersWithAtLeastOneOfTheGivenRoleObjects() throws Exception {
 		executeDataSet(XML_FILENAME);
 		
 		List<Role> roles = Collections.singletonList(new Role("Some Role"));
-		assertEquals(1, userService.getUsers("Susy Kingman", roles, false).size());
+		Assert.assertEquals(1, Context.getUserService().getUsers("Susy Kingman", roles, false).size());
 	}
 	
 	/**
 	 * @see UserService#getUsers(String,List,boolean)
 	 */
 	@Test
-	public void getUsers_shouldFetchUsersWithNameThatContainsGivenNameSearch() {
-		assertEquals(1, userService.getUsers("Hippocrates", null, false).size());
+	@Verifies(value = "should fetch users with name that contains given nameSearch", method = "getUsers(String,List,boolean)")
+	public void getUsers_shouldFetchUsersWithNameThatContainsGivenNameSearch() throws Exception {
+		Assert.assertEquals(1, Context.getUserService().getUsers("Hippocrates", null, false).size());
 	}
 	
 	/**
 	 * @see UserService#getUsers(String,List,boolean)
 	 */
 	@Test
-	public void getUsers_shouldFetchUsersWithSystemIdThatContainsGivenNameSearch() {
-		assertEquals(1, userService.getUsers("2-6", null, true).size());
+	@Verifies(value = "should fetch users with systemId that contains given nameSearch", method = "getUsers(String,List,boolean)")
+	public void getUsers_shouldFetchUsersWithSystemIdThatContainsGivenNameSearch() throws Exception {
+		Assert.assertEquals(1, Context.getUserService().getUsers("2-6", null, true).size());
 	}
 	
 	/**
 	 * @see UserService#getUsers(String,List,boolean)
 	 */
 	@Test
-	public void getUsers_shouldFetchVoidedUsersIfIncludedVoidedIsTrue() {
-		assertEquals(1, userService.getUsers("Bruno", null, true).size());
+	@Verifies(value = "should fetch voided users if includedVoided is true", method = "getUsers(String,List,boolean)")
+	public void getUsers_shouldFetchVoidedUsersIfIncludedVoidedIsTrue() throws Exception {
+		Assert.assertEquals(1, Context.getUserService().getUsers("Bruno", null, true).size());
 	}
 	
 	/**
 	 * @see UserService#getUsers(String,List,boolean)
 	 */
 	@Test
-	public void getUsers_shouldFetchAllUsersIfNameSearchIsEmptyOrNull() {
-		assertThat(userService.getUsers("", null, true), hasSize(greaterThanOrEqualTo(3)));
-		assertThat(userService.getUsers(null, null, true), hasSize(greaterThanOrEqualTo(3)));
+	@Verifies(value = "should fetch all users if nameSearch is empty or null", method = "getUsers(String,List,null)")
+	public void getUsers_shouldFetchAllUsersIfNameSearchIsEmptyOrNull() throws Exception {
+		Assert.assertEquals(4, Context.getUserService().getUsers("", null, true).size());
+		Assert.assertEquals(4, Context.getUserService().getUsers(null, null, true).size());
 	}
 	
 	/**
 	 * @see UserService#getUsers(String,List,boolean)
 	 */
 	@Test
-	public void getUsers_shouldNotFetchDuplicateUsers() {
+	@Verifies(value = "should not fetch duplicate users", method = "getUsers(String,List,boolean)")
+	public void getUsers_shouldNotFetchDuplicateUsers() throws Exception {
 		executeDataSet(XML_FILENAME);
 		
-		List<User> users = userService.getUsers("John Doe", null, false);
-		assertEquals(1, users.size());
+		List<User> users = Context.getUserService().getUsers("John Doe", null, false);
+		Assert.assertEquals(1, users.size());
 	}
 	
 	/**
 	 * @see UserService#getUsers(String,List,boolean)
 	 */
 	@Test
-	public void getUsers_shouldNotFetchVoidedUsersIfIncludedVoidedIsFalse() {
-		assertEquals(0, userService.getUsers("Bruno", null, false).size());
+	@Verifies(value = "should not fetch voided users if includedVoided is false", method = "getUsers(String,List,boolean)")
+	public void getUsers_shouldNotFetchVoidedUsersIfIncludedVoidedIsFalse() throws Exception {
+		Assert.assertEquals(0, Context.getUserService().getUsers("Bruno", null, false).size());
 	}
 	
 	/**
 	 * @see UserService#getUsersByRole(Role)
 	 */
 	@Test
-	public void getUsersByRole_shouldFetchUsersAssignedGivenRole() {
+	@Verifies(value = "should fetch users assigned given role", method = "getUsersByRole(Role)")
+	public void getUsersByRole_shouldFetchUsersAssignedGivenRole() throws Exception {
 		executeDataSet(XML_FILENAME);
 		
-		assertEquals(2, userService.getUsersByRole(new Role("Some Role")).size());
+		Assert.assertEquals(2, Context.getUserService().getUsersByRole(new Role("Some Role")).size());
 	}
 	
 	/**
 	 * @see UserService#getUsersByRole(Role)
 	 */
 	@Test
-	public void getUsersByRole_shouldNotFetchUserThatDoesNotBelongToGivenRole() {
+	@Verifies(value = "should not fetch user that does not belong to given role", method = "getUsersByRole(Role)")
+	public void getUsersByRole_shouldNotFetchUserThatDoesNotBelongToGivenRole() throws Exception {
 		executeDataSet(XML_FILENAME);
 		
-		assertEquals(0, userService.getUsersByRole(new Role("Nonexistent role")).size());
+		Assert.assertEquals(0, Context.getUserService().getUsersByRole(new Role("Nonexistent role")).size());
 	}
 	
 	/**
 	 * @see UserService#hasDuplicateUsername(User)
 	 */
 	@Test
-	public void hasDuplicateUsername_shouldVerifyThatUsernameAndSystemIdIsUnique() {
+	@Verifies(value = "should verify that username and system id is unique", method = "hasDuplicateUsername(User)")
+	public void hasDuplicateUsername_shouldVerifyThatUsernameAndSystemIdIsUnique() throws Exception {
 		executeDataSet(XML_FILENAME);
 		
 		User user = new User();
 		user.setSystemId("8-3");
 		user.setUsername("a unique username");
-		assertTrue(userService.hasDuplicateUsername(user));
+		Assert.assertTrue(Context.getUserService().hasDuplicateUsername(user));
 		
 		user = new User();
 		user.setSystemId("a unique system id");
 		user.setUsername("userWithSha512Hash");
-		assertTrue(userService.hasDuplicateUsername(user));
+		Assert.assertTrue(Context.getUserService().hasDuplicateUsername(user));
 	}
 	
 	/**
 	 * @see UserService#isSecretAnswer(User,String)
 	 */
 	@Test
-	public void isSecretAnswer_shouldReturnFalseWhenGivenAnswerDoesNotMatchTheStoredSecretAnswer() {
-		User user = userService.getUser(502);
-		assertFalse(userService.isSecretAnswer(user, "not the answer"));
+	@Verifies(value = "should return false when given answer does not match the stored secret answer", method = "isSecretAnswer(User,String)")
+	public void isSecretAnswer_shouldReturnFalseWhenGivenAnswerDoesNotMatchTheStoredSecretAnswer() throws Exception {
+		User user = Context.getUserService().getUser(502);
+		Assert.assertFalse(Context.getUserService().isSecretAnswer(user, "not the answer"));
 	}
 	
 	/**
 	 * @see UserService#isSecretAnswer(User,String)
 	 */
 	@Test
-	public void isSecretAnswer_shouldReturnTrueWhenGivenAnswerMatchesStoredSecretAnswer() {
+	@Verifies(value = "should return true when given answer matches stored secret answer", method = "isSecretAnswer(User,String)")
+	public void isSecretAnswer_shouldReturnTrueWhenGivenAnswerMatchesStoredSecretAnswer() throws Exception {
 		executeDataSet(XML_FILENAME);
-		User user = userService.getUser(5507);
-		userService.changeQuestionAnswer(user, "question", "answer");
-		assertTrue(userService.isSecretAnswer(user, "answer"));
+		User user = Context.getUserService().getUser(5507);
+		Context.getUserService().changeQuestionAnswer(user, "question", "answer");
+		Assert.assertTrue(Context.getUserService().isSecretAnswer(user, "answer"));
 	}
 	
 	/**
 	 * @see UserService#purgePrivilege(Privilege)
 	 */
 	@Test
-	public void purgePrivilege_shouldDeleteGivenPrivilegeFromTheDatabase() {
-		userService.purgePrivilege(new Privilege("Some Privilege"));
-		assertNull(userService.getPrivilege("Some Privilege"));
+	@Verifies(value = "should delete given privilege from the database", method = "purgePrivilege(Privilege)")
+	public void purgePrivilege_shouldDeleteGivenPrivilegeFromTheDatabase() throws Exception {
+		Context.getUserService().purgePrivilege(new Privilege("Some Privilege"));
+		Assert.assertNull(Context.getUserService().getPrivilege("Some Privilege"));
 	}
 	
 	/**
 	 * @see UserService#purgePrivilege(Privilege)
 	 */
-	@Test
-	public void purgePrivilege_shouldThrowErrorWhenPrivilegeIsCorePrivilege() {
-		assertThrows(APIException.class, () -> userService.purgePrivilege(new Privilege(PrivilegeConstants.ADD_COHORTS)));
+	@Test(expected = APIException.class)
+	@Verifies(value = "should throw error when privilege is core privilege", method = "purgePrivilege(Privilege)")
+	public void purgePrivilege_shouldThrowErrorWhenPrivilegeIsCorePrivilege() throws Exception {
+		Context.getUserService().purgePrivilege(new Privilege(PrivilegeConstants.ADD_COHORTS));
 	}
 	
 	/**
 	 * @see UserService#purgeRole(Role)
 	 */
 	@Test
-	public void purgeRole_shouldDeleteGivenRoleFromDatabase() {
+	@Verifies(value = "should delete given role from database", method = "purgeRole(Role)")
+	public void purgeRole_shouldDeleteGivenRoleFromDatabase() throws Exception {
 		executeDataSet(XML_FILENAME);
-		Role role = userService.getRole("Some Role To Delete");
-		userService.purgeRole(role);
-		assertNull(userService.getRole("Some Role To Delete"));
+		Role role = Context.getUserService().getRole("Some Role To Delete");
+		Context.getUserService().purgeRole(role);
+		Assert.assertNull(Context.getUserService().getRole("Some Role To Delete"));
 	}
 	
 	/**
 	 * @see UserService#purgeRole(Role)
 	 */
 	@Test
-	public void purgeRole_shouldReturnIfRoleIsNull() {
-		userService.purgeRole(null);
+	@Verifies(value = "should return if role is null", method = "purgeRole(Role)")
+	public void purgeRole_shouldReturnIfRoleIsNull() throws Exception {
+		Context.getUserService().purgeRole(null);
 	}
 	
 	/**
 	 * @see UserService#purgeRole(Role)
 	 */
-	@Test
-	public void purgeRole_shouldThrowErrorWhenRoleIsACoreRole() {
+	@Test(expected = APIException.class)
+	@Verifies(value = "should throw error when role is a core role", method = "purgeRole(Role)")
+	public void purgeRole_shouldThrowErrorWhenRoleIsACoreRole() throws Exception {
 		Role role = new Role(RoleConstants.ANONYMOUS);
-
-		assertThrows(APIException.class, () -> userService.purgeRole(role));
+		Context.getUserService().purgeRole(role);
 	}
 	
 	/**
 	 * @see UserService#purgeUser(User)
 	 */
-	@Test
-	public void purgeRole_shouldThrowErrorWhenRoleHasChildRoles() {
-		Set<Role> childRole = new HashSet<>();
+	@Test(expected = CannotDeleteRoleWithChildrenException.class)
+	@Verifies(value = "should throw error when role has child roles", method = "purgeRole(Role)")
+	public void purgeRole_shouldThrowErrorWhenRoleHasChildRoles() throws Exception {
+		Set<Role> childRole = new HashSet<Role>();
 		Role role1 = new Role("role_parent");
 		Role role2 = new Role("role_child");
 		childRole.add(role1);
 		role2.setChildRoles(childRole);
-
-		assertThrows(CannotDeleteRoleWithChildrenException.class, () -> userService.purgeRole(role2));
+		Context.getUserService().purgeRole(role2);
 	}
 	
 	/**
 	 * @see UserService#purgeUser(User)
 	 */
 	@Test
-	public void purgeUser_shouldDeleteGivenUser() {
-		User user = userService.getUser(502);
-		userService.purgeUser(user);
-		assertNull(userService.getUser(2));
+	@Verifies(value = "should delete given user", method = "purgeUser(User)")
+	public void purgeUser_shouldDeleteGivenUser() throws Exception {
+		User user = Context.getUserService().getUser(502);
+		Context.getUserService().purgeUser(user);
+		Assert.assertNull(Context.getUserService().getUser(2));
 	}
 	
 	/**
 	 * @see UserService#purgeUser(User,boolean)
 	 */
 	@Test
-	public void purgeUser_shouldDeleteGivenUserWhenCascadeEqualsFalse() {
-		User user = userService.getUser(502);
-		userService.purgeUser(user, false);
-		assertNull(userService.getUser(502));
+	@Verifies(value = "should delete given user when cascade equals false", method = "purgeUser(User,boolean)")
+	public void purgeUser_shouldDeleteGivenUserWhenCascadeEqualsFalse() throws Exception {
+		User user = Context.getUserService().getUser(502);
+		Context.getUserService().purgeUser(user, false);
+		Assert.assertNull(Context.getUserService().getUser(502));
 	}
 	
 	/**
 	 * @see UserService#purgeUser(User,boolean)
 	 */
-	@Test
-	public void purgeUser_shouldThrowAPIExceptionIfCascadeIsTrue() {
-		User user = userService.getUser(502);
-
-		assertThrows(APIException.class, () -> userService.purgeUser(user, true));
+	@Test(expected = APIException.class)
+	@Verifies(value = "should throw APIException if cascade is true", method = "purgeUser(User,null)")
+	public void purgeUser_shouldThrowAPIExceptionIfCascadeIsTrue() throws Exception {
+		User user = Context.getUserService().getUser(502);
+		Context.getUserService().purgeUser(user, true);
 	}
 	
 	/**
 	 * @see UserService#removeUserProperty(User,String)
 	 */
 	@Test
-	public void removeUserProperty_shouldRemoveUserPropertyForGivenUserAndKey() {
+	@Verifies(value = "should remove user property for given user and key", method = "removeUserProperty(User,String)")
+	public void removeUserProperty_shouldRemoveUserPropertyForGivenUserAndKey() throws Exception {
 		executeDataSet(XML_FILENAME);
-
+		
+		UserService userService = Context.getUserService();
 		User user = userService.getUser(5505);
-		assertNotSame("", user.getUserProperty("some key"));
+		Assert.assertNotSame("", user.getUserProperty("some key"));
 		
 		userService.removeUserProperty(user, "some key");
 		
 		user = userService.getUser(5505);
-		assertEquals("", user.getUserProperty("some key"));
+		Assert.assertEquals("", user.getUserProperty("some key"));
 	}
 	
 	/**
 	 * @see UserService#removeUserProperty(User,String)
 	 */
 	@Test
-	public void removeUserProperty_shouldReturnNullIfUserIsNull() {
-		assertNull(userService.setUserProperty(null, "some key", "some new value"));
+	@Verifies(value = "should return null if user is null", method = "removeUserProperty(User,String)")
+	public void removeUserProperty_shouldReturnNullIfUserIsNull() throws Exception {
+		UserService userService = Context.getUserService();
+		Assert.assertNull(userService.setUserProperty(null, "some key", "some new value"));
 	}
 	
 	/**
 	 * @see UserService#removeUserProperty(User,String)
 	 */
-	@Test
-	public void removeUserProperty_shouldThrowErrorWhenUserIsNotAuthorizedToEditUsers() {
+	@Test(expected = APIException.class)
+	@Verifies(value = "should throw error when user is not authorized to edit users", method = "removeUserProperty(User,String)")
+	public void removeUserProperty_shouldThrowErrorWhenUserIsNotAuthorizedToEditUsers() throws Exception {
 		executeDataSet(XML_FILENAME);
-
+		
+		UserService userService = Context.getUserService();
 		User user = userService.getUser(5505);
 		
 		Context.logout();
-
-		assertThrows(APIException.class, () -> userService.removeUserProperty(user, "some key"));
+		
+		userService.removeUserProperty(user, "some key");
+		
+		//user = userService.getUser(5505);
+		//Assert.assertNull(user.getUserProperty("some key"));
 	}
 	
 	/**
 	 * @see UserService#savePrivilege(Privilege)
 	 */
 	@Test
-	public void savePrivilege_shouldSaveGivenPrivilegeToTheDatabase() {
+	@Verifies(value = "should save given privilege to the database", method = "savePrivilege(Privilege)")
+	public void savePrivilege_shouldSaveGivenPrivilegeToTheDatabase() throws Exception {
 		Privilege p = new Privilege("new privilege name", "new privilege desc");
-		userService.savePrivilege(p);
+		Context.getUserService().savePrivilege(p);
 		
-		Privilege savedPrivilege = userService.getPrivilege("new privilege name");
-		assertNotNull(savedPrivilege);
+		Privilege savedPrivilege = Context.getUserService().getPrivilege("new privilege name");
+		Assert.assertNotNull(savedPrivilege);
 		
 	}
 	
@@ -1092,66 +951,76 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 	 * @see UserService#setUserProperty(User,String,String)
 	 */
 	@Test
-	public void setUserProperty_shouldAddPropertyWithGivenKeyAndValueWhenKeyDoesNotAlreadyExist() {
+	@Verifies(value = "should add property with given key and value when key does not already exist", method = "setUserProperty(User,String,String)")
+	public void setUserProperty_shouldAddPropertyWithGivenKeyAndValueWhenKeyDoesNotAlreadyExist() throws Exception {
 		executeDataSet(XML_FILENAME);
-
+		
+		UserService userService = Context.getUserService();
 		User user = userService.getUser(5505);
 		
 		// Check that it doesn't already exist
-		assertEquals(user.getUserProperty("some new key"), "");
+		Assert.assertEquals(user.getUserProperty("some new key"), "");
 		
 		userService.setUserProperty(user, "some new key", "some new value");
 		
 		user = userService.getUser(5505);
-		assertEquals("some new value", user.getUserProperty("some new key"));
+		Assert.assertEquals("some new value", user.getUserProperty("some new key"));
 	}
 	
 	/**
 	 * @see UserService#setUserProperty(User,String,String)
 	 */
 	@Test
-	public void setUserProperty_shouldModifyPropertyWithGivenKeyAndValueWhenKeyAlreadyExists() {
+	@Verifies(value = "should modify property with given key and value when key already exists", method = "setUserProperty(User,String,String)")
+	public void setUserProperty_shouldModifyPropertyWithGivenKeyAndValueWhenKeyAlreadyExists() throws Exception {
 		executeDataSet(XML_FILENAME);
-
+		
+		UserService userService = Context.getUserService();
 		User user = userService.getUser(5505);
 		
 		// Check that it already exists
-		assertEquals(user.getUserProperty("some key"), "some value");
+		Assert.assertEquals(user.getUserProperty("some key"), "some value");
 		
 		userService.setUserProperty(user, "some key", "some new value");
 		
 		user = userService.getUser(5505);
-		assertEquals("some new value", user.getUserProperty("some key"));
+		Assert.assertEquals("some new value", user.getUserProperty("some key"));
 	}
 	
 	/**
 	 * @see UserService#setUserProperty(User,String,String)
 	 */
 	@Test
-	public void setUserProperty_shouldReturnNullIfUserIsNull() {
-		assertNull(userService.setUserProperty(null, "some key", "some value"));
+	@Verifies(value = "should return null if user is null", method = "setUserProperty(User,String,String)")
+	public void setUserProperty_shouldReturnNullIfUserIsNull() throws Exception {
+		UserService userService = Context.getUserService();
+		
+		Assert.assertNull(userService.setUserProperty(null, "some key", "some value"));
 	}
 	
 	/**
 	 * @see UserService#setUserProperty(User,String,String)
 	 */
-	@Test
-	public void setUserProperty_shouldThrowErrorWhenUserIsNotAuthorizedToEditUsers() {
+	@Test(expected = APIException.class)
+	@Verifies(value = "should throw error when user is not authorized to edit users", method = "setUserProperty(User,String,String)")
+	public void setUserProperty_shouldThrowErrorWhenUserIsNotAuthorizedToEditUsers() throws Exception {
+		UserService userService = Context.getUserService();
 		User user = userService.getUser(502);
 		
 		Context.logout();
-		assertThrows(APIException.class, () -> userService.setUserProperty(user, "some key", "some value"));
+		userService.setUserProperty(user, "some key", "some value");
 	}
 	
 	/**
 	 * @see UserService#saveRole(Role)
 	 */
 	@Test
-	public void saveRole_shouldSaveGivenRoleToTheDatabase() {
+	@Verifies(value = "should save given role to the database", method = "saveRole(Role)")
+	public void saveRole_shouldSaveGivenRoleToTheDatabase() throws Exception {
 		Role role = new Role("new role", "new desc");
-		userService.saveRole(role);
+		Context.getUserService().saveRole(role);
 		
-		assertNotNull(userService.getRole("new role"));
+		Assert.assertNotNull(Context.getUserService().getRole("new role"));
 		
 	}
 	
@@ -1159,132 +1028,91 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 	 * @see UserService#saveRole(Role)
 	 */
 	@Test
-	public void saveRole_shouldThrowErrorIfRoleInheritsFromItself() {
+	@Verifies(value = "should throw error if role inherits from itself", method = "saveRole(Role)")
+	public void saveRole_shouldThrowErrorIfRoleInheritsFromItself() throws Exception {
 		Role parentRole = new Role("parent role");
 		
 		// Have child inherit parent role
 		Role childRole = new Role("child role");
-		Set<Role> inheritsFromParent = new HashSet<>();
+		Set<Role> inheritsFromParent = new HashSet<Role>();
 		inheritsFromParent.add(parentRole);
 		childRole.setInheritedRoles(inheritsFromParent);
 		
 		// Now have parent try to inherit the child role.
-		Set<Role> inheritsFromChild = new HashSet<>();
+		Set<Role> inheritsFromChild = new HashSet<Role>();
 		inheritsFromChild.add(childRole);
 		parentRole.setInheritedRoles(inheritsFromChild);
 		
-		APIException exception = assertThrows(APIException.class, () -> userService.saveRole(parentRole));
-		assertThat(exception.getMessage(), is(messages.getMessage("Role.cannot.inherit.descendant")));
-	}
-	
-	@Test
-	public void saveRole_shouldAllowARoleToBeSavedWithCorrectPermissions() throws IllegalAccessException {
-		Role role = new Role("my role");
-		Privilege myPrivilege = new Privilege("custom privilege");
-		role.addPrivilege(myPrivilege);
-		
-		User currentUser = new User();
-		currentUser.addRole(new Role(RoleConstants.SUPERUSER));
-		
-		withCurrentUserAs(currentUser, () -> {
-			Role newRole = new Role("another role");
-			newRole.addPrivilege(myPrivilege);
-			userService.saveRole(newRole);
-		});
-	}
-
-	@Test
-	public void saveRole_shouldThrowErrorWhenCurrentUserLacksPrivilegeAssignedToRole() throws IllegalAccessException {
-		Role adminRole = new Role("my role");
-		adminRole.addPrivilege(new Privilege(PrivilegeConstants.MANAGE_ROLES));
-
-		User currentUser = new User();
-		currentUser.addRole(adminRole);
-
-		Privilege myPrivilege = new Privilege("custom privilege");
-		
-		APIException exception = assertThrows(APIException.class, () ->  withCurrentUserAs(currentUser, () -> {
-			Role newRole = new Role("another role");
-			newRole.addPrivilege(myPrivilege);
-			userService.saveRole(newRole);
-		}));
-		assertThat(exception.getMessage(), is("You must have the following privileges in order to assign them: custom privilege"));
-	}
-
-	@Test
-	public void saveRole_shouldThrowErrorWhenCurrentUserLacksAPrivilegeAssignedToRole() throws IllegalAccessException {
-		Privilege myFirstPrivilege = new Privilege("custom privilege");
-		Privilege mySecondPrivilege = new Privilege("another privilege");
-		
-		Role adminRole = new Role("my role");
-		adminRole.addPrivilege(new Privilege(PrivilegeConstants.MANAGE_ROLES));
-		adminRole.addPrivilege(myFirstPrivilege);
-
-		User currentUser = new User();
-		currentUser.addRole(adminRole);
-
-		APIException exception = assertThrows(APIException.class, () -> withCurrentUserAs(currentUser, () -> {
-			Role newRole = new Role("another role");
-			newRole.addPrivilege(myFirstPrivilege);
-			newRole.addPrivilege(mySecondPrivilege);
-			userService.saveRole(newRole);
-		}));
-		assertThat(exception.getMessage(), is("You must have the following privileges in order to assign them: another privilege"));
+		expectedException.expect(APIException.class);
+		expectedException.expectMessage(Context.getMessageSourceService().getMessage("Role.cannot.inherit.descendant"));
+		Context.getUserService().saveRole(parentRole);
 	}
 	
 	/**
 	 * @see UserService#getUsersByPerson(Person,null)
 	 */
 	@Test
-	public void getUsersByPerson_shouldFetchAllAccountsForAPersonWhenIncludeRetiredIsTrue() {
+	@Verifies(value = "should fetch all accounts for a person when include retired is true", method = "getUsersByPerson(Person,null)")
+	public void getUsersByPerson_shouldFetchAllAccountsForAPersonWhenIncludeRetiredIsTrue() throws Exception {
 		executeDataSet(XML_FILENAME);
 		Person person = new Person(5508);
-		List<User> users = userService.getUsersByPerson(person, true);
-		assertEquals(3, users.size());
+		List<User> users = Context.getUserService().getUsersByPerson(person, true);
+		Assert.assertEquals(3, users.size());
 	}
 	
 	/**
 	 * @see UserService#getUsersByPerson(Person,null)
 	 */
 	@Test
-	public void getUsersByPerson_shouldNotFetchRetiredAccountsWhenIncludeRetiredIsFalse() {
+	@Verifies(value = "should not fetch retired accounts when include retired is false", method = "getUsersByPerson(Person,null)")
+	public void getUsersByPerson_shouldNotFetchRetiredAccountsWhenIncludeRetiredIsFalse() throws Exception {
 		executeDataSet(XML_FILENAME);
 		Person person = new Person(5508);
-		List<User> users = userService.getUsersByPerson(person, false);
-		assertEquals(2, users.size());
+		List<User> users = Context.getUserService().getUsersByPerson(person, false);
+		Assert.assertEquals(2, users.size());
 	}
 	
 	/**
 	 * @see UserService#retireUser(User,String)
 	 */
 	@Test
-	public void retireUser_shouldRetireUserAndSetAttributes() {
+	@Verifies(value = "should retire user and set attributes", method = "retireUser(User,String)")
+	public void retireUser_shouldRetireUserAndSetAttributes() throws Exception {
+		UserService userService = Context.getUserService();
 		User user = userService.getUser(502);
 		userService.retireUser(user, "because");
-		assertTrue(user.getRetired());
-		assertNotNull(user.getDateRetired());
-		assertNotNull(user.getRetiredBy());
-		assertEquals("because", user.getRetireReason());
+		Assert.assertTrue(user.isRetired());
+		Assert.assertNotNull(user.getDateRetired());
+		Assert.assertNotNull(user.getRetiredBy());
+		Assert.assertEquals("because", user.getRetireReason());
 	}
 	
 	/**
 	 * @see UserService#unretireUser(User)
 	 */
 	@Test
-	public void unretireUser_shouldUnretireAndUnmarkAllAttributes() {
+	@Verifies(value = "should unretire and unmark all attributes", method = "unretireUser(User)")
+	public void unretireUser_shouldUnretireAndUnmarkAllAttributes() throws Exception {
+		UserService userService = Context.getUserService();
 		User user = userService.getUser(501);
 		userService.unretireUser(user);
-		assertFalse(user.getRetired());
-		assertNull(user.getDateRetired());
-		assertNull(user.getRetiredBy());
-		assertNull(user.getRetireReason());
+		Assert.assertFalse(user.isRetired());
+		Assert.assertNull(user.getDateRetired());
+		Assert.assertNull(user.getRetiredBy());
+		Assert.assertNull(user.getRetireReason());
 	}
 	
-	@Test
-	public void saveUser_shouldFailToCreateTheUserWithAWeakPassword() {
-		assertTrue(Context.isAuthenticated(), "The context needs to be correctly authenticated to by a user");
+	/**
+	 * Test that user is not created with a weak password
+	 * 
+	 * @see UserService#saveUser(User,String)
+	 */
+	@Test(expected = PasswordException.class)
+	@Verifies(value = "fail to create the user with a weak password", method = "saveUser(User,String)")
+	public void saveUser_shouldFailToCreateTheUserWithAWeakPassword() throws Exception {
+		assertTrue("The context needs to be correctly authenticated to by a user", Context.isAuthenticated());
 		
-		UserService us = userService;
+		UserService us = Context.getUserService();
 		
 		User u = new User();
 		u.setPerson(new Person());
@@ -1292,40 +1120,44 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 		u.addName(new PersonName("Benjamin", "A", "Wolfe"));
 		u.setUsername("bwolfe");
 		u.getPerson().setGender("M");
-
-		assertThrows(PasswordException.class, () -> us.createUser(u, "short"));
+		
+		us.createUser(u, "short");
 	}
 	
 	/**
 	 * This is a regression test for TRUNK-2108 <br>
 	 * 
 	 * @see UserService#getUsers(String,List,boolean)
+	 * @verifies not fail if roles are searched but name is empty
 	 */
 	@Test
-	public void getUsers_shouldNotFailIfRolesAreSearchedButNameIsEmpty() {
+	public void getUsers_shouldNotFailIfRolesAreSearchedButNameIsEmpty() throws Exception {
 		Role role = new Role("Provider");
-		List<Role> roles = new ArrayList<>();
+		List<Role> roles = new ArrayList<Role>();
 		roles.add(role);
 		
-		assertThat(userService.getUsers("", roles, true), hasSize(greaterThanOrEqualTo(2)));
+		Assert.assertEquals(2, Context.getUserService().getUsers("", roles, true).size());
 	}
 	
 	/**
 	 * @see UserService#getUsers(String, List, boolean, Integer, Integer)
 	 */
 	@Test
-	public void getUsers_shouldReturnUsersWhoseRolesInheritRequestedRoles() {
+	@Verifies(value = "return users whose roles inherit requested roles", method = "getUsers(String,List,boolean,Integer,Integer)")
+	public void getUsers_shouldReturnUsersWhoseRolesInheritRequestedRoles() throws Exception {
 		executeDataSet(XML_FILENAME);
 		
-		List<Role> roles = new ArrayList<>();
-		roles.add(userService.getRole("Parent"));
-		assertEquals(3, userService.getUsers(null, roles, true, null, null).size());
+		List<Role> roles = new ArrayList<Role>();
+		roles.add(Context.getUserService().getRole("Parent"));
+		Assert.assertEquals(3, Context.getUserService().getUsers(null, roles, true, null, null).size());
 	}
 	
 	@Test
-	public void saveUserProperty_shouldAddNewPropertyToExistingUserProperties() {
+	public void saveUserProperty_shouldAddNewPropertyToExistingUserProperties() throws Exception {
 		executeDataSet(XML_FILENAME);
-
+		
+		final UserService userService = Context.getUserService();
+		
 		//  retrieve a user who has UserProperties
 		User user = userService.getUser(5511);
 		
@@ -1333,7 +1165,7 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 		Context.authenticate(user.getUsername(), "testUser1234");
 		
 		final int numberOfUserProperties = user.getUserProperties().size();
-		assertEquals(3, user.getUserProperties().size());
+		assertEquals(1, user.getUserProperties().size());
 		final String USER_PROPERTY_KEY = "test-key";
 		final String USER_PROPERTY_VALUE = "test-value";
 		
@@ -1347,19 +1179,21 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 	}
 	
 	@Test
-	public void saveUserProperties_shouldRemoveAllExistingPropertiesAndAssignNewProperties() {
+	public void saveUserProperties_shouldRemoveAllExistingPropertiesAndAssignNewProperties() throws Exception {
 		executeDataSet(XML_FILENAME);
-
+		
+		final UserService userService = Context.getUserService();
+		
 		//  retrieve a user who has UserProperties
 		User user = userService.getUser(5511);
-		assertEquals(2, user.getUserProperties().size());
+		assertEquals(1, user.getUserProperties().size());
 		// Authenticate the test  user so that Context.getAuthenticatedUser() method returns above user
 		Context.authenticate(user.getUsername(), "testUser1234");
 		final String USER_PROPERTY_KEY_1 = "test-key1";
 		final String USER_PROPERTY_VALUE_1 = "test-value1";
 		final String USER_PROPERTY_KEY_2 = "test-key2";
 		final String USER_PROPERTY_VALUE_2 = "test-value2";
-		Map<String, String> propertiesMap = new HashMap<>();
+		Map<String, String> propertiesMap = new HashMap<String, String>();
 		propertiesMap.put(USER_PROPERTY_KEY_1, USER_PROPERTY_VALUE_1);
 		propertiesMap.put(USER_PROPERTY_KEY_2, USER_PROPERTY_VALUE_2);
 		propertiesMap = Collections.unmodifiableMap(propertiesMap);
@@ -1375,10 +1209,12 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 	
 	/**
 	 * @see UserService#changePassword(User,String,String)
+	 * @verifies change password for given user if oldPassword is correctly passed
 	 */
 	@Test
-	public void changePassword_shouldChangePasswordForGivenUserIfOldPasswordIsCorrectlyPassed() {
+	public void changePassword_shouldChangePasswordForGivenUserIfOldPasswordIsCorrectlyPassed() throws Exception {
 		executeDataSet(XML_FILENAME_WITH_DATA_FOR_CHANGE_PASSWORD_ACTION);
+		final UserService userService = Context.getUserService();
 		//user 6001 has password userServiceTest
 		User user6001 = userService.getUser(6001);
 		String oldPassword = "userServiceTest";
@@ -1390,10 +1226,13 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 	
 	/**
 	 * @see UserService#changePassword(User,String,String)
+	 * @verifies change password for given user if oldPassword is null and changing user have privileges
 	 */
 	@Test
-	public void changePassword_shouldChangePasswordForGivenUserIfOldPasswordIsNullAndChangingUserHavePrivileges()	{
+	public void changePassword_shouldChangePasswordForGivenUserIfOldPasswordIsNullAndChangingUserHavePrivileges()
+	        throws Exception {
 		executeDataSet(XML_FILENAME_WITH_DATA_FOR_CHANGE_PASSWORD_ACTION);
+		final UserService userService = Context.getUserService();
 		//user 6001 has password userServiceTest
 		User user6001 = userService.getUser(6001);
 		String oldPassword = null;
@@ -1404,10 +1243,12 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 	
 	/**
 	 * @see UserService#changePassword(User,String,String)
+	 * @verifies throw APIException if old password is not correct
 	 */
 	@Test
-	public void changePassword_shouldThrowAPIExceptionIfOldPasswordIsNotCorrect() {
+	public void changePassword_shouldThrowAPIExceptionIfOldPasswordIsNotCorrect() throws Exception {
 		executeDataSet(XML_FILENAME_WITH_DATA_FOR_CHANGE_PASSWORD_ACTION);
+		final UserService userService = Context.getUserService();
 		//user 6001 has password userServiceTest
 		User user6001 = userService.getUser(6001);
 		String wrongPassword = "wrong password!";
@@ -1416,34 +1257,19 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 		//user6001 has not got required priviliges
 		Context.authenticate(user6001.getUsername(), "userServiceTest");
 		
-		APIAuthenticationException exception = assertThrows(APIAuthenticationException.class, () -> userService.changePassword(user6001, wrongPassword, newPassword));
-		assertThat(exception.getMessage(), is(messages.getMessage("error.privilegesRequired", new Object[] {PrivilegeConstants.EDIT_USER_PASSWORDS}, null)));
+		expectedException.expect(APIAuthenticationException.class);
+		expectedException.expectMessage(Context.getMessageSourceService().getMessage("error.privilegesRequired", new Object[] {PrivilegeConstants.EDIT_USER_PASSWORDS}, null));
+		userService.changePassword(user6001, wrongPassword, newPassword);
 	}
 	
 	/**
 	 * @see UserService#changePassword(User,String,String)
+	 * @verifies throw exception if oldPassword is null and changing user have not privileges
 	 */
 	@Test
-	public void changePassword_shouldThrowAPIExceptionIfNewPasswordIsTheSameAsOld() {
+	public void changePassword_shouldThrowExceptionIfOldPasswordIsNullAndChangingUserHaveNotPrivileges() throws Exception {
 		executeDataSet(XML_FILENAME_WITH_DATA_FOR_CHANGE_PASSWORD_ACTION);
-		//user 6001 has password userServiceTest
-		User user6001 = userService.getUser(6001);
-		String oldPassword = "userServiceTest";
-		String newPassword = "userServiceTest";
-		//log in user without change user passwords privileges
-		//user6001 has not got required priviliges
-		Context.authenticate(user6001.getUsername(), "userServiceTest");
-		
-		APIAuthenticationException exception = assertThrows(APIAuthenticationException.class, () -> userService.changePassword(user6001, oldPassword, newPassword));
-		assertThat(exception.getMessage(), is(messages.getMessage("error.privilegesRequired", new Object[] {PrivilegeConstants.EDIT_USER_PASSWORDS}, null)));
-	}
-
-	/**
-	 * @see UserService#changePassword(User,String,String)
-	 */
-	@Test
-	public void changePassword_shouldThrowExceptionIfOldPasswordIsNullAndChangingUserHaveNotPrivileges() {
-		executeDataSet(XML_FILENAME_WITH_DATA_FOR_CHANGE_PASSWORD_ACTION);
+		final UserService userService = Context.getUserService();
 		//user 6001 has password userServiceTest
 		User user6001 = userService.getUser(6001);
 		assertFalse(user6001.hasPrivilege(PrivilegeConstants.EDIT_USER_PASSWORDS));
@@ -1453,300 +1279,105 @@ public class UserServiceTest extends BaseContextSensitiveTest {
 		//user6001 has not got required priviliges
 		Context.authenticate(user6001.getUsername(), "userServiceTest");
 		
-		APIException exception = assertThrows(APIException.class, () -> userService.changePassword(user6001, oldPassword, newPassword));
-		assertThat(exception.getMessage(), is(messages.getMessage("error.privilegesRequired", new Object[] {PrivilegeConstants.EDIT_USER_PASSWORDS}, null)));	
+		expectedException.expect(APIException.class);
+		expectedException.expectMessage(Context.getMessageSourceService().getMessage("error.privilegesRequired", new Object[] {PrivilegeConstants.EDIT_USER_PASSWORDS}, null));
+		userService.changePassword(user6001, oldPassword, newPassword);
 	}
 	
 	/**
 	 * @see UserService#changePassword(User,String,String)
+	 * @verifies throw exception if new password is too short
 	 */
 	@Test
-	public void changePassword_shouldThrowExceptionIfNewPasswortIsTooShort() {
+	public void changePassword_shouldThrowExceptionIfNewPasswortIsTooShort() throws Exception {
 		executeDataSet(XML_FILENAME_WITH_DATA_FOR_CHANGE_PASSWORD_ACTION);
+		final UserService userService = Context.getUserService();
 		//user 6001 has password userServiceTest
 		User user6001 = userService.getUser(6001);
 		String oldPassword = "userServiceTest";
 		String weakPassword = "weak";
 		
-		APIException exception = assertThrows(APIException.class, () -> userService.changePassword(user6001, oldPassword, weakPassword));
-		assertThat( exception.getMessage(), is(messages.getMessage("error.password.length", new Object[] {"8"}, null)));
+		expectedException.expectMessage(Context.getMessageSourceService().getMessage("error.password.length", new Object[] {"8"}, null));
+		userService.changePassword(user6001, oldPassword, weakPassword);
 	}
 	
 	/**
 	 * @see UserService#changePassword(User,String,String)
+	 * @verifies throw APIException if given user does not exist
 	 */
 	@Test
-	public void changePassword_shouldThrowAPIExceptionIfGivenUserDoesNotExist() {
+	public void changePassword_shouldThrowAPIExceptionIfGivenUserDoesNotExist() throws Exception {
 		//user.getUserId is null - so it is not existing user
 		User notExistingUser = new User();
+		final UserService userService = Context.getUserService();
 		String anyString = "anyString";
 		
-		APIException exception = assertThrows(APIException.class, () ->  userService.changePassword(notExistingUser, anyString, anyString));
-		assertThat(exception.getMessage(), is(messages.getMessage("user.must.exist")));
+		expectedException.expect(APIException.class);
+		expectedException.expectMessage(Context.getMessageSourceService().getMessage("user.must.exist"));
+		userService.changePassword(notExistingUser, anyString, anyString);
 	}
 
     @Test
-	public void changePassword_shouldThrowShortPasswordExceptionWithShortPassword() { 
-		ShortPasswordException exception = assertThrows(ShortPasswordException.class, () -> userService.changePassword("test", ""));
-		assertThat(exception.getMessage(), is(messages.getMessage("error.password.length", new Object[] {"8"}, null)));
+    public void changePassword_shouldThrowShortPasswordExceptionWithShortPassword() throws Exception {
+        expectedException.expect(ShortPasswordException.class);
+        expectedException.expectMessage(Context.getMessageSourceService().getMessage("error.password.length", new Object[] {"8"}, null));
+
+        Context.getUserService().changePassword("test", "");
     }
     
 	@Test
-	public void changePassword_shouldUpdatePasswordOfGivenUserWhenLoggedInUserHasEditUsersPasswordPrivilege() {
-		User user = userService.getUserByUsername(ADMIN_USERNAME);
-		assertNotNull(user, "There needs to be a user with username 'admin' in the database");
+	@Verifies(value = "should update password of given user when logged in user has edit users password privilege", method = "changePassword(User,String)")
+	public void changePassword_shouldUpdatePasswordOfGivenUserWhenLoggedInUserHasEditUsersPasswordPrivilege() throws Exception {
+		UserService userService = Context.getUserService();
+		User user = userService.getUserByUsername("admin");
+		assertNotNull("There needs to be a user with username 'admin' in the database", user);
 		
-		userService.changePassword(user, "test", "testTest123");
+		userService.changePassword(user, "testTest123");
 		
 		Context.authenticate(user.getUsername(), "testTest123");
 	}
 	
 	@Test
-	public void changePassword_shouldNotUpdatePasswordOfGivenUserWhenLoggedInUserDoesNotHaveEditUsersPasswordPrivilege() {
+	@Verifies(value = "should not update password of given user when logged in user does not have edit users password privilege", method = "changePassword(User,String)")
+	public void changePassword_shouldNotUpdatePasswordOfGivenUserWhenLoggedInUserDoesNotHaveEditUsersPasswordPrivilege() throws Exception {
 		executeDataSet(XML_FILENAME_WITH_DATA_FOR_CHANGE_PASSWORD_ACTION);
+		UserService userService = Context.getUserService();
 		User user = userService.getUser(6001);
 		assertFalse(user.hasPrivilege(PrivilegeConstants.EDIT_USER_PASSWORDS));
 		Context.authenticate(user.getUsername(), "userServiceTest");
 		
-		APIAuthenticationException exception = assertThrows(APIAuthenticationException.class, () ->  userService.changePassword(user, "userServiceTest", "testTest123"));
+		expectedException.expect(APIAuthenticationException.class);
+		expectedException.expectMessage(Context.getMessageSourceService().getMessage("error.privilegesRequired", new Object[] {PrivilegeConstants.EDIT_USER_PASSWORDS}, null));
 		
-		assertThat(exception.getMessage(), is(messages.getMessage("error.privilegesRequired", new Object[] {PrivilegeConstants.EDIT_USER_PASSWORDS}, null)));
+		userService.changePassword(user, "testTest123");
 	}
 	
 	@Test
-	public void changePasswordUsingSecretAnswer_shouldUpdatePasswordIfSecretIsCorrect() {
+	@Verifies(value = "should update password if secret is correct", method = "changePasswordUsingSecretAnswer(String,String)")
+	public void changePasswordUsingSecretAnswer_shouldUpdatePasswordIfSecretIsCorrect() throws Exception {
 		executeDataSet(XML_FILENAME_WITH_DATA_FOR_CHANGE_PASSWORD_ACTION);
+		UserService userService = Context.getUserService();
 		User user = userService.getUser(6001);
 		assertFalse(user.hasPrivilege(PrivilegeConstants.EDIT_USER_PASSWORDS));
 		Context.authenticate(user.getUsername(), "userServiceTest");
-		Context.addProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
+		
 		userService.changePasswordUsingSecretAnswer("answer", "userServiceTest2");
-		Context.removeProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
+		
 		Context.authenticate(user.getUsername(), "userServiceTest2");
 	}
 
 	@Test
-	public void changePasswordUsingSecretAnswer_shouldNotUpdatePasswordIfSecretIsNotCorrect() {
+	@Verifies(value = "should not update password if secret is not correct", method = "changePasswordUsingSecretAnswer(String,String)")
+	public void changePasswordUsingSecretAnswer_shouldNotUpdatePasswordIfSecretIsNotCorrect() throws Exception {
 		executeDataSet(XML_FILENAME_WITH_DATA_FOR_CHANGE_PASSWORD_ACTION);
+		UserService userService = Context.getUserService();
 		User user = userService.getUser(6001);
 		assertFalse(user.hasPrivilege(PrivilegeConstants.EDIT_USER_PASSWORDS));
 		Context.authenticate(user.getUsername(), "userServiceTest");
 		
-		APIException exception = assertThrows(APIException.class, () -> userService.changePasswordUsingSecretAnswer("wrong answer", "userServiceTest2"));
-		assertThat(exception.getMessage(), is(messages.getMessage("secret.answer.not.correct")));
-	}
-	
-	/**
-	 * @see UserService#getUserByUsernameOrEmail(String)
-	 */
-	@Test
-	public void getUserByUsernameOrEmail_shouldGetUserByUsingEmail() {
-		executeDataSet(XML_FILENAME);
-		User user = userService.getUserByUsernameOrEmail("hank.williams@gmail.com");
-		assertNotNull(user, "User with email hank.williams@gmail not found in database");
-	}
-	
-	@Test
-	public void getUserByUsernameOrEmail_shouldNotGetUserIfEmailIsEmpty() {
-		APIException exception = assertThrows(APIException.class, () -> userService.getUserByUsernameOrEmail(""));
-		assertThat(exception.getMessage(), is(messages.getMessage("error.usernameOrEmail.notNullOrBlank")));
-	}
-	
-	@Test
-	public void getUserByUsernameOrEmail_shouldFailIfEmailIsWhiteSpace() {
-		APIException exception = assertThrows(APIException.class, () -> userService.getUserByUsernameOrEmail("  "));
-		assertThat(exception.getMessage(), is(messages.getMessage("error.usernameOrEmail.notNullOrBlank")));
-	}
-	
-	@Test
-	public void getUserByUsernameOrEmail_shouldFailIfEmailIsNull() {
-		APIException exception = assertThrows(APIException.class, () -> userService.getUserByUsernameOrEmail(null));
-		assertThat(exception.getMessage(), is(messages.getMessage("error.usernameOrEmail.notNullOrBlank")));
-	}
-	
-	
-	@Test
-	public void setUserActivationKey_shouldCreateUserActivationKey() throws Exception {
-		User createdUser = createTestUser();
-		Context.getAdministrationService().setGlobalProperty(OpenmrsConstants.GP_PASSWORD_RESET_URL,
-		    "http://localhost:8080/openmrs/admin/users/changePassword.form/{activationKey}");
-		assertNull(dao.getLoginCredential(createdUser).getActivationKey());
-		assertThrows(MessageException.class, () -> userService.setUserActivationKey(createdUser));
-		assertNotNull(dao.getLoginCredential(createdUser).getActivationKey());
-	}
-	
-	@Test 
-	public void getUserByActivationKey_shouldGetUserByActivationKey(){
-		User createdUser = createTestUser();
-		String key="h4ph0fpNzQCIPSw8plJI";
-		int validTime = 10*60*1000; //equivalent to 10 minutes for token to be valid
-		Long tokenTime = System.currentTimeMillis() + validTime;
-		LoginCredential credentials = dao.getLoginCredential(createdUser);
-		credentials.setActivationKey("b071c88d6d877922e35af2e6a90dd57d37ac61143a03bb986c5f353566f3972a86ce9b2604c31a22dfa467922dcfd54fa7d18b0a7c7648d94ca3d97a88ea2fd0:"+tokenTime);			
-		dao.updateLoginCredential(credentials);
-		assertEquals(createdUser, userService.getUserByActivationKey(key)); 	
-	}
-	
-	@Test
-	public void getUserByActivationKey_shouldReturnNullIfTokenTimeExpired(){
-		User createdUser = createTestUser();
-		String key="h4ph0fpNzQCIPSw8plJI";
-		int validTime = 10*60*1000; //equivalent to 10 minutes for token to be valid
-		Long tokenTime = System.currentTimeMillis() - validTime;
-		LoginCredential credentials = dao.getLoginCredential(createdUser);
-		credentials.setActivationKey("b071c88d6d877922e35af2e6a90dd57d37ac61143a03bb986c5f353566f3972a86ce9b2604c31a22dfa467922dcfd54fa7d18b0a7c7648d94ca3d97a88ea2fd0:"+tokenTime);			
-		dao.updateLoginCredential(credentials); 
-		assertNull(userService.getUserByActivationKey(key)); 
-	}
-	
-	@Test
-	public void changePasswordUsingActivationKey_shouldUpdatePasswordIfActivationKeyIsCorrect() {
-		User createdUser = createTestUser();
-		String key = "h4ph0fpNzQCIPSw8plJI";
-		int validTime = 10 * 60 * 1000; //equivalent to 10 minutes for token to be valid
-		Long tokenTime = System.currentTimeMillis() + validTime;
-		LoginCredential credentials = dao.getLoginCredential(createdUser);
-		credentials.setActivationKey(
-		    "b071c88d6d877922e35af2e6a90dd57d37ac61143a03bb986c5f353566f3972a86ce9b2604c31a22dfa467922dcfd54fa7d18b0a7c7648d94ca3d97a88ea2fd0:"
-		            + tokenTime);
-		dao.updateLoginCredential(credentials);
+		expectedException.expect(APIException.class);
+		expectedException.expectMessage(Context.getMessageSourceService().getMessage("secret.answer.not.correct"));
 		
-		final String PASSWORD = "Admin123";
-		Context.authenticate(createdUser.getUsername(), "Openmr5xy");
-		Context.addProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
-		userService.changePasswordUsingActivationKey(key, PASSWORD);
-		Context.removeProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
-		Context.authenticate(createdUser.getUsername(), PASSWORD);
-		
-	}
-	
-	@Test
-	public void changePasswordUsingActivationKey_shouldNotUpdatePasswordIfActivationKeyIsIncorrect() {
-		User createdUser = createTestUser();
-		String key = "wrongactivationkeyin";
-		Context.authenticate(createdUser.getUsername(), "Openmr5xy");
-		InvalidActivationKeyException exception = assertThrows(InvalidActivationKeyException.class, () -> userService.changePasswordUsingActivationKey(key, "Pa55w0rd"));
-		assertThat(exception.getMessage(), is(messages.getMessage("activation.key.not.correct")));
-	}
-	
-	@Test
-	public void changePasswordUsingActivationKey_shouldNotUpdatePasswordIfActivationKeyExpired() {
-		User createdUser = createTestUser();
-		String key = "h4ph0fpNzQCIPSw8plJI";
-		int validTime = 10 * 60 * 1000; //equivalent to 10 minutes for token to be valid
-		Long tokenTime = System.currentTimeMillis() - validTime;
-		LoginCredential credentials = dao.getLoginCredential(createdUser);
-		credentials.setActivationKey(
-		    "b071c88d6d877922e35af2e6a90dd57d37ac61143a03bb986c5f353566f3972a86ce9b2604c31a22dfa467922dcfd54fa7d18b0a7c7648d94ca3d97a88ea2fd0:"
-		            + tokenTime);
-		dao.updateLoginCredential(credentials);
-		Context.authenticate(createdUser.getUsername(), "Openmr5xy");
-		
-		
-		InvalidActivationKeyException exception = assertThrows(InvalidActivationKeyException.class, () -> userService.changePasswordUsingActivationKey(key, "Pa55w0rd"));
-		assertThat(exception.getMessage(), is(messages.getMessage("activation.key.not.correct")));
-	}
-
-	/**
-	 * Utility method to set the current executing user to test various permission levels.
-	 * 
-	 * @param user the user to set as the currently running user
-	 * @param internals the functionality to test with this current running user
-	 * @throws IllegalAccessException because we use reflection to set the currently running user, this may fail and throw
-	 *  and {@link IllegalArgumentException}
-	 */
-	private void withCurrentUserAs(User user, Runnable internals) throws IllegalAccessException {
-		UserContext userContext = Context.getUserContext();
-		User authenticatedUser = userContext.getAuthenticatedUser();
-		try {
-			FieldUtils.getField(UserContext.class, "user", true).set(userContext, user);
-			internals.run();
-		} finally {
-			FieldUtils.getField(UserContext.class, "user", true).set(userContext, authenticatedUser);
-		}
-	}
-
-	@Test
-	public void saveUserProperty_shouldAddANewPropertyWithAVeryLargeStringWithoutRunningIntoError() {
-		final String USER_PROPERTY_KEY = liquibase.util.StringUtil.repeat("emrapi.lastViewedPatientIds,",10);
-		final String USER_PROPERTY_VALUE = liquibase.util.StringUtil.repeat("52345",9899);
-		User updatedUser = userService.saveUserProperty(USER_PROPERTY_KEY, USER_PROPERTY_VALUE);
-
-		Set<String> emrApiPropertyKeys = updatedUser.getUserProperties()
-			.keySet()
-			.stream()
-			.filter(key -> key.contains("emrapi.lastViewedPatientIds"))
-			.collect(Collectors.toSet());
-
-		assertEquals(280, emrApiPropertyKeys.stream().findFirst().orElse("").length());
-		assertEquals(49495, updatedUser.getUserProperties().get(USER_PROPERTY_KEY).length());
-	}
-	
-	@Test
-	public void getDefaultLocaleForUser_shouldReturnSystemLocaleIfNoUserLocaleConfigured() {
-		User createdUser = createTestUser();
-		assertEquals("", createdUser.getUserProperty(OpenmrsConstants.USER_PROPERTY_DEFAULT_LOCALE));
-		assertEquals(Context.getLocale(), Context.getUserService().getDefaultLocaleForUser(createdUser));
-	}
-
-	@Test
-	public void getDefaultLocaleForUser_shouldReturnDefaultLocaleForUserIfConfigured() {
-		User createdUser = createTestUser();
-		createdUser.setUserProperty(OpenmrsConstants.USER_PROPERTY_DEFAULT_LOCALE, "en");
-		Context.getUserService().saveUser(createdUser);
-		assertEquals(Locale.ENGLISH, Context.getUserService().getDefaultLocaleForUser(createdUser));
-		createdUser.setUserProperty(OpenmrsConstants.USER_PROPERTY_DEFAULT_LOCALE, "fr");
-		Context.getUserService().saveUser(createdUser);
-		assertEquals(Locale.FRENCH, Context.getUserService().getDefaultLocaleForUser(createdUser));
-	}
-
-	@Test
-	public void getDefaultLocaleForUser_shouldReturnDefaultLocaleForUserIfAlreadySet() {
-		executeDataSet(XML_FILENAME);
-		Context.authenticate("test", "testUser1234");
-
-		Locale locale = Context.getLocale();
-		assertEquals(Locale.FRENCH, locale);
-	}
-
-	@Test
-	public void getLastLoginTimeForUser_shouldReturnEmptyStringOnLastLoginTimeIfPropertyNotSet() {
-		User createdUser = createTestUser();
-		assertThat(createdUser.getUserProperty(OpenmrsConstants.USER_PROPERTY_LAST_LOGIN_TIMESTAMP), emptyString());
-		assertThat(Context.getUserService().getLastLoginTime(createdUser), emptyString());
-	}
-
-	@Test
-	public void getLastLoginTimeForUser_shouldReturnEmptyStringOnLastLoginTimeIfADifferentUserIsLoggedIn() {
-		executeDataSet(XML_FILENAME);
-		User createdUser = createTestUser();
-		Context.authenticate(getTestUserCredentials());
-		
-		assertThat(createdUser.getUserProperty(OpenmrsConstants.USER_PROPERTY_LAST_LOGIN_TIMESTAMP), emptyString());
-		assertThat(Context.getUserService().getLastLoginTime(createdUser), emptyString());
-	}
-	
-	@Test
-	public void getLastLoginTimeForUser_shouldNotBeEmptyIfUserIsAuthenticated() {
-		executeDataSet(XML_FILENAME);
-		User createdUser = createTestUser();
-		Context.authenticate(new UsernamePasswordCredentials("bwolfe", "Openmr5xy"));
-
-		assertThat(createdUser.getUserProperty(OpenmrsConstants.USER_PROPERTY_LAST_LOGIN_TIMESTAMP), notNullValue());
-		assertThat(createdUser.getUserProperty(OpenmrsConstants.USER_PROPERTY_LAST_LOGIN_TIMESTAMP), not(emptyString()));
-		assertThat(Context.getUserService().getLastLoginTime(createdUser), not(emptyString()));
-	}
-
-	private Credentials getTestUserCredentials() {
-		return new UsernamePasswordCredentials("test", "testUser1234");
-	}
-
-	private User createTestUser() {
-		User u = new User();
-		u.setPerson(new Person());
-		u.addName(new PersonName("Benjamin", "A", "Wolfe"));
-		u.setUsername("bwolfe");
-		u.getPerson().setGender("M");
-		return userService.createUser(u, "Openmr5xy");
+		userService.changePasswordUsingSecretAnswer("wrong answer", "userServiceTest2");
 	}
 }

@@ -21,10 +21,7 @@ import org.openmrs.annotation.HasAddOnStartupPrivileges;
  */
 @HasAddOnStartupPrivileges
 public class PrivilegeConstants {
-
-	private PrivilegeConstants() {
-	}
-
+	
 	@AddOnStartup(description = "Able to get concept entries")
 	public static final String GET_CONCEPTS = "Get Concepts";
 	
@@ -108,9 +105,6 @@ public class PrivilegeConstants {
 	
 	@AddOnStartup(description = "Able to get person attribute types")
 	public static final String GET_PERSON_ATTRIBUTE_TYPES = "Get Person Attribute Types";
-	
-	@AddOnStartup(description = "Able to get provider attribute types")
-	public static final String GET_PROVIDER_ATTRIBUTE_TYPES = "Get Provider Attribute Types";
 	
 	@AddOnStartup(description = "Able to get person objects")
 	public static final String GET_PERSONS = "Get People";
@@ -554,41 +548,4 @@ public class PrivilegeConstants {
 
 	public static final String PURGE_CONCEPT_ATTRIBUTE_TYPES = "Purge Concept Attribute Types";
 
-	@AddOnStartup(description = "Able to edit conditions")
-	public static final String EDIT_CONDITIONS = "Edit Conditions";
-
-	@AddOnStartup(description = "Able to get conditions")
-	public static final String GET_CONDITIONS = "Get Conditions";
-
-	@AddOnStartup(description = "Able to delete conditions")
-	public static final String DELETE_CONDITIONS = "Delete Conditions";
-
-	@AddOnStartup(description = "Able to edit diagnoses")
-	public static final String EDIT_DIAGNOSES = "Edit Diagnoses";
-
-	@AddOnStartup(description = "Able to get diagnoses")
-	public static final String GET_DIAGNOSES = "Get Diagnoses";
-
-	@AddOnStartup(description = "Able to delete diagnoses")
-	public static final String DELETE_DIAGNOSES = "Delete Diagnoses";
-
-	@AddOnStartup(description = "Able to get diagnoses attribute types")
-	public static final String GET_DIAGNOSES_ATTRIBUTE_TYPES = "Get Diagnoses Attribute Types";
-
-	@AddOnStartup(description = "Able to get order set attribute types")
-	public static final String GET_ORDER_SET_ATTRIBUTE_TYPES = "Get Order Set Attribute Types";
-
-	@AddOnStartup(description = "Able to add/edit/retire order set attribute types")
-	public static final String MANAGE_ORDER_SET_ATTRIBUTE_TYPES = "Manage Order Set Attribute Types";
-
-	public static final String PURGE_ORDER_SET_ATTRIBUTE_TYPES = "Purge Order Set Attribute Types";
-
-	@AddOnStartup(description = "Able to get Medication Dispenses")
-	public static final String GET_MEDICATION_DISPENSE = "Get Medication Dispense";
-	
-	@AddOnStartup(description = "Able to edit Medication Dispenses")
-	public static final String EDIT_MEDICATION_DISPENSE = "Edit Medication Dispense";
-
-	@AddOnStartup(description = "Able to delete Medication Dispenses")
-	public static final String DELETE_MEDICATION_DISPENSE = "Delete Medication Dispense";
 }

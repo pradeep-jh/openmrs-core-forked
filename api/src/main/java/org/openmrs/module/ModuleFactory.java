@@ -3,7 +3,7 @@
  * v. 2.0. If a copy of the MPL was not distributed with this file, You can
  * obtain one at http://mozilla.org/MPL/2.0/. OpenMRS is also distributed under
  * the terms of the Healthcare Disclaimer located at http://openmrs.org/license.
- * 
+ *
  * Copyright (C) OpenMRS Inc. OpenMRS is a registered trademark and the OpenMRS
  * graphic logo is a trademark of OpenMRS Inc.
  */
@@ -27,21 +27,25 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.Vector;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
+import java.util.jar.JarFile;
+import java.util.zip.ZipEntry;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import org.aopalliance.aop.Advice;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.GlobalProperty;
 import org.openmrs.Privilege;
-import org.openmrs.api.APIException;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.OpenmrsService;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.context.Daemon;
 import org.openmrs.module.Extension.MEDIA_TYPE;
 import org.openmrs.util.CycleException;
+import org.openmrs.util.DatabaseUpdateException;
 import org.openmrs.util.DatabaseUpdater;
 import org.openmrs.util.Graph;
 import org.openmrs.util.InputRequiredException;
@@ -49,49 +53,39 @@ import org.openmrs.util.OpenmrsClassLoader;
 import org.openmrs.util.OpenmrsConstants;
 import org.openmrs.util.OpenmrsUtil;
 import org.openmrs.util.PrivilegeConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.aop.Advisor;
 import org.springframework.context.support.AbstractRefreshableApplicationContext;
 import org.springframework.util.StringUtils;
-
-import liquibase.Contexts;
 
 /**
  * Methods for loading, starting, stopping, and storing OpenMRS modules
  */
 public class ModuleFactory {
 	
-	private ModuleFactory() {
-	}
+	private static Log log = LogFactory.getLog(ModuleFactory.class);
 	
-	private static final Logger log = LoggerFactory.getLogger(ModuleFactory.class);
+	protected static volatile Map<String, Module> loadedModules = new WeakHashMap<String, Module>();
 	
-	protected static final Cache<String, Module> loadedModules = CacheBuilder.newBuilder()
-		.softValues().build();
+	protected static volatile Map<String, Module> startedModules = new WeakHashMap<String, Module>();
 	
-	protected static final Cache<String, Module> startedModules = CacheBuilder.newBuilder()
-		.softValues().build();
-	
-	protected static final Map<String, List<Extension>> extensionMap = new HashMap<>();
+	protected static volatile Map<String, List<Extension>> extensionMap = new HashMap<String, List<Extension>>();
 	
 	// maps to keep track of the memory and objects to free/close
-	protected static final Cache<Module, ModuleClassLoader> moduleClassLoaders = CacheBuilder.newBuilder().weakKeys()
-		.softValues().build();
+	protected static volatile Map<Module, ModuleClassLoader> moduleClassLoaders = new WeakHashMap<Module, ModuleClassLoader>();
 	
-	private static final Map<String, Set<ModuleClassLoader>> providedPackages = new ConcurrentHashMap<>();
+	private static Map<String, Set<ModuleClassLoader>> providedPackages = new ConcurrentHashMap<String, Set<ModuleClassLoader>>();
 	
 	// the name of the file within a module file
 	private static final String MODULE_CHANGELOG_FILENAME = "liquibase.xml";
 	
-	private static final Cache<String, DaemonToken> daemonTokens = CacheBuilder.newBuilder().softValues().build();
+	private static final Map<String, DaemonToken> daemonTokens = new WeakHashMap<String, DaemonToken>();
 	
-	private static final Set<String> actualStartupOrder = new LinkedHashSet<>();
+	private static volatile Set<String> actualStartupOrder;
 	
 	/**
-	 * Add a module (in the form of a jar file) to the list of openmrs modules Returns null if an error
-	 * occurred and/or module was not successfully loaded
-	 *
+	 * Add a module (in the form of a jar file) to the list of openmrs modules Returns null if an
+	 * error occurred and/or module was not successfully loaded
+	 * 
 	 * @param moduleFile
 	 * @return Module
 	 */
@@ -102,15 +96,15 @@ public class ModuleFactory {
 	}
 	
 	/**
-	 * Add a module (in the form of a jar file) to the list of openmrs modules Returns null if an error
-	 * occurred and/or module was not successfully loaded
-	 *
+	 * Add a module (in the form of a jar file) to the list of openmrs modules Returns null if an
+	 * error occurred and/or module was not successfully loaded
+	 * 
 	 * @param moduleFile
 	 * @param replaceIfExists unload a module that has the same moduleId if one is loaded already
 	 * @return Module
 	 */
 	public static Module loadModule(File moduleFile, Boolean replaceIfExists) throws ModuleException {
-		Module module = new ModuleFileParser(Context.getMessageSourceService()).parse(moduleFile);
+		Module module = getModuleFromFile(moduleFile);
 		
 		if (module != null) {
 			loadModule(module, replaceIfExists);
@@ -121,20 +115,22 @@ public class ModuleFactory {
 	
 	/**
 	 * Add a module to the list of openmrs modules
-	 *
+	 * 
 	 * @param module
 	 * @param replaceIfExists unload a module that has the same moduleId if one is loaded already
-	 *            <strong>Should</strong> load module if it is currently not loaded
-	 *            <strong>Should</strong> not load module if already loaded <strong>Should</strong>
-	 *            always load module if replacement is wanted <strong>Should</strong> not load an older
-	 *            version of the same module <strong>Should</strong> load a newer version of the same
-	 *            module
-	 * @return module the module that was loaded or if the module exists already with the same version,
-	 *         the old module
+	 * @should load module if it is currently not loaded
+	 * @should not load module if already loaded
+	 * @should always load module if replacement is wanted
+	 * @should not load an older version of the same module
+	 * @should load a newer version of the same module
+	 * @return module the module that was loaded or if the module exists already with the same
+	 *         version, the old module
 	 */
 	public static Module loadModule(Module module, Boolean replaceIfExists) throws ModuleException {
 		
-		log.debug("Adding module {} to the module queue", module.getName());
+		if (log.isDebugEnabled()) {
+			log.debug("Adding module " + module.getName() + " to the module queue");
+		}
 		
 		Module oldModule = getLoadedModulesMap().get(module.getModuleId());
 		if (oldModule != null) {
@@ -169,22 +165,24 @@ public class ModuleFactory {
 		// load modules from the user's module repository directory
 		File modulesFolder = ModuleUtil.getModuleRepository();
 		
-		log.debug("Loading modules from: {}", modulesFolder.getAbsolutePath());
+		if (log.isDebugEnabled()) {
+			log.debug("Loading modules from: " + modulesFolder.getAbsolutePath());
+		}
 		
-		File[] files = modulesFolder.listFiles();
-		if (modulesFolder.isDirectory() && files != null) {
-			loadModules(Arrays.asList(files));
+		if (modulesFolder.isDirectory()) {
+			loadModules(Arrays.asList(modulesFolder.listFiles()));
 		} else {
-			log.error("modules folder: '" + modulesFolder.getAbsolutePath() + "' is not a directory or IO error occurred");
+			log.error("modules folder: '" + modulesFolder.getAbsolutePath() + "' is not a valid directory");
 		}
 	}
 	
 	/**
 	 * Attempt to load the given files as OpenMRS modules
-	 *
-	 * @param modulesToLoad the list of files to try and load <strong>Should</strong> not crash when
-	 *            file is not found or broken <strong>Should</strong> setup requirement mappings for
-	 *            every module <strong>Should</strong> not start the loaded modules
+	 * 
+	 * @param modulesToLoad the list of files to try and load
+	 * @should not crash when file is not found or broken
+	 * @should setup requirement mappings for every module
+	 * @should not start the loaded modules
 	 */
 	public static void loadModules(List<File> modulesToLoad) {
 		// loop over the modules and load all the modules that we can
@@ -193,23 +191,21 @@ public class ModuleFactory {
 				// ignore .svn folder and the like
 				if (!f.getName().startsWith(".")) {
 					try {
-						// last module loaded wins
-						Module mod = loadModule(f, true);
+						Module mod = loadModule(f, true); // last module loaded wins
 						log.debug("Loaded module: " + mod + " successfully");
-					}
-					catch (Exception e) {
-						log.error("Unable to load file in module directory: " + f + ". Skipping file.", e);
+					} catch (Exception e) {
+						log.debug("Unable to load file in module directory: " + f + ". Skipping file.", e);
 					}
 				}
 			} else {
-				log.error("Could not find file in module directory: " + f);
+				log.debug("Could not find file in module directory: " + f);
 			}
 		}
 		
 		//inform modules, that they can't start before other modules
-		
 		Map<String, Module> loadedModulesMap = getLoadedModulesMapPackage();
-		for (Module m : loadedModulesMap.values()) {
+		for (String key : loadedModules.keySet()) {
+			Module m = loadedModules.get(key);
 			Map<String, String> startBeforeModules = m.getStartBeforeModulesMap();
 			if (startBeforeModules.size() > 0) {
 				for (String s : startBeforeModules.keySet()) {
@@ -223,8 +219,8 @@ public class ModuleFactory {
 	}
 	
 	/**
-	 * Try to start all of the loaded modules that have the global property <i>moduleId</i>.started is
-	 * set to "true" or the property does not exist. Otherwise, leave it as only "loaded"<br>
+	 * Try to start all of the loaded modules that have the global property <i>moduleId</i>.started
+	 * is set to "true" or the property does not exist. Otherwise, leave it as only "loaded"<br>
 	 * <br>
 	 * Modules that are already started will be skipped.
 	 */
@@ -242,15 +238,14 @@ public class ModuleFactory {
 				String message = getCyclicDependenciesMessage(ex.getMessage());
 				log.error(message, ex);
 				notifySuperUsersAboutCyclicDependencies(ex);
-				modules = (List<Module>) ex.getExtraData();
+				modules = (List<Module>)ex.getExtraData();
 			}
 			
 			// try and start the modules that should be started
 			for (Module mod : modules) {
 				
 				if (mod.isStarted()) {
-					// skip over modules that are already started
-					continue;
+					continue; // skip over modules that are already started
 				}
 				
 				// Skip module if required ones are not started
@@ -263,7 +258,9 @@ public class ModuleFactory {
 				}
 				
 				try {
-					log.debug("starting module: {}", mod.getModuleId());
+					if (log.isDebugEnabled()) {
+						log.debug("starting module: " + mod.getModuleId());
+					}
 					startModule(mod);
 				}
 				catch (Exception e) {
@@ -271,17 +268,17 @@ public class ModuleFactory {
 					mod.setStartupErrorMessage("Error while starting module", e);
 					notifySuperUsersAboutModuleFailure(mod);
 				}
-			}
+			}		
 		}
 	}
 	
 	/**
 	 * Obtain the list of modules that should be started
-	 *
+	 * 
 	 * @return list of modules
 	 */
 	private static List<Module> getModulesThatShouldStart() {
-		List<Module> modules = new ArrayList<>();
+		List<Module> modules = new ArrayList<Module>();
 		
 		AdministrationService adminService = Context.getAdministrationService();
 		
@@ -296,7 +293,7 @@ public class ModuleFactory {
 			// if a 'moduleid.started' property doesn't exist, start the module anyway
 			// as this is probably the first time they are loading it
 			if (startedProp == null || "true".equals(startedProp) || "true".equalsIgnoreCase(mandatoryProp)
-				|| mod.isMandatory() || isCoreToOpenmrs) {
+			        || mod.isMandatory() || isCoreToOpenmrs) {
 				modules.add(mod);
 			}
 		}
@@ -305,17 +302,18 @@ public class ModuleFactory {
 	
 	/**
 	 * Sort modules in startup order based on required and aware-of dependencies
-	 *
+	 * 
 	 * @param modules list of modules to sort
 	 * @return list of modules sorted by dependencies
 	 * @throws CycleException
 	 */
 	public static List<Module> getModulesInStartupOrder(Collection<Module> modules) throws CycleException {
-		Graph<Module> graph = new Graph<>();
+		Graph<Module> graph = new Graph<Module>();
 		
 		for (Module mod : modules) {
 			
-			graph.addNode(mod);
+			Module toNode = mod;
+			graph.addNode(toNode);
 			
 			// Required dependencies
 			for (String key : mod.getRequiredModules()) {
@@ -327,8 +325,7 @@ public class ModuleFactory {
 				
 				if (fromNode != null) {
 					graph.addEdge(graph.new Edge(
-						fromNode,
-						mod));
+					                             fromNode, toNode));
 				}
 			}
 			
@@ -342,8 +339,7 @@ public class ModuleFactory {
 				
 				if (fromNode != null) {
 					graph.addEdge(graph.new Edge(
-						fromNode,
-						mod));
+					                             fromNode, toNode));
 				}
 			}
 		}
@@ -353,7 +349,7 @@ public class ModuleFactory {
 	
 	/**
 	 * Send an Alert to all super users that the given module did not start successfully.
-	 *
+	 * 
 	 * @param mod The Module that failed
 	 */
 	private static void notifySuperUsersAboutModuleFailure(Module mod) {
@@ -390,34 +386,38 @@ public class ModuleFactory {
 	}
 	
 	/**
-	 * Returns all modules found/loaded into the system (started and not started), with the core modules
-	 * at the start of that list
-	 *
+	 * Returns all modules found/loaded into the system (started and not started), with the core
+	 * modules at the start of that list
+	 * 
 	 * @return <code>List&lt;Module&gt;</code> of the modules loaded into the system, with the core
 	 *         modules first.
 	 */
 	public static List<Module> getLoadedModulesCoreFirst() {
-		List<Module> list = new ArrayList<>(getLoadedModules());
+		List<Module> list = new ArrayList<Module>(getLoadedModules());
 		final Collection<String> coreModuleIds = ModuleConstants.CORE_MODULES.keySet();
-		list.sort((left, right) -> {
-			Integer leftVal = coreModuleIds.contains(left.getModuleId()) ? 0 : 1;
-			Integer rightVal = coreModuleIds.contains(right.getModuleId()) ? 0 : 1;
-			return leftVal.compareTo(rightVal);
+		Collections.sort(list, new Comparator<Module>() {
+			
+			@Override
+			public int compare(Module left, Module right) {
+				Integer leftVal = coreModuleIds.contains(left.getModuleId()) ? 0 : 1;
+				Integer rightVal = coreModuleIds.contains(right.getModuleId()) ? 0 : 1;
+				return leftVal.compareTo(rightVal);
+			}
 		});
 		return list;
 	}
 	
 	/**
 	 * Convenience method to return a List of Strings containing a description of which modules the
-	 * passed module requires but which are not started. The returned description of each module is the
-	 * moduleId followed by the required version if one is specified
-	 *
+	 * passed module requires but which are not started. The returned description of each module is
+	 * the moduleId followed by the required version if one is specified
+	 * 
 	 * @param module the module to check required modules for
-	 * @return List&lt;String&gt; of module names + optional required versions: "org.openmrs.formentry
-	 *         1.8, org.rg.patientmatching"
+	 * @return List&lt;String&gt; of module names + optional required versions:
+	 *         "org.openmrs.formentry 1.8, org.rg.patientmatching"
 	 */
 	private static List<String> getMissingRequiredModules(Module module) {
-		List<String> ret = new ArrayList<>();
+		List<String> ret = new ArrayList<String>();
 		for (String moduleName : module.getRequiredModules()) {
 			boolean started = false;
 			for (Module mod : getStartedModules()) {
@@ -441,7 +441,7 @@ public class ModuleFactory {
 	
 	/**
 	 * Returns all modules found/loaded into the system (started and not started)
-	 *
+	 * 
 	 * @return <code>Collection&lt;Module&gt;</code> of the modules loaded into the system
 	 */
 	public static Collection<Module> getLoadedModules() {
@@ -455,30 +455,39 @@ public class ModuleFactory {
 	/**
 	 * Returns all modules found/loaded into the system (started and not started) in the form of a
 	 * map&lt;ModuleId, Module&gt;
-	 *
+	 * 
 	 * @return map&lt;ModuleId, Module&gt;
 	 */
 	public static Map<String, Module> getLoadedModulesMap() {
-		return loadedModules.asMap();
+		if (loadedModules == null) {
+			loadedModules = new WeakHashMap<String, Module>();
+		}
+		
+		return loadedModules;
 	}
 	
 	/**
 	 * Returns all modules found/loaded into the system (started and not started) in the form of a
 	 * map&lt;PackageName, Module&gt;
-	 *
+	 * 
 	 * @return map&lt;PackageName, Module&gt;
 	 */
 	public static Map<String, Module> getLoadedModulesMapPackage() {
-		Map<String, Module> map = new HashMap<>();
-		for (Module loadedModule : getLoadedModulesMap().values()) {
-			map.put(loadedModule.getPackageName(), loadedModule);
+		if (loadedModules == null) {
+			loadedModules = new WeakHashMap<String, Module>();
+			return loadedModules;
+		}
+		
+		Map<String, Module> map = new WeakHashMap<String, Module>();
+		for (String key : loadedModules.keySet()) {
+			map.put(loadedModules.get(key).getPackageName(), loadedModules.get(key));
 		}
 		return map;
 	}
 	
 	/**
 	 * Returns the modules that have been successfully started
-	 *
+	 * 
 	 * @return <code>Collection&lt;Module&gt;</code> of the started modules
 	 */
 	public static Collection<Module> getStartedModules() {
@@ -490,7 +499,7 @@ public class ModuleFactory {
 	}
 	
 	public static List<Module> getStartedModulesInOrder() {
-		List<Module> modules = new ArrayList<>();
+		List<Module> modules = new ArrayList<Module>();
 		if (actualStartupOrder != null) {
 			for (String moduleId : actualStartupOrder) {
 				modules.add(getStartedModulesMap().get(moduleId));
@@ -504,11 +513,40 @@ public class ModuleFactory {
 	/**
 	 * Returns the modules that have been successfully started in the form of a map&lt;ModuleId,
 	 * Module&gt;
-	 *
+	 * 
 	 * @return Map&lt;ModuleId, Module&gt;
 	 */
 	public static Map<String, Module> getStartedModulesMap() {
-		return startedModules.asMap();
+		if (startedModules == null) {
+			startedModules = new WeakHashMap<String, Module>();
+		}
+		
+		return startedModules;
+	}
+	
+	/**
+	 * Creates a Module object from the (jar)file pointed to by <code>moduleFile</code> returns null
+	 * if an error occurred during processing
+	 * 
+	 * @param moduleFile
+	 * @return module Module
+	 */
+	private static Module getModuleFromFile(File moduleFile) throws ModuleException {
+		
+		Module module = null;
+		try {
+			module = new ModuleFileParser(moduleFile).parse();
+		}
+		catch (ModuleException e) {
+			if (moduleFile != null) {
+				log.error("Error getting module object from file " + moduleFile.getName(), e);
+			} else {
+				log.error("Module was null.", e);
+			}
+			throw e;
+		}
+		
+		return module;
 	}
 	
 	/**
@@ -551,20 +589,20 @@ public class ModuleFactory {
 	
 	/**
 	 * Runs through extensionPoints and then calls {@link BaseModuleActivator#willStart()} on the
-	 * Module's activator. This method is run in a new thread and is authenticated as the Daemon user.
-	 * If a non null application context is passed in, it gets refreshed to make the module's services
-	 * available
-	 *
+	 * Module's activator. This method is run in a new thread and is authenticated as the Daemon
+	 * user. If a non null application context is passed in, it gets refreshed to make the module's
+	 * services available
+	 * 
 	 * @param module Module to start
-	 * @param isOpenmrsStartup Specifies whether this module is being started at application startup or
-	 *            not, this argument is ignored if a null application context is passed in
+	 * @param isOpenmrsStartup Specifies whether this module is being started at application startup
+	 *            or not, this argument is ignored if a null application context is passed in
 	 * @param applicationContext the spring application context instance to refresh
 	 * @throws ModuleException if the module throws any kind of error at startup or in an activator
 	 * @see #startModuleInternal(Module, boolean, AbstractRefreshableApplicationContext)
 	 * @see Daemon#startModule(Module, boolean, AbstractRefreshableApplicationContext)
 	 */
 	public static Module startModule(Module module, boolean isOpenmrsStartup,
-		AbstractRefreshableApplicationContext applicationContext) throws ModuleException {
+	        AbstractRefreshableApplicationContext applicationContext) throws ModuleException {
 		
 		if (!requiredModulesStarted(module)) {
 			int missingModules = 0;
@@ -590,7 +628,7 @@ public class ModuleFactory {
 				notifySuperUsersAboutModuleFailure(module);
 				// instead of return null, i realized that Daemon.startModule() always returns a Module
 				// object,irrespective of whether the startup succeeded
-				return module;
+				return module;   
 			}
 		}
 		return Daemon.startModule(module, isOpenmrsStartup, applicationContext);
@@ -599,12 +637,12 @@ public class ModuleFactory {
 	/**
 	 * This method should not be called directly.<br>
 	 * <br>
-	 * The {@link #startModule(Module)} (and hence {@link Daemon#startModule(Module)}) calls this method
-	 * in a new Thread and is authenticated as the {@link Daemon} user<br>
+	 * The {@link #startModule(Module)} (and hence {@link Daemon#startModule(Module)}) calls this
+	 * method in a new Thread and is authenticated as the {@link Daemon} user<br>
 	 * <br>
 	 * Runs through extensionPoints and then calls {@link BaseModuleActivator#willStart()} on the
 	 * Module's activator.
-	 *
+	 * 
 	 * @param module Module to start
 	 */
 	public static Module startModuleInternal(Module module) throws ModuleException {
@@ -614,22 +652,23 @@ public class ModuleFactory {
 	/**
 	 * This method should not be called directly.<br>
 	 * <br>
-	 * The {@link #startModule(Module)} (and hence {@link Daemon#startModule(Module)}) calls this method
-	 * in a new Thread and is authenticated as the {@link Daemon} user<br>
+	 * The {@link #startModule(Module)} (and hence {@link Daemon#startModule(Module)}) calls this
+	 * method in a new Thread and is authenticated as the {@link Daemon} user<br>
 	 * <br>
 	 * Runs through extensionPoints and then calls {@link BaseModuleActivator#willStart()} on the
 	 * Module's activator. <br>
 	 * <br>
-	 * If a non null application context is passed in, it gets refreshed to make the module's services
-	 * available
-	 *
+	 * If a non null application context is passed in, it gets refreshed to make the module's
+	 * services available
+	 * 
 	 * @param module Module to start
-	 * @param isOpenmrsStartup Specifies whether this module is being started at application startup or
-	 *            not, this argument is ignored if a null application context is passed in
+	 * @param isOpenmrsStartup Specifies whether this module is being started at application startup
+	 *            or not, this argument is ignored if a null application context is passed in
 	 * @param applicationContext the spring application context instance to refresh
 	 */
 	public static Module startModuleInternal(Module module, boolean isOpenmrsStartup,
-		AbstractRefreshableApplicationContext applicationContext) throws ModuleException {
+	        AbstractRefreshableApplicationContext applicationContext) throws ModuleException {
+		
 		
 		if (module != null) {
 			String moduleId = module.getModuleId();
@@ -657,28 +696,42 @@ public class ModuleFactory {
 				// module's startup if one of these advice points is on another
 				// module because that other module's service won't have been loaded
 				// into spring yet.  All advice for all modules must be reloaded
-				// a spring context refresh anyway
+				// a spring context refresh anyway, so skip the advice loading here
+				// loadAdvice(module);
 				
 				// map extension point to a list of extensions for this module only
-				Map<String, List<Extension>> moduleExtensionMap = new HashMap<>();
+				Map<String, List<Extension>> moduleExtensionMap = new HashMap<String, List<Extension>>();
 				for (Extension ext : module.getExtensions()) {
 					
 					String extId = ext.getExtensionId();
-					List<Extension> tmpExtensions = moduleExtensionMap.computeIfAbsent(extId, k -> new ArrayList<>());
+					List<Extension> tmpExtensions = moduleExtensionMap.get(extId);
+					if (tmpExtensions == null) {
+						tmpExtensions = new Vector<Extension>();
+						moduleExtensionMap.put(extId, tmpExtensions);
+					}
 					
 					tmpExtensions.add(ext);
 				}
 				
 				// Sort this module's extensions, and merge them into the full extensions map
-				Comparator<Extension> sortOrder = (e1, e2) -> Integer.valueOf(e1.getOrder()).compareTo(e2.getOrder());
+				Comparator<Extension> sortOrder = new Comparator<Extension>() {
+					
+					@Override
+					public int compare(Extension e1, Extension e2) {
+						return Integer.valueOf(e1.getOrder()).compareTo(Integer.valueOf(e2.getOrder()));
+					}
+				};
 				for (Map.Entry<String, List<Extension>> moduleExtensionEntry : moduleExtensionMap.entrySet()) {
 					// Sort this module's extensions for current extension point
 					List<Extension> sortedModuleExtensions = moduleExtensionEntry.getValue();
-					sortedModuleExtensions.sort(sortOrder);
+					Collections.sort(sortedModuleExtensions, sortOrder);
 					
 					// Get existing extensions, and append the ones from the new module
-					List<Extension> extensions = getExtensionMap().computeIfAbsent(moduleExtensionEntry.getKey(),
-						k -> new ArrayList<>());
+					List<Extension> extensions = getExtensionMap().get(moduleExtensionEntry.getKey());
+					if (extensions == null) {
+						extensions = new Vector<Extension>();
+						getExtensionMap().put(moduleExtensionEntry.getKey(), extensions);
+					}
 					for (Extension ext : sortedModuleExtensions) {
 						log.debug("Adding to mapping ext: " + ext.getExtensionId() + " ext.class: " + ext.getClass());
 						extensions.add(ext);
@@ -716,7 +769,9 @@ public class ModuleFactory {
 				
 				// effectively mark this module as started successfully
 				getStartedModulesMap().put(moduleId, module);
-
+				if (actualStartupOrder == null) {
+					actualStartupOrder = new LinkedHashSet<String>();
+				}
 				actualStartupOrder.add(moduleId);
 				
 				try {
@@ -725,7 +780,7 @@ public class ModuleFactory {
 					
 					// save the mandatory status
 					saveGlobalProperty(moduleId + ".mandatory", String.valueOf(module.isMandatory()),
-						getGlobalPropertyMandatoryModuleDescription(moduleId));
+					    getGlobalPropertyMandatoryModuleDescription(moduleId));
 				}
 				catch (Exception e) {
 					// pass over errors because this doesn't really concern startup
@@ -801,7 +856,7 @@ public class ModuleFactory {
 	
 	private static void registerProvidedPackages(ModuleClassLoader moduleClassLoader) {
 		for (String providedPackage : moduleClassLoader.getProvidedPackages()) {
-			Set<ModuleClassLoader> newSet = new HashSet<>();
+			Set<ModuleClassLoader> newSet = new HashSet<ModuleClassLoader>();
 			
 			Set<ModuleClassLoader> set = providedPackages.get(providedPackage);
 			if (set != null) {
@@ -815,7 +870,7 @@ public class ModuleFactory {
 	
 	private static void unregisterProvidedPackages(ModuleClassLoader moduleClassLoader) {
 		for (String providedPackage : moduleClassLoader.getProvidedPackages()) {
-			Set<ModuleClassLoader> newSet = new HashSet<>();
+			Set<ModuleClassLoader> newSet = new HashSet<ModuleClassLoader>();
 			
 			Set<ModuleClassLoader> set = providedPackages.get(providedPackage);
 			if (set != null) {
@@ -832,63 +887,60 @@ public class ModuleFactory {
 		if (set == null) {
 			return Collections.emptySet();
 		} else {
-			return new HashSet<>(set);
+			return new HashSet<ModuleClassLoader>(set);
 		}
 	}
 	
 	/**
 	 * Gets the error message of a module which fails to start.
-	 *
+	 * 
 	 * @param module the module that has failed to start.
 	 * @return the message text.
 	 */
 	private static String getFailedToStartModuleMessage(Module module) {
-		String[] params = { module.getName(), String.join(",", getMissingRequiredModules(module)) };
+		String[] params = { module.getName(), OpenmrsUtil.join(getMissingRequiredModules(module), ", ") };
 		return Context.getMessageSourceService().getMessage("Module.error.moduleCannotBeStarted", params,
-			Context.getLocale());
+		    Context.getLocale());
 	}
 	
 	/**
 	 * Gets the error message of cyclic dependencies between modules
-	 *
+	 * 
 	 * @return the message text.
 	 */
 	private static String getCyclicDependenciesMessage(String message) {
-		return Context.getMessageSourceService().getMessage("Module.error.cyclicDependencies", new Object[] { message },
-			Context.getLocale());
+		return Context.getMessageSourceService().getMessage("Module.error.cyclicDependencies", new Object[]{ message }, Context.getLocale());
 	}
 	
 	/**
 	 * Loop over the given module's advice objects and load them into the Context This needs to be
 	 * called for all started modules after every restart of the Spring Application Context
-	 *
+	 * 
 	 * @param module
 	 */
 	public static void loadAdvice(Module module) {
 		for (AdvicePoint advice : module.getAdvicePoints()) {
-			Class<?> cls;
+			Class<?> cls = null;
 			try {
 				cls = Context.loadClass(advice.getPoint());
 				Object aopObject = advice.getClassInstance();
-				if (aopObject instanceof Advisor) {
-					log.debug("adding advisor [{}]", aopObject.getClass());
+				if (Advisor.class.isInstance(aopObject)) {
+					log.debug("adding advisor: " + aopObject.getClass());
 					Context.addAdvisor(cls, (Advisor) aopObject);
-				} else if (aopObject != null) {
-					log.debug("adding advice [{}]", aopObject.getClass());
-					Context.addAdvice(cls, (Advice) aopObject);
 				} else {
-					log.debug("Could not load advice class for {} [{}]", advice.getPoint(), advice.getClassName());
+					log.debug("Adding advice: " + aopObject.getClass());
+					Context.addAdvice(cls, (Advice) aopObject);
 				}
 			}
-			catch (ClassNotFoundException | NoClassDefFoundError e) {
-				log.warn("Could not load advice point [{}]", advice.getPoint(), e);
+			catch (ClassNotFoundException e) {
+				log.warn("Could not load advice point: " + advice.getPoint(), e);
 			}
 		}
 	}
 	
 	/**
 	 * Execute the given sql diff section for the given module
-	 *
+	 * 
 	 * @param module the module being executed on
 	 * @param version the version of this sql diff
 	 * @param sql the actual sql statements to run (separated by semi colons)
@@ -905,8 +957,8 @@ public class ModuleFactory {
 		if (gp != null && StringUtils.hasLength(gp.getPropertyValue())) {
 			String currentDbVersion = gp.getPropertyValue();
 			if (log.isDebugEnabled()) {
-				log.debug("version:column {}:{}", version, currentDbVersion);
-				log.debug("compare: {}", ModuleUtil.compareVersion(version, currentDbVersion));
+				log.debug("version:column " + version + ":" + currentDbVersion);
+				log.debug("compare: " + ModuleUtil.compareVersion(version, currentDbVersion));
 			}
 			if (ModuleUtil.compareVersion(version, currentDbVersion) > 0) {
 				executeSQL = true;
@@ -936,7 +988,7 @@ public class ModuleFactory {
 				Context.addProxyPrivilege(PrivilegeConstants.MANAGE_GLOBAL_PROPERTIES);
 				
 				String description = "DO NOT MODIFY.  Current database version number for the " + module.getModuleId()
-					+ " module.";
+				        + " module.";
 				
 				if (gp == null) {
 					log.info("Global property " + key + " was not found. Creating one now.");
@@ -962,34 +1014,62 @@ public class ModuleFactory {
 	
 	/**
 	 * Execute all not run changeSets in liquibase.xml for the given module
-	 *
+	 * 
 	 * @param module the module being executed on
 	 */
 	private static void runLiquibase(Module module) {
-		ModuleClassLoader moduleClassLoader = getModuleClassLoader(module);
+		JarFile jarFile = null;
 		boolean liquibaseFileExists = false;
 		
-		if (moduleClassLoader != null) {
-			try (InputStream inStream = moduleClassLoader.getResourceAsStream(MODULE_CHANGELOG_FILENAME)) {
-				liquibaseFileExists = (inStream != null);
+		try {
+			try {
+				jarFile = new JarFile(module.getFile());
 			}
-			catch (IOException ignored) {
-				
+			catch (IOException e) {
+				throw new ModuleException("Unable to get jar file", module.getName(), e);
+			}
+			
+			//check whether module has a liquibase.xml
+			InputStream inStream = null;
+			ZipEntry entry = null;
+			try {
+				inStream = ModuleUtil.getResourceFromApi(jarFile, module.getModuleId(), module.getVersion(),
+				    MODULE_CHANGELOG_FILENAME);
+				if (inStream == null) {
+					// Try the old way. Loading from the root of the omod
+					entry = jarFile.getEntry(MODULE_CHANGELOG_FILENAME);
+				}
+				liquibaseFileExists = (inStream != null) || (entry != null);
+			}
+			finally {
+				IOUtils.closeQuietly(inStream);
+			}
+		}
+		finally {
+			try {
+				if (jarFile != null) {
+					jarFile.close();
+				}
+			}
+			catch (IOException e) {
+				log.warn("Unable to close jarfile: " + jarFile.getName());
 			}
 		}
 		
 		if (liquibaseFileExists) {
 			try {
 				// run liquibase.xml by Liquibase API
-				DatabaseUpdater.executeChangelog(MODULE_CHANGELOG_FILENAME, new Contexts(), null, moduleClassLoader);
+				DatabaseUpdater.executeChangelog(MODULE_CHANGELOG_FILENAME, null, null, null, getModuleClassLoader(module));
 			}
-			catch (InputRequiredException e) {
+			catch (InputRequiredException ire) {
 				// the user would be stepped through the questions returned here.
-				throw new ModuleException("Input during database updates is not yet implemented.", module.getName(), e);
+				throw new ModuleException("Input during database updates is not yet implemented.", module.getName(), ire);
+			}
+			catch (DatabaseUpdateException e) {
+				throw new ModuleException("Unable to update data model using liquibase.xml.", module.getName(), e);
 			}
 			catch (Exception e) {
-				throw new ModuleException("Unable to update data model using " + MODULE_CHANGELOG_FILENAME + ".",
-					module.getName(), e);
+				throw new ModuleException("Unable to update data model using liquibase.xml.", module.getName(), e);
 			}
 		}
 	}
@@ -997,7 +1077,7 @@ public class ModuleFactory {
 	/**
 	 * Runs through the advice and extension points and removes from api. <br>
 	 * Also calls mod.Activator.shutdown()
-	 *
+	 * 
 	 * @param mod module to stop
 	 * @see ModuleFactory#stopModule(Module, boolean, boolean)
 	 */
@@ -1008,7 +1088,7 @@ public class ModuleFactory {
 	/**
 	 * Runs through the advice and extension points and removes from api.<br>
 	 * Also calls mod.Activator.shutdown()
-	 *
+	 * 
 	 * @param mod the module to stop
 	 * @param isShuttingDown true if this is called during the process of shutting down openmrs
 	 * @see #stopModule(Module, boolean, boolean)
@@ -1019,23 +1099,23 @@ public class ModuleFactory {
 	
 	/**
 	 * Runs through the advice and extension points and removes from api.<br>
-	 * <code>skipOverStartedProperty</code> should only be true when openmrs is stopping modules because
-	 * it is shutting down. When normally stopping a module, use {@link #stopModule(Module)} (or leave
-	 * value as false). This property controls whether the globalproperty is set for startup/shutdown.
-	 * <br>
-	 * Also calls module's {@link ModuleActivator#stopped()}
-	 *
+	 * <code>skipOverStartedProperty</code> should only be true when openmrs is stopping modules
+	 * because it is shutting down. When normally stopping a module, use {@link #stopModule(Module)}
+	 * (or leave value as false). This property controls whether the globalproperty is set for
+	 * startup/shutdown. <br>
+	 * Also calls module's {@link Activator#shutdown()}
+	 * 
 	 * @param mod module to stop
 	 * @param skipOverStartedProperty true if we don't want to set &lt;moduleid&gt;.started to false
 	 * @param isFailedStartup true if this is being called as a cleanup because of a failed module
 	 *            startup
-	 * @return list of dependent modules that were stopped because this module was stopped. This will
-	 *         never be null.
+	 * @return list of dependent modules that were stopped because this module was stopped. This
+	 *         will never be null.
 	 */
 	public static List<Module> stopModule(Module mod, boolean skipOverStartedProperty, boolean isFailedStartup)
-		throws ModuleMustStartException {
+	        throws ModuleMustStartException {
 		
-		List<Module> dependentModulesStopped = new ArrayList<>();
+		List<Module> dependentModulesStopped = new Vector<Module>();
 		
 		if (mod != null) {
 			
@@ -1044,8 +1124,7 @@ public class ModuleFactory {
 			}
 			
 			try {
-				// if extends BaseModuleActivator
-				if (mod.getModuleActivator() != null) {
+				if (mod.getModuleActivator() != null) { // if extends BaseModuleActivator
 					mod.getModuleActivator().willStop();
 				}
 			}
@@ -1069,10 +1148,10 @@ public class ModuleFactory {
 			
 			// stop all dependent modules
 			// copy modules to new list to avoid "concurrent modification exception"
-			List<Module> startedModulesCopy = new ArrayList<>(getStartedModules());
+			List<Module> startedModulesCopy = new ArrayList<Module>();
+			startedModulesCopy.addAll(getStartedModules());
 			for (Module dependentModule : startedModulesCopy) {
-				if (dependentModule != null && !dependentModule.equals(mod)
-					&& isModuleRequiredByAnother(dependentModule, modulePackage)) {
+				if (dependentModule != null && !dependentModule.equals(mod) && isModuleRequiredByAnother(dependentModule, modulePackage)) {
 					dependentModulesStopped.add(dependentModule);
 					dependentModulesStopped.addAll(stopModule(dependentModule, skipOverStartedProperty, isFailedStartup));
 				}
@@ -1098,11 +1177,11 @@ public class ModuleFactory {
 				// remove all advice by this module
 				try {
 					for (AdvicePoint advice : mod.getAdvicePoints()) {
-						Class cls;
+						Class cls = null;
 						try {
 							cls = Context.loadClass(advice.getPoint());
 							Object aopObject = advice.getClassInstance();
-							if (aopObject instanceof Advisor) {
+							if (Advisor.class.isInstance(aopObject)) {
 								log.debug("adding advisor: " + aopObject.getClass());
 								Context.removeAdvisor(cls, (Advisor) aopObject);
 							} else {
@@ -1172,6 +1251,7 @@ public class ModuleFactory {
 			ModuleClassLoader cl = removeClassLoader(mod);
 			if (cl != null) {
 				cl.dispose();
+				cl = null;
 				// remove files from lib cache
 				File folder = OpenmrsClassLoader.getLibCacheFolder();
 				File tmpModuleDir = new File(folder, moduleId);
@@ -1186,10 +1266,10 @@ public class ModuleFactory {
 		
 		return dependentModulesStopped;
 	}
-	
+
 	/**
 	 * Checks if a module is required by another
-	 *
+     *
 	 * @param dependentModule the module whose required modules are to be checked
 	 * @param modulePackage the package of the module to check if required by another
 	 * @return true if the module is required, else false
@@ -1197,22 +1277,18 @@ public class ModuleFactory {
 	private static boolean isModuleRequiredByAnother(Module dependentModule, String modulePackage) {
 		return dependentModule.getRequiredModules() != null && dependentModule.getRequiredModules().contains(modulePackage);
 	}
-	
+
 	private static ModuleClassLoader removeClassLoader(Module mod) {
-		// create map if it is null
-		ModuleClassLoader cl = moduleClassLoaders.getIfPresent(mod);
-		if (cl == null) {
+		getModuleClassLoaderMap(); // create map if it is null
+		if (!moduleClassLoaders.containsKey(mod)) {
 			log.warn("Module: " + mod.getModuleId() + " does not exist");
 		}
 		
-		moduleClassLoaders.invalidate(mod);
-		
-		return cl;
+		return moduleClassLoaders.remove(mod);
 	}
 	
 	/**
 	 * Removes module from module repository
-	 *
 	 * @param mod module to unload
 	 */
 	public static void unloadModule(Module mod) {
@@ -1235,29 +1311,31 @@ public class ModuleFactory {
 				log.warn("Could not delete " + file.getAbsolutePath());
 			}
 			
+			file = null;
+			mod = null;
 		}
 	}
 	
 	/**
 	 * Return all of the extensions associated with the given <code>pointId</code> Returns empty
 	 * extension list if no modules extend this pointId
-	 *
+	 * 
 	 * @param pointId
 	 * @return List of extensions
 	 */
 	public static List<Extension> getExtensions(String pointId) {
-		List<Extension> extensions;
+		List<Extension> extensions = null;
 		Map<String, List<Extension>> extensionMap = getExtensionMap();
 		
 		// get all extensions for this exact pointId
 		extensions = extensionMap.get(pointId);
 		if (extensions == null) {
-			extensions = new ArrayList<>();
+			extensions = new ArrayList<Extension>();
 		}
 		
 		// if this pointId doesn't contain the separator character, search
 		// for this point prepended with each MEDIA TYPE
-		if (!pointId.contains(Extension.EXTENSION_ID_SEPARATOR)) {
+		if (!pointId.contains(Extension.extensionIdSeparator)) {
 			for (MEDIA_TYPE mediaType : Extension.MEDIA_TYPE.values()) {
 				
 				// get all extensions for this type and point id
@@ -1281,7 +1359,7 @@ public class ModuleFactory {
 	/**
 	 * Return all of the extensions associated with the given <code>pointId</code> Returns
 	 * getExtension(pointId) if no modules extend this pointId for given media type
-	 *
+	 * 
 	 * @param pointId
 	 * @param type Extension.MEDIA_TYPE
 	 * @return List of extensions
@@ -1299,12 +1377,12 @@ public class ModuleFactory {
 	
 	/**
 	 * Get a list of required Privileges defined by the modules
-	 *
+	 * 
 	 * @return <code>List&lt;Privilege&gt;</code> of the required privileges
 	 */
 	public static List<Privilege> getPrivileges() {
 		
-		List<Privilege> privileges = new ArrayList<>();
+		List<Privilege> privileges = new Vector<Privilege>();
 		
 		for (Module mod : getStartedModules()) {
 			privileges.addAll(mod.getPrivileges());
@@ -1317,12 +1395,12 @@ public class ModuleFactory {
 	
 	/**
 	 * Get a list of required GlobalProperties defined by the modules
-	 *
+	 * 
 	 * @return <code>List&lt;GlobalProperty&gt;</code> object of the module's global properties
 	 */
 	public static List<GlobalProperty> getGlobalProperties() {
 		
-		List<GlobalProperty> globalProperties = new ArrayList<>();
+		List<GlobalProperty> globalProperties = new Vector<GlobalProperty>();
 		
 		for (Module mod : getStartedModules()) {
 			globalProperties.addAll(mod.getGlobalProperties());
@@ -1335,7 +1413,7 @@ public class ModuleFactory {
 	
 	/**
 	 * Checks whether the given module is activated
-	 *
+	 * 
 	 * @param mod Module to check
 	 * @return true if the module is started, false otherwise
 	 */
@@ -1345,7 +1423,7 @@ public class ModuleFactory {
 	
 	/**
 	 * Checks whether the given module, identified by its id, is started.
-	 *
+	 * 
 	 * @param moduleId module id. e.g formentry, logic
 	 * @since 1.9
 	 * @return true if the module is started, false otherwise
@@ -1356,9 +1434,10 @@ public class ModuleFactory {
 	
 	/**
 	 * Get a module's classloader
-	 *
+	 * 
 	 * @param mod Module to fetch the class loader for
-	 * @return ModuleClassLoader pertaining to this module. Returns null if the module is not started
+	 * @return ModuleClassLoader pertaining to this module. Returns null if the module is not
+	 *         started
 	 * @throws ModuleException if the module does not have a registered classloader
 	 */
 	public static ModuleClassLoader getModuleClassLoader(Module mod) throws ModuleException {
@@ -1373,9 +1452,10 @@ public class ModuleFactory {
 	
 	/**
 	 * Get a module's classloader via the module id
-	 *
+	 * 
 	 * @param moduleId <code>String</code> id of the module
-	 * @return ModuleClassLoader pertaining to this module. Returns null if the module is not started
+	 * @return ModuleClassLoader pertaining to this module. Returns null if the module is not
+	 *         started
 	 * @throws ModuleException if this module isn't started or doesn't have a classloader
 	 * @see #getModuleClassLoader(Module)
 	 */
@@ -1390,7 +1470,7 @@ public class ModuleFactory {
 	
 	/**
 	 * Returns all module classloaders This method will not return null
-	 *
+	 * 
 	 * @return Collection&lt;ModuleClassLoader&gt; all known module classloaders or empty list.
 	 */
 	public static Collection<ModuleClassLoader> getModuleClassLoaders() {
@@ -1404,32 +1484,34 @@ public class ModuleFactory {
 	
 	/**
 	 * Return all current classloaders keyed on module object
-	 *
+	 * 
 	 * @return Map&lt;Module, ModuleClassLoader&gt;
 	 */
 	public static Map<Module, ModuleClassLoader> getModuleClassLoaderMap() {
-		// because the OpenMRS classloader depends on this static function, it is weirdly possible for this to get called
-		// as this classfile is loaded, in which case, the static final field can be null.
 		if (moduleClassLoaders == null) {
-			return Collections.emptyMap();
+			moduleClassLoaders = new WeakHashMap<Module, ModuleClassLoader>();
 		}
 		
-		return moduleClassLoaders.asMap();
+		return moduleClassLoaders;
 	}
 	
 	/**
 	 * Return the current extension map keyed on extension point id
-	 *
+	 * 
 	 * @return Map&lt;String, List&lt;Extension&gt;&gt;
 	 */
 	public static Map<String, List<Extension>> getExtensionMap() {
+		if (extensionMap == null) {
+			extensionMap = new WeakHashMap<String, List<Extension>>();
+		}
+		
 		return extensionMap;
 	}
 	
 	/**
-	 * Tests whether all modules mentioned in module.requiredModules are loaded and started already (by
-	 * being in the startedModules list)
-	 *
+	 * Tests whether all modules mentioned in module.requiredModules are loaded and started already
+	 * (by being in the startedModules list)
+	 * 
 	 * @param module
 	 * @return true/false boolean whether this module's required modules are all started
 	 */
@@ -1458,7 +1540,7 @@ public class ModuleFactory {
 	/**
 	 * Update the module: 1) Download the new module 2) Unload the old module 3) Load/start the new
 	 * module
-	 *
+	 * 
 	 * @param mod
 	 */
 	public static Module updateModule(Module mod) throws ModuleException {
@@ -1466,7 +1548,7 @@ public class ModuleFactory {
 			return mod;
 		}
 		
-		URL url;
+		URL url = null;
 		try {
 			url = new URL(mod.getDownloadURL());
 		}
@@ -1500,7 +1582,7 @@ public class ModuleFactory {
 	 * Validates the given token.
 	 * <p>
 	 * It is thread safe.
-	 *
+	 * 
 	 * @param token
 	 * @since 1.9.2
 	 */
@@ -1510,9 +1592,9 @@ public class ModuleFactory {
 		} else {
 			//We need to synchronize to guarantee that the last passed token is valid.
 			synchronized (daemonTokens) {
-				DaemonToken validToken = daemonTokens.getIfPresent(token.getId());
+				DaemonToken validToken = daemonTokens.get(token.getId());
 				//Compare by reference to defend from overridden equals.
-				return validToken != null && validToken == token;
+				return validToken == token;
 			}
 		}
 	}
@@ -1529,7 +1611,7 @@ public class ModuleFactory {
 	 * previously passed tokens may be invalidated.
 	 * <p>
 	 * It is thread safe.
-	 *
+	 * 
 	 * @param module
 	 * @since 1.9.2
 	 */
@@ -1542,29 +1624,31 @@ public class ModuleFactory {
 	}
 	
 	/**
-	 * Gets a new or existing token. Uses weak references for tokens so that they are garbage collected
-	 * when not needed.
+	 * Gets a new or existing token. Uses weak references for tokens so that they are garbage
+	 * collected when not needed.
 	 * <p>
 	 * It is thread safe.
-	 *
+	 * 
 	 * @param module
 	 * @return the token
 	 */
 	private static DaemonToken getDaemonToken(Module module) {
-		DaemonToken token;
-		try {
-			token = daemonTokens.get(module.getModuleId(), () -> new DaemonToken(module.getModuleId()));
+		synchronized (daemonTokens) {
+			DaemonToken token = daemonTokens.get(module.getModuleId());
+			if (token != null) {
+				return token;
+			}
+			
+			token = new DaemonToken(module.getModuleId());
+			daemonTokens.put(module.getModuleId(), token);
+			
+			return token;
 		}
-		catch (ExecutionException e) {
-			throw new APIException(e);
-		}
-		
-		return token;
 	}
 	
 	/**
 	 * Returns the description for the [moduleId].started global property
-	 *
+	 * 
 	 * @param moduleId
 	 * @return description to use for the .started property
 	 */
@@ -1578,7 +1662,7 @@ public class ModuleFactory {
 	
 	/**
 	 * Returns the description for the [moduleId].mandatory global property
-	 *
+	 * 
 	 * @param moduleId
 	 * @return description to use for .mandatory property
 	 */
@@ -1591,9 +1675,9 @@ public class ModuleFactory {
 	}
 	
 	/**
-	 * Convenience method to save a global property with the given value. Proxy privileges are added so
-	 * that this can occur at startup.
-	 *
+	 * Convenience method to save a global property with the given value. Proxy privileges are added
+	 * so that this can occur at startup.
+	 * 
 	 * @param key the property for this global property
 	 * @param value the value for this global property
 	 * @param desc the description
@@ -1617,12 +1701,12 @@ public class ModuleFactory {
 	}
 	
 	/**
-	 * Convenience method used to identify module interdependencies and alert the user before modules
-	 * are shut down.
-	 *
+	 * Convenience method used to identify module interdependencies and alert the user before
+	 * modules are shut down.
+	 * 
 	 * @param moduleId the moduleId used to identify the module being validated
-	 * @return List&lt;dependentModules&gt; the list of moduleId's which depend on the module about to
-	 *         be shutdown.
+	 * @return List&lt;dependentModules&gt; the list of moduleId's which depend on the module about to be
+	 *         shutdown.
 	 * @since 1.10
 	 */
 	public static List<String> getDependencies(String moduleId) {
@@ -1635,7 +1719,7 @@ public class ModuleFactory {
 		for (Entry<String, Module> entry : startedModules.entrySet()) {
 			if (!moduleId.equals(entry.getKey()) && entry.getValue().getRequiredModules().contains(modulePackage)) {
 				if (dependentModules == null) {
-					dependentModules = new ArrayList<>();
+					dependentModules = new ArrayList<String>();
 				}
 				dependentModules.add(entry.getKey() + " " + entry.getValue().getVersion());
 			}

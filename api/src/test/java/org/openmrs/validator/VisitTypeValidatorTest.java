@@ -9,12 +9,11 @@
  */
 package org.openmrs.validator;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.VisitType;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 
@@ -24,7 +23,8 @@ public class VisitTypeValidatorTest extends BaseContextSensitiveTest {
 	 * @see VisitTypeValidator#validate(Object, org.springframework.validation.Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() {
+	@Verifies(value = "should pass validation if field lengths are correct", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() throws Exception {
 		VisitType visitType = new VisitType();
 		visitType.setName("name");
 		visitType.setDescription("some text");
@@ -33,14 +33,15 @@ public class VisitTypeValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(visitType, "visitType");
 		new VisitTypeValidator().validate(visitType, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see VisitTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() {
+	@Verifies(value = "should fail validation if field lengths are not correct", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() throws Exception {
 		VisitType visitType = new VisitType();
 		visitType
 		        .setName("too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text");
@@ -52,8 +53,8 @@ public class VisitTypeValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(visitType, "visitType");
 		new VisitTypeValidator().validate(visitType, errors);
 		
-		assertTrue(errors.hasFieldErrors("name"));
-		assertTrue(errors.hasFieldErrors("description"));
-		assertTrue(errors.hasFieldErrors("retireReason"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("description"));
+		Assert.assertTrue(errors.hasFieldErrors("retireReason"));
 	}
 }

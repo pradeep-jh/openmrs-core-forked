@@ -13,8 +13,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.validator.routines.EmailValidator;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.Person;
 import org.openmrs.User;
 import org.openmrs.annotation.Handler;
@@ -22,8 +23,6 @@ import org.openmrs.api.AdministrationService;
 import org.openmrs.api.context.Context;
 import org.openmrs.util.OpenmrsConstants;
 import org.openmrs.util.PrivilegeConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -36,8 +35,11 @@ import org.springframework.validation.Validator;
 @Handler(supports = { User.class }, order = 50)
 public class UserValidator implements Validator {
 	
-	/** Logger for this class and subclasses */
-	private static final Logger log = LoggerFactory.getLogger(UserValidator.class);
+	/** Log for this class and subclasses */
+	protected final Log log = LogFactory.getLog(getClass());
+	
+	private static final Pattern EMAIL_PATTERN = Pattern
+	        .compile("^.+@.+\\..+$");
 	
 	@Autowired
 	private PersonValidator personValidator;
@@ -57,15 +59,15 @@ public class UserValidator implements Validator {
 	 *
 	 * @see org.springframework.validation.Validator#validate(java.lang.Object,
 	 *      org.springframework.validation.Errors)
-	 * <strong>Should</strong> fail validation if retired and retireReason is null
-	 * <strong>Should</strong> fail validation if retired and retireReason is empty
-	 * <strong>Should</strong> fail validation if retired and retireReason is whitespace
-	 * <strong>Should</strong> pass validation if all required fields have proper values
-	 * <strong>Should</strong> fail validation if email as username enabled and email invalid
-	 * <strong>Should</strong> fail validation if email as username disabled and email provided
-	 * <strong>Should</strong> not throw NPE when user is null
-	 * <strong>Should</strong> pass validation if field lengths are correct
-	 * <strong>Should</strong> fail validation if field lengths are not correct
+	 * @should fail validation if retired and retireReason is null
+	 * @should fail validation if retired and retireReason is empty
+	 * @should fail validation if retired and retireReason is whitespace
+	 * @should pass validation if all required fields have proper values
+	 * @should fail validation if email as username enabled and email invalid
+	 * @should fail validation if email as username disabled and email provided
+	 * @should not throw NPE when user is null
+	 * @should pass validation if field lengths are correct
+	 * @should fail validation if field lengths are not correct
 	 */
 	@Override
 	public void validate(Object obj, Errors errors) {
@@ -103,7 +105,7 @@ public class UserValidator implements Validator {
 			}
 			
 			AdministrationService as = Context.getAdministrationService();
-			boolean emailAsUsername;
+			boolean emailAsUsername = false;
 			try {
 				Context.addProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
 				emailAsUsername = Boolean.parseBoolean(as.getGlobalProperty(
@@ -124,20 +126,6 @@ public class UserValidator implements Validator {
 					errors.rejectValue("username", "error.username.pattern");
 				}
 			}
-
-			if (StringUtils.isNotBlank(user.getEmail())) {
-				if (!isEmailValid(user.getEmail())) {
-					errors.rejectValue("email", "error.email.invalid");
-				} else {
-					User existingUser = Context.getUserService().getUserByUsernameOrEmail(user.getEmail());
-					if (existingUser != null && !existingUser.equals(user)) {
-						if (user.getEmail().equalsIgnoreCase(existingUser.getEmail())) {
-							errors.rejectValue("email", "error.email.alreadyInUse");
-						}
-					}
-				}
-			}
-			
 			ValidateUtil.validateFieldLengths(errors, obj.getClass(), "username", "systemId", "retireReason");
 		}
 	}
@@ -152,16 +140,16 @@ public class UserValidator implements Validator {
 	 *
 	 * @param username the username string to check
 	 * @return true if the username is ok
-	 * <strong>Should</strong> validate username with only alpha numerics
-	 * <strong>Should</strong> validate username with alpha dash and underscore
-	 * <strong>Should</strong> validate username with alpha dash underscore and dot
-	 * <strong>Should</strong> validate username with exactly max size name
-	 * <strong>Should</strong> not validate username with less than minimumLength
-	 * <strong>Should</strong> not validate username with invalid character
-	 * <strong>Should</strong> not validate username with more than maximum size
-	 * <strong>Should</strong> validate when username is null
-	 * <strong>Should</strong> validate when username is the empty string
-	 * <strong>Should</strong> not validate when username is whitespace only
+	 * @should validate username with only alpha numerics
+	 * @should validate username with alpha dash and underscore
+	 * @should validate username with alpha dash underscore and dot
+	 * @should validate username with exactly max size name
+	 * @should not validate username with less than minimumLength
+	 * @should not validate username with invalid character
+	 * @should not validate username with more than maximum size
+	 * @should validate when username is null
+	 * @should validate when username is the empty string
+	 * @should not validate when username is whitespace only
 	 */
 	public boolean isUserNameValid(String username) {
 		//Initialize reg ex for userName pattern
@@ -194,18 +182,15 @@ public class UserValidator implements Validator {
 	 * @param username
 	 * @return true if valid
 	 *
-	 * <strong>Should</strong> return false if email invalid
-	 * <strong>Should</strong> return true if email valid
+	 * @should return false if email invalid
+	 * @should return true if email valid
 	 */
 	public boolean isUserNameAsEmailValid(String username) {
-		return EmailValidator.getInstance().isValid(username);
-	}
-	
-	/**
-	 * @return true if email is valid or false otherwise
-	 * @param email
-	 */
-	private boolean isEmailValid(String email) {
-		return EmailValidator.getInstance().isValid(email);
+		if (StringUtils.isBlank(username)) {
+			return false;
+		}
+		
+		Matcher matcher = EMAIL_PATTERN.matcher(username);
+		return matcher.matches();
 	}
 }

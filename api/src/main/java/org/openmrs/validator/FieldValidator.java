@@ -9,11 +9,11 @@
  */
 package org.openmrs.validator;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.Field;
 import org.openmrs.annotation.Handler;
 import org.openmrs.api.APIException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.validation.Errors;
 import org.springframework.validation.ValidationUtils;
 import org.springframework.validation.Validator;
@@ -26,7 +26,7 @@ import org.springframework.validation.Validator;
 @Handler(supports = { Field.class }, order = 50)
 public class FieldValidator implements Validator {
 	
-	private static final Logger log = LoggerFactory.getLogger(FieldValidator.class);
+	private static final Log log = LogFactory.getLog(FieldValidator.class);
 	
 	/**
 	 * Returns whether or not this validator supports validating a given class.
@@ -36,7 +36,9 @@ public class FieldValidator implements Validator {
 	 */
 	@Override
 	public boolean supports(Class<?> c) {
-		log.debug("{}.supports: {}", this.getClass().getName(), c.getName());
+		if (log.isDebugEnabled()) {
+			log.debug(this.getClass().getName() + ".supports: " + c.getName());
+		}
 		return Field.class.isAssignableFrom(c);
 	}
 	
@@ -48,19 +50,21 @@ public class FieldValidator implements Validator {
 	 * @param errors Errors
 	 * @see org.springframework.validation.Validator#validate(java.lang.Object,
 	 *      org.springframework.validation.Errors)
-	 * <strong>Should</strong> fail if field name is null
-	 * <strong>Should</strong> fail if field name is empty
-	 * <strong>Should</strong> fail if field name is all whitespace
-	 * <strong>Should</strong> fail if selectMultiple is null
-	 * <strong>Should</strong> fail if retired is null
-	 * <strong>Should</strong> pass if name is ok and fieldType, selectMultiple, and retired are non-null
-	 * <strong>Should</strong> pass validation if field lengths are correct
-	 * <strong>Should</strong> fail validation if field lengths are not correct
+	 * @should fail if field name is null
+	 * @should fail if field name is empty
+	 * @should fail if field name is all whitespace
+	 * @should fail if selectMultiple is null
+	 * @should fail if retired is null
+	 * @should pass if name is ok and fieldType, selectMultiple, and retired are non-null
+	 * @should pass validation if field lengths are correct
+	 * @should fail validation if field lengths are not correct
 	 * should not fail if fieldType is null
 	 */
 	@Override
 	public void validate(Object obj, Errors errors) throws APIException {
-		log.debug("{}.validate...", this.getClass().getName());
+		if (log.isDebugEnabled()) {
+			log.debug(this.getClass().getName() + ".validate...");
+		}
 		
 		if (obj == null || !(obj instanceof Field)) {
 			throw new IllegalArgumentException("The parameter obj should not be null and must be of type " + Field.class);

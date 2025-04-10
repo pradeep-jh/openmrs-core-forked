@@ -9,19 +9,17 @@
  */
 package org.openmrs;
 
+import org.codehaus.jackson.annotate.JsonIgnore;
+
 import java.util.HashSet;
 import java.util.Set;
-
-import org.codehaus.jackson.annotate.JsonIgnore;
-import org.hibernate.envers.Audited;
 
 /**
  * Field
  *
  * @version 1.0
  */
-@Audited
-public class Field extends BaseChangeableOpenmrsMetadata {
+public class Field extends BaseOpenmrsMetadata {
 	
 	public static final long serialVersionUID = 4454L;
 	
@@ -123,6 +121,7 @@ public class Field extends BaseChangeableOpenmrsMetadata {
 	 * @param attributeName The attributeName to set.
 	 */
 	public void setAttributeName(String attributeName) {
+		// this.dirty = true;
 		this.attributeName = attributeName;
 	}
 	
@@ -184,7 +183,7 @@ public class Field extends BaseChangeableOpenmrsMetadata {
 	 */
 	public void addAnswer(FieldAnswer fieldAnswer) {
 		if (answers == null) {
-			answers = new HashSet<>();
+			answers = new HashSet<FieldAnswer>();
 		}
 		if (!answers.contains(fieldAnswer) && fieldAnswer != null) {
 			answers.add(fieldAnswer);
@@ -206,7 +205,6 @@ public class Field extends BaseChangeableOpenmrsMetadata {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		
 		return getFieldId();
@@ -216,7 +214,6 @@ public class Field extends BaseChangeableOpenmrsMetadata {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setFieldId(id);
 		

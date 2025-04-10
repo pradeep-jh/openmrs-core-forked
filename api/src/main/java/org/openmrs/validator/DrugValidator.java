@@ -12,6 +12,8 @@ package org.openmrs.validator;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.ConceptMapType;
 import org.openmrs.ConceptReferenceTerm;
 import org.openmrs.Drug;
@@ -29,6 +31,9 @@ import org.springframework.validation.Validator;
 @Handler(supports = { Drug.class })
 public class DrugValidator implements Validator {
 	
+	// Log for this class
+	protected final Log log = LogFactory.getLog(getClass());
+	
 	/**
 	 * Determines if the command object being submitted is a valid type
 	 * 
@@ -44,15 +49,15 @@ public class DrugValidator implements Validator {
 	 * 
 	 * @see org.springframework.validation.Validator#validate(java.lang.Object,
 	 *      org.springframework.validation.Errors)
-	 * <strong>Should</strong> fail if the drug object is null
-	 * <strong>Should</strong> fail if drug on drugReferenceMap is null
-	 * <strong>Should</strong> fail if conceptReferenceTerm on drugReferenceMap is null
-	 * <strong>Should</strong> invoke ConceptReferenceTermValidator if term on drugReferenceMap is new
-	 * <strong>Should</strong> invoke ConceptMapTypeValidator if conceptMapType on drugReferenceMap is new
-	 * <strong>Should</strong> pass if all fields are correct
-	 * <strong>Should</strong> reject drug multiple mappings to the same term
-	 * <strong>Should</strong> pass validation if field lengths are correct
-	 * <strong>Should</strong> fail validation if field lengths are not correct
+	 * @should fail if the drug object is null
+	 * @should fail if drug on drugReferenceMap is null
+	 * @should fail if conceptReferenceTerm on drugReferenceMap is null
+	 * @should invoke ConceptReferenceTermValidator if term on drugReferenceMap is new
+	 * @should invoke ConceptMapTypeValidator if conceptMapType on drugReferenceMap is new
+	 * @should pass if all fields are correct
+	 * @should reject drug multiple mappings to the same term
+	 * @should pass validation if field lengths are correct
+	 * @should fail validation if field lengths are not correct
 	 */
 	@Override
 	public void validate(Object obj, Errors errors) {

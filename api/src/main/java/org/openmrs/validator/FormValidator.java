@@ -9,9 +9,10 @@
  */
 package org.openmrs.validator;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.Form;
 import org.openmrs.annotation.Handler;
-import org.openmrs.api.db.hibernate.HibernateUtil;
 import org.springframework.validation.Errors;
 import org.springframework.validation.ValidationUtils;
 import org.springframework.validation.Validator;
@@ -22,6 +23,9 @@ import org.springframework.validation.Validator;
  */
 @Handler(supports = { Form.class }, order = 50)
 public class FormValidator implements Validator {
+	
+	/** Log for this class and subclasses */
+	protected final Log log = LogFactory.getLog(getClass());
 	
 	/**
 	 * Determines if the command object being submitted is a valid type
@@ -38,20 +42,17 @@ public class FormValidator implements Validator {
 	 *
 	 * @see org.springframework.validation.Validator#validate(java.lang.Object,
 	 *      org.springframework.validation.Errors)
-	 * <strong>Should</strong> fail validation if name is null
-	 * <strong>Should</strong> fail validation if version is null
-	 * <strong>Should</strong> fail validation if version does not match regex
-	 * <strong>Should</strong> fail validation if retiredReason is null
-	 * <strong>Should</strong> fail validation if retiredReason is empty
-	 * <strong>Should</strong> pass validation if all fields are correct
-	 * <strong>Should</strong> pass validation if field lengths are correct
-	 * <strong>Should</strong> fail validation if field lengths are not correct
+	 * @should fail validation if name is null
+	 * @should fail validation if version is null
+	 * @should fail validation if version does not match regex
+	 * @should fail validation if retiredReason is null
+	 * @should fail validation if retiredReason is empty
+	 * @should pass validation if all fields are correct
+	 * @should pass validation if field lengths are correct
+	 * @should fail validation if field lengths are not correct
 	 */
 	@Override
 	public void validate(Object obj, Errors errors) {
-		
-		obj = HibernateUtil.getRealObjectFromProxy(obj);
-		
 		Form form = (Form) obj;
 		if (form == null) {
 			errors.rejectValue("form", "error.general");

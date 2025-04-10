@@ -17,13 +17,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.User;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.context.UserContext;
 import org.openmrs.util.OpenmrsClassLoader;
 import org.openmrs.web.WebConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
@@ -36,12 +36,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
  */
 public class OpenmrsFilter extends OncePerRequestFilter {
 	
-	private static final Logger log = LoggerFactory.getLogger(OpenmrsFilter.class);
+	protected final Log log = LogFactory.getLog(getClass());
 	
 	/**
 	 * @see javax.servlet.Filter#destroy()
 	 */
-	@Override
 	public void destroy() {
 		log.debug("Destroying filter");
 	}
@@ -63,9 +62,11 @@ public class OpenmrsFilter extends OncePerRequestFilter {
 		// used by htmlInclude tag
 		httpRequest.setAttribute(WebConstants.INIT_REQ_UNIQUE_ID, String.valueOf(System.currentTimeMillis()));
 		
-		log.debug("requestURI {}", httpRequest.getRequestURI());
-		log.debug("requestURL {}", httpRequest.getRequestURL());
-		log.debug("request path info {}", httpRequest.getPathInfo());
+		if (log.isDebugEnabled()) {
+			log.debug("requestURI " + httpRequest.getRequestURI());
+			log.debug("requestURL " + httpRequest.getRequestURL());
+			log.debug("request path info " + httpRequest.getPathInfo());
+		}
 		
 		// User context is created if it doesn't already exist and added to the session
 		// note: this usercontext storage logic is copied to webinf/view/uncaughtexception.jsp to 
@@ -78,10 +79,12 @@ public class OpenmrsFilter extends OncePerRequestFilter {
 		// if there isn't a userContext on the session yet, create one
 		// and set it onto the session
 		if (userContext == null) {
-			userContext = new UserContext(Context.getAuthenticationScheme());
+			userContext = new UserContext();
 			httpSession.setAttribute(WebConstants.OPENMRS_USER_CONTEXT_HTTPSESSION_ATTR, userContext);
 			
-			log.debug("Just set user context {} as attribute on session", userContext);
+			if (log.isDebugEnabled()) {
+				log.debug("Just set user context " + userContext + " as attribute on session");
+			}
 		} else {
 			// set username as attribute on session so parent servlet container 
 			// can identify sessions easier
@@ -93,15 +96,6 @@ public class OpenmrsFilter extends OncePerRequestFilter {
 		
 		// set the locale on the session (for the servlet container as well)
 		httpSession.setAttribute("locale", userContext.getLocale());
-		
-		//TODO We do not cache the csrfguard javascript file because it contains the
-		//csrf token that is dynamically embedded in forms. For this to work,
-		//the OpenmrsFilter should be before the CSRFGuard filter in web.xml
-		if (httpRequest.getRequestURI().endsWith("csrfguard")) {
-			httpResponse.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1.
-			httpResponse.setHeader("Pragma", "no-cache"); // HTTP 1.0.
-			httpResponse.setHeader("Expires", "0"); // Proxies.
-		}
 		
 		// Add the user context to the current thread 
 		Context.setUserContext(userContext);

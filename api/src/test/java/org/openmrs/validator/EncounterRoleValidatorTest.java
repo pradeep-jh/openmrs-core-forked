@@ -9,14 +9,12 @@
  */
 package org.openmrs.validator;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.EncounterRole;
 import org.openmrs.api.context.Context;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 
@@ -29,40 +27,42 @@ public class EncounterRoleValidatorTest extends BaseContextSensitiveTest {
 	 * @see org.openmrs.validator.EncounterRoleValidator#validate(Object, org.springframework.validation.Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfTheNameOfTheEncounterRoleIsNullEmptyOrWhitespace() {
+	@Verifies(value = "should fail if the name of the encounter role is null empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfTheNameOfTheEncounterRoleIsNullEmptyOrWhitespace() throws Exception {
 		
 		EncounterRole encounterRoleNo1 = new EncounterRole();
 		encounterRoleNo1.setName(null);
 		Errors errorsNo1 = new BindException(encounterRoleNo1, "encounterRole");
 		new EncounterRoleValidator().validate(encounterRoleNo1, errorsNo1);
-		assertTrue(errorsNo1.hasFieldErrors("name"));
+		Assert.assertTrue(errorsNo1.hasFieldErrors("name"));
 		
 		EncounterRole encounterRoleNo2 = new EncounterRole();
 		encounterRoleNo2.setName("");
 		Errors errorsNo2 = new BindException(encounterRoleNo2, "encounterRole");
 		new EncounterRoleValidator().validate(encounterRoleNo2, errorsNo2);
-		assertTrue(errorsNo2.hasFieldErrors("name"));
+		Assert.assertTrue(errorsNo2.hasFieldErrors("name"));
 		
 		EncounterRole encounterRoleNo3 = new EncounterRole();
 		encounterRoleNo3.setName("  ");
 		Errors errorsNo3 = new BindException(encounterRoleNo3, "encounterRole");
 		new EncounterRoleValidator().validate(encounterRoleNo3, errorsNo3);
-		assertTrue(errorsNo3.hasFieldErrors("name"));
+		Assert.assertTrue(errorsNo3.hasFieldErrors("name"));
 	}
 	
 	/**
 	 * @see org.openmrs.validator.EncounterRoleValidator#validate(Object, org.springframework.validation.Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfEncounterRoleNameIsDuplicate() {
+	@Verifies(value = "should fail if encounter role name is duplicate", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfEncounterRoleNameIsDuplicate() throws Exception {
 		
-		assertNotNull(Context.getEncounterService().getEncounterRoleByName("Unknown"));
+		Assert.assertNotNull(Context.getEncounterService().getEncounterRoleByName("Unknown"));
 		
 		EncounterRole newEncounterRole = new EncounterRole();
 		newEncounterRole.setName("Unknown");
 		Errors errors = new BindException(newEncounterRole, "encounterRole");
 		new EncounterRoleValidator().validate(newEncounterRole, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 		
 	}
 	
@@ -70,15 +70,16 @@ public class EncounterRoleValidatorTest extends BaseContextSensitiveTest {
 	 * {@link org.openmrs.validator.EncounterRoleValidator#validate(Object, org.springframework.validation.Errors)}
 	 */
 	@Test
-	public void validate_shouldPassEditingEncounterRoleName() {
+	@Verifies(value = "should pass editing encounter role name", method = "validate(Object,Errors)")
+	public void validate_shouldPassEditingEncounterRoleName() throws Exception {
 		
 		EncounterRole encounterRole = Context.getEncounterService().getEncounterRoleByName("Unknown");
-		assertNotNull(encounterRole);
+		Assert.assertNotNull(encounterRole);
 		encounterRole.setName("Lab");
 		encounterRole.setDescription("desc");
 		Errors errors = new BindException(encounterRole, "encounterRole");
 		new EncounterRoleValidator().validate(encounterRole, errors);
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 		
 	}
 	
@@ -86,23 +87,25 @@ public class EncounterRoleValidatorTest extends BaseContextSensitiveTest {
 	 * {@link org.openmrs.validator.EncounterRoleValidator#validate(Object, org.springframework.validation.Errors)}
 	 */
 	@Test
-	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() {
+	@Verifies(value = "should pass validation if field lengths are correct", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() throws Exception {
 		
 		EncounterRole encounterRole = Context.getEncounterService().getEncounterRoleByName("Unknown");
-		assertNotNull(encounterRole);
+		Assert.assertNotNull(encounterRole);
 		encounterRole.setName("name");
 		encounterRole.setDescription("desc");
 		encounterRole.setRetireReason("retireReason");
 		Errors errors = new BindException(encounterRole, "encounterRole");
 		new EncounterRoleValidator().validate(encounterRole, errors);
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * {@link org.openmrs.validator.EncounterRoleValidator#validate(Object, org.springframework.validation.Errors)}
 	 */
 	@Test
-	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() {
+	@Verifies(value = "should fail validation if field lengths are not correct", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() throws Exception {
 		
 		EncounterRole encounterRole = new EncounterRole();
 		encounterRole
@@ -113,8 +116,8 @@ public class EncounterRoleValidatorTest extends BaseContextSensitiveTest {
 		        .setRetireReason("too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text");
 		Errors errors = new BindException(encounterRole, "encounterRole");
 		new EncounterRoleValidator().validate(encounterRole, errors);
-		assertTrue(errors.hasFieldErrors("name"));
-		assertTrue(errors.hasFieldErrors("description"));
-		assertTrue(errors.hasFieldErrors("retireReason"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("description"));
+		Assert.assertTrue(errors.hasFieldErrors("retireReason"));
 	}
 }

@@ -22,32 +22,27 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.hibernate.HibernateException;
 import org.hibernate.Interceptor;
-import org.hibernate.boot.Metadata;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.integrator.spi.Integrator;
-import org.hibernate.service.spi.SessionFactoryServiceRegistry;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.Module;
 import org.openmrs.module.ModuleFactory;
 import org.openmrs.util.OpenmrsUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MarkerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.orm.hibernate5.LocalSessionFactoryBean;
+import org.springframework.orm.hibernate4.LocalSessionFactoryBean;
 
-public class HibernateSessionFactoryBean extends LocalSessionFactoryBean implements Integrator {
+public class HibernateSessionFactoryBean extends LocalSessionFactoryBean {
 	
-	private static final Logger log = LoggerFactory.getLogger(HibernateSessionFactoryBean.class);
+	private static Log log = LogFactory.getLog(HibernateSessionFactoryBean.class);
 	
-	protected Set<String> mappingResources = new HashSet<>();
+	protected Set<String> mappingResources = new HashSet<String>();
 	
 	/**
 	 * @since 1.9.2, 1.10
 	 */
-	protected Set<String> packagesToScan = new HashSet<>();
+	protected Set<String> packagesToScan = new HashSet<String>();
 	
 	// @since 1.6.3, 1.7.2, 1.8.0, 1.9
 	protected ChainingInterceptor chainingInterceptor = new ChainingInterceptor();
@@ -55,9 +50,7 @@ public class HibernateSessionFactoryBean extends LocalSessionFactoryBean impleme
 	// @since 1.6.3, 1.7.2, 1.8.0, 1.9
 	// This will be sorted on keys before being used
 	@Autowired(required = false)
-	public Map<String, Interceptor> interceptors = new HashMap<>();
-	
-	private Metadata metadata;
+	public Map<String, Interceptor> interceptors = new HashMap<String, Interceptor>();
 	
 	/**
 	 * Collect the mapping resources for future use because the mappingResources object is defined
@@ -65,7 +58,9 @@ public class HibernateSessionFactoryBean extends LocalSessionFactoryBean impleme
 	 */
 	@Override
 	public void setMappingResources(String... mappingResources) {
-		Collections.addAll(this.mappingResources, mappingResources);
+		for (String resource : mappingResources) {
+			this.mappingResources.add(resource);
+		}
 		
 		super.setMappingResources(this.mappingResources.toArray(new String[] {}));
 	}
@@ -84,7 +79,9 @@ public class HibernateSessionFactoryBean extends LocalSessionFactoryBean impleme
 	
 	public Set<String> getModuleMappingResources() {
 		for (Module mod : ModuleFactory.getStartedModules()) {
-			mappingResources.addAll(mod.getMappingFiles());
+			for (String s : mod.getMappingFiles()) {
+				mappingResources.add(s);
+			}
 		}
 		return mappingResources;
 	}
@@ -96,9 +93,11 @@ public class HibernateSessionFactoryBean extends LocalSessionFactoryBean impleme
 	 * @since 1.9.2, 1.10
 	 */
 	public Set<String> getModulePackagesWithMappedClasses() {
-		Set<String> packages = new HashSet<>();
+		Set<String> packages = new HashSet<String>();
 		for (Module module : ModuleFactory.getStartedModules()) {
-			packages.addAll(module.getPackagesWithMappedClasses());
+			for (String pack : module.getPackagesWithMappedClasses()) {
+				packages.add(pack);
+			}
 		}
 		return packages;
 	}
@@ -156,7 +155,7 @@ public class HibernateSessionFactoryBean extends LocalSessionFactoryBean impleme
 			
 		}
 		catch (IOException e) {
-			log.error(MarkerFactory.getMarker("FATAL"), "Unable to load default hibernate properties", e);
+			log.fatal("Unable to load default hibernate properties", e);
 		}
 		
 		log.debug("Replacing variables in hibernate properties");
@@ -172,7 +171,7 @@ public class HibernateSessionFactoryBean extends LocalSessionFactoryBean impleme
 		
 		// make sure all autowired interceptors are put onto our chaining interceptor
 		// sort on the keys so that the devs/modules have some sort of control over the order of the interceptors 
-		List<String> keys = new ArrayList<>(interceptors.keySet());
+		List<String> keys = new ArrayList<String>(interceptors.keySet());
 		Collections.sort(keys);
 		for (String key : keys) {
 			chainingInterceptor.addInterceptor(interceptors.get(key));
@@ -184,8 +183,6 @@ public class HibernateSessionFactoryBean extends LocalSessionFactoryBean impleme
 		setMappingResources(getModuleMappingResources().toArray(new String[0]));
 		
 		setPackagesToScan(getModulePackagesWithMappedClasses().toArray(new String[0]));
-		
-		setHibernateIntegrators(this);
 		
 		super.afterPropertiesSet();
 	}
@@ -203,22 +200,5 @@ public class HibernateSessionFactoryBean extends LocalSessionFactoryBean impleme
 			// see net.sf.ehcache.CacheManager#removeShutdownHook()
 		}
 	}
-
-	@Override
-	public void integrate(Metadata metadata, SessionFactoryImplementor sessionFactory,
-			SessionFactoryServiceRegistry serviceRegistry) {
-		this.metadata = metadata;
-	}
-
-	@Override
-	public void disintegrate(SessionFactoryImplementor sessionFactory, SessionFactoryServiceRegistry serviceRegistry) {
-		
-	}
-
-	/**
-	 * @since 2.4
-	 */
-	public Metadata getMetadata() {
-		return metadata;
-	}
+	
 }

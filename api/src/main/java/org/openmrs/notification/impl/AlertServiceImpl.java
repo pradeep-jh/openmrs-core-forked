@@ -13,19 +13,18 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.Role;
 import org.openmrs.User;
 import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
-import org.openmrs.api.context.Daemon;
 import org.openmrs.api.impl.BaseOpenmrsService;
 import org.openmrs.notification.Alert;
 import org.openmrs.notification.AlertRecipient;
 import org.openmrs.notification.AlertService;
 import org.openmrs.notification.db.AlertDAO;
 import org.openmrs.util.RoleConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -38,7 +37,7 @@ public class AlertServiceImpl extends BaseOpenmrsService implements Serializable
 	
 	private static final long serialVersionUID = 564561231321112365L;
 	
-	private static final Logger log = LoggerFactory.getLogger(AlertServiceImpl.class);
+	private Log log = LogFactory.getLog(this.getClass());
 	
 	private AlertDAO dao;
 	
@@ -51,7 +50,6 @@ public class AlertServiceImpl extends BaseOpenmrsService implements Serializable
 	/**
 	 * @see org.openmrs.notification.AlertService#setAlertDAO(org.openmrs.notification.db.AlertDAO)
 	 */
-	@Override
 	public void setAlertDAO(AlertDAO dao) {
 		this.dao = dao;
 	}
@@ -59,7 +57,6 @@ public class AlertServiceImpl extends BaseOpenmrsService implements Serializable
 	/**
 	 * @see org.openmrs.notification.AlertService#saveAlert(org.openmrs.notification.Alert)
 	 */
-	@Override
 	public Alert saveAlert(Alert alert) throws APIException {
 		log.debug("Create a alert " + alert);
 		
@@ -90,7 +87,6 @@ public class AlertServiceImpl extends BaseOpenmrsService implements Serializable
 	/**
 	 * @see org.openmrs.notification.AlertService#getAlert(java.lang.Integer)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public Alert getAlert(Integer alertId) throws APIException {
 		return dao.getAlert(alertId);
@@ -99,7 +95,6 @@ public class AlertServiceImpl extends BaseOpenmrsService implements Serializable
 	/**
 	 * @see org.openmrs.notification.AlertService#purgeAlert(org.openmrs.notification.Alert)
 	 */
-	@Override
 	public void purgeAlert(Alert alert) throws APIException {
 		dao.deleteAlert(alert);
 	}
@@ -107,7 +102,6 @@ public class AlertServiceImpl extends BaseOpenmrsService implements Serializable
 	/**
 	 * @see org.openmrs.notification.AlertService#getAllActiveAlerts(org.openmrs.User)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<Alert> getAllActiveAlerts(User user) throws APIException {
 		log.debug("Getting all active alerts for user " + user);
@@ -117,7 +111,6 @@ public class AlertServiceImpl extends BaseOpenmrsService implements Serializable
 	/**
 	 * @see org.openmrs.notification.AlertService#getAlertsByUser(org.openmrs.User)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<Alert> getAlertsByUser(User user) throws APIException {
 		log.debug("Getting unread alerts for user " + user);
@@ -136,7 +129,6 @@ public class AlertServiceImpl extends BaseOpenmrsService implements Serializable
 	/**
 	 * @see org.openmrs.notification.AlertService#getAlerts(org.openmrs.User, boolean, boolean)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<Alert> getAlerts(User user, boolean includeRead, boolean includeExpired) throws APIException {
 		log.debug("Getting alerts for user " + user + " read? " + includeRead + " expired? " + includeExpired);
@@ -146,7 +138,6 @@ public class AlertServiceImpl extends BaseOpenmrsService implements Serializable
 	/**
 	 * @see org.openmrs.notification.AlertService#getAllAlerts()
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<Alert> getAllAlerts() throws APIException {
 		log.debug("Getting alerts for all users");
@@ -156,7 +147,6 @@ public class AlertServiceImpl extends BaseOpenmrsService implements Serializable
 	/**
 	 * @see org.openmrs.notification.AlertService#getAllAlerts(boolean)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<Alert> getAllAlerts(boolean includeExpired) throws APIException {
 		log.debug("Getting alerts for all users");
@@ -166,7 +156,6 @@ public class AlertServiceImpl extends BaseOpenmrsService implements Serializable
 	/**
 	 * @see org.openmrs.notification.AlertService#notifySuperUsers(String, Exception, Object...)
 	 */
-	@Override
 	public void notifySuperUsers(String messageCode, Exception cause, Object... messageArguments) {
 		
 		// Generate an internationalized error message with the beginning of the stack trace from cause added onto the end
@@ -197,12 +186,13 @@ public class AlertServiceImpl extends BaseOpenmrsService implements Serializable
 		alert.setSatisfiedByAny(true);
 		
 		//If there is not user creator for the alert ( because it is being created at start-up )create a user
-		if (alert.getCreator() == null) { 
-			User daemonUser = Context.getUserService().getUserByUuid(Daemon.getDaemonUserUuid());
-			alert.setCreator(daemonUser);
-		} 
+		//TODO switch this to use the daemon user when ticket TRUNK-120 is complete
+		if (alert.getCreator() == null) {
+			alert.setCreator(new User(1));
+		}
 		
 		// save the alert to send it to all administrators
 		Context.getAlertService().saveAlert(alert);
+		
 	}
 }

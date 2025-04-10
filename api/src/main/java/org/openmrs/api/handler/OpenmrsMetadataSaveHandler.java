@@ -12,6 +12,7 @@ package org.openmrs.api.handler;
 import java.util.Date;
 
 import org.openmrs.OpenmrsMetadata;
+
 import org.openmrs.User;
 
 /**
@@ -23,8 +24,8 @@ public class OpenmrsMetadataSaveHandler implements SaveHandler<OpenmrsMetadata> 
 	/**
 	 * @see org.openmrs.api.handler.SaveHandler#handle(org.openmrs.OpenmrsObject, org.openmrs.User,
 	 *      java.util.Date, java.lang.String)
-	 * <strong>Should</strong> trim whitespace from name
-	 * <strong>Should</strong> trim whitespace from description
+	 * @should trim whitespace from name
+	 * @should trim whitespace from description
 	 */
 	@Override
 	public void handle(OpenmrsMetadata object, User creator, Date dateCreated, String other) {

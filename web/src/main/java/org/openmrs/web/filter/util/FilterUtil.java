@@ -15,12 +15,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.util.DatabaseUpdater;
 import org.openmrs.util.DatabaseUtil;
 import org.openmrs.util.OpenmrsConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This class contains convenient methods for storing/retrieving locale parameters into/from DB as
@@ -28,12 +28,7 @@ import org.slf4j.LoggerFactory;
  */
 public class FilterUtil {
 	
-	private FilterUtil() {
-	}
-	
-	private static final Logger log = LoggerFactory.getLogger(FilterUtil.class);
-	
-	private static final String DATABASE_CLOSING_ERROR = "Error while closing the database";
+	private static final Log log = LogFactory.getLog(FilterUtil.class);
 	
 	public static final String LOCALE_ATTRIBUTE = "locale";
 	
@@ -56,7 +51,6 @@ public class FilterUtil {
 		if (StringUtils.isNotBlank(username)) {
 			PreparedStatement statement = null;
 			Connection connection = null;
-			ResultSet results = null;
 			try {
 				connection = DatabaseUpdater.getConnection();
 				
@@ -69,11 +63,14 @@ public class FilterUtil {
 					statement.setInt(1, userId);
 					statement.setString(2, OpenmrsConstants.USER_PROPERTY_DEFAULT_LOCALE);
 					if (statement.execute()) {
-						results = statement.getResultSet();
+						ResultSet results = statement.getResultSet();
 						if (results.next()) {
 							currentLocale = results.getString(1);
 						}
 					}
+					
+					//close statement
+					statement.close();
 				}
 				
 				// if locale is still null we should try to retrieve system locale global property's value
@@ -86,7 +83,7 @@ public class FilterUtil {
 			}
 			finally {
 				try {
-					if (statement != null) {
+					if (statement != null && !statement.isClosed()) {
 						statement.close();
 					}
 				}
@@ -99,16 +96,7 @@ public class FilterUtil {
 						connection.close();
 					}
 					catch (SQLException e) {
-						log.debug(DATABASE_CLOSING_ERROR, e);
-					}
-				}
-				
-				if (results != null) {
-					try {
-						results.close();
-					}
-					catch (SQLException e) {
-						log.warn("Error while closing ResultSet", e);
+						log.debug("Error while closing the database", e);
 					}
 				}
 			}
@@ -130,7 +118,7 @@ public class FilterUtil {
 	 */
 	public static String readSystemDefaultLocale(Connection connection) {
 		String systemDefaultLocale = null;
-		boolean needToCloseConection = false;
+		Boolean needToCloseConection = false;
 		try {
 			if (connection == null) {
 				connection = DatabaseUpdater.getConnection();
@@ -155,7 +143,7 @@ public class FilterUtil {
 					connection.close();
 				}
 				catch (SQLException e) {
-					log.debug(DATABASE_CLOSING_ERROR, e);
+					log.debug("Error while closing the database", e);
 				}
 			}
 		}
@@ -236,7 +224,7 @@ public class FilterUtil {
 						connection.close();
 					}
 					catch (SQLException e) {
-						log.debug(DATABASE_CLOSING_ERROR, e);
+						log.debug("Error while closing the database", e);
 					}
 				}
 			}

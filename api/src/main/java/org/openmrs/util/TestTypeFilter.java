@@ -11,7 +11,7 @@ package org.openmrs.util;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.ArrayList;
+import java.util.Vector;
 
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
@@ -37,7 +37,7 @@ public class TestTypeFilter implements TypeFilter {
 	/**
 	 * Any class with a super class in this list will not be loaded (scanned) by Spring
 	 */
-	private static List<String> superClassNamesToExclude = new ArrayList<>();
+	private static List<String> superClassNamesToExclude = new Vector<String>();
 	
 	static {
 		superClassNamesToExclude.add("org.openmrs.test.BaseContextSensitiveTest");
@@ -53,13 +53,12 @@ public class TestTypeFilter implements TypeFilter {
 	 * @see org.springframework.core.type.filter.TypeFilter#match(org.springframework.core.type.classreading.MetadataReader,
 	 *      org.springframework.core.type.classreading.MetadataReaderFactory)
 	 */
-	@Override
 	public boolean match(MetadataReader metadataReader, MetadataReaderFactory metadataReaderFactory) throws IOException {
 		String superClassName = metadataReader.getClassMetadata().getSuperClassName();
 		if (superClassName != null) {
 			return superClassNamesToExclude.contains(superClassName);
 		}
-
+		
 		return false;
 	}
 	

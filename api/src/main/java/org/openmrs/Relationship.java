@@ -9,55 +9,27 @@
  */
 package org.openmrs;
 
-import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.Parameter;
-import org.hibernate.envers.Audited;
-
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
 import java.util.Date;
 
 /**
  * Relationship
  */
-@Entity
-@Table(name = "relationship")
-@Audited
-public class Relationship extends BaseChangeableOpenmrsData {
+public class Relationship extends BaseOpenmrsData {
 	
 	public static final long serialVersionUID = 323423L;
 	
 	// Fields
-	@Id
-	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "relationship_id_seq")
-	@GenericGenerator(
-		name = "relationship_id_seq",
-		strategy = "native",
-		parameters = @Parameter(name = "sequence", value = "relationship_relationship_id_seq")
-	)
-	@Column(name = "relationship_id")
+	
 	private Integer relationshipId;
-	@ManyToOne(optional = false)
-	@JoinColumn(name = "person_a", nullable = false)
+	
 	private Person personA;
-
-	@ManyToOne(optional = false)
-	@JoinColumn(name = "relationship", nullable = false)
+	
 	private RelationshipType relationshipType;
-
-	@ManyToOne(optional = false)
-	@JoinColumn(name = "person_b", nullable = false)
+	
 	private Person personB;
-
-	@Column(name = "start_date",length = 19)
+	
 	private Date startDate;
-	@Column(name = "end_date", length = 19)
+	
 	private Date endDate;
 	
 	// Constructors
@@ -99,7 +71,7 @@ public class Relationship extends BaseChangeableOpenmrsData {
 		target.personB = getPersonB();
 		target.setCreator(getCreator());
 		target.setDateCreated(getDateCreated());
-		target.setVoided(getVoided());
+		target.setVoided(isVoided());
 		target.setVoidedBy(getVoidedBy());
 		target.setDateVoided(getDateVoided());
 		target.setVoidReason(getVoidReason());
@@ -198,7 +170,6 @@ public class Relationship extends BaseChangeableOpenmrsData {
 		this.endDate = endDate;
 	}
 	
-	@Override
 	public String toString() {
 		String relType = getRelationshipType() == null ? "NULL" : getRelationshipType().getaIsToB();
 		return personA + " is the " + relType + " of " + personB;
@@ -208,7 +179,6 @@ public class Relationship extends BaseChangeableOpenmrsData {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		
 		return getRelationshipId();
@@ -218,7 +188,6 @@ public class Relationship extends BaseChangeableOpenmrsData {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setRelationshipId(id);
 		

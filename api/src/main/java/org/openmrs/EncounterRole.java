@@ -9,16 +9,13 @@
  */
 package org.openmrs;
 
-import org.hibernate.envers.Audited;
-
 /**
  * An EncounterRole a role specific to the encounter. While these could match up to existing
  * organizational roles (e.g., "Nurse"), they don't have to (e.g., "Lead Surgeon")
  *
  * @since 1.9
  */
-@Audited
-public class EncounterRole extends BaseChangeableOpenmrsMetadata {
+public class EncounterRole extends BaseOpenmrsMetadata {
 	
 	public static final String UNKNOWN_ENCOUNTER_ROLE_UUID = "a0b03050-c99b-11e0-9572-0800200c9a66";
 	
@@ -33,7 +30,7 @@ public class EncounterRole extends BaseChangeableOpenmrsMetadata {
 	
 	/**
 	 * @param encounterRoleId
-	 * <strong>Should</strong> set encounter role id
+	 * @should set encounter role id
 	 */
 	public EncounterRole(Integer encounterRoleId) {
 		this.encounterRoleId = encounterRoleId;
@@ -43,7 +40,7 @@ public class EncounterRole extends BaseChangeableOpenmrsMetadata {
 	
 	/**
 	 * @see Object#toString()
-	 * <strong>Should</strong> not fail with empty object
+	 * @should not fail with empty object
 	 */
 	@Override
 	public String toString() {
@@ -55,7 +52,6 @@ public class EncounterRole extends BaseChangeableOpenmrsMetadata {
 	/**
 	 * @see OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		
 		return getEncounterRoleId();
@@ -64,7 +60,6 @@ public class EncounterRole extends BaseChangeableOpenmrsMetadata {
 	/**
 	 * @see OpenmrsObject#setId(Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setEncounterRoleId(id);
 		

@@ -9,15 +9,14 @@
  */
 package org.openmrs;
 
-import java.util.ArrayList;
+import org.hibernate.search.annotations.ContainedIn;
+
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-
-import org.hibernate.envers.Audited;
-import org.hibernate.search.annotations.ContainedIn;
+import java.util.Vector;
 
 /**
  * Defines a Patient in the system. A patient is simply an extension of a person and all that that
@@ -25,18 +24,16 @@ import org.hibernate.search.annotations.ContainedIn;
  * 
  * @version 2.0
  */
-@Audited
 public class Patient extends Person {
 	
 	public static final long serialVersionUID = 93123L;
-	
+
 	private Integer patientId;
-	
+
 	private String allergyStatus = Allergies.UNKNOWN;
-	
+
 	@ContainedIn
 	private Set<PatientIdentifier> identifiers;
-
 	
 	// Constructors
 	
@@ -50,7 +47,8 @@ public class Patient extends Person {
 	 * attributes are copied over to the new object. NOTE! All child collection objects are copied
 	 * as pointers, each individual element is not copied. <br>
 	 * <br>
-	 *
+	 * TODO Should the patient specific attributes be copied? (like identifiers)
+	 * 
 	 * @param person the person object to copy onto a new Patient
 	 * @see Person#Person(Person)
 	 */
@@ -76,35 +74,12 @@ public class Patient extends Person {
 		setPatient(true);
 	}
 	
-	/**
-	 * This constructor creates a new Patient object from the given {@link Patient} object. All
-	 * attributes are copied over to the new object. In effect creating a clone/duplicate. <br>
-	 *
-	 * @param patient the person object to copy onto a new Patient
-	 * @since 2.2.0
-	 */
-	public Patient(Patient patient) {
-		super(patient);
-		this.patientId = patient.getPatientId();
-		this.allergyStatus = patient.getAllergyStatus();
-		Set<PatientIdentifier> newIdentifiers = new TreeSet<>();
-		for (PatientIdentifier pid : patient.getIdentifiers()) {
-			PatientIdentifier identifierClone = (PatientIdentifier) pid.clone();
-			identifierClone.setPatient(this);
-			newIdentifiers.add(identifierClone);
-		}
-		this.identifiers = newIdentifiers;
-	}
-	
 	// Property accessors
 	
 	/**
 	 * @return internal identifier for patient
 	 */
 	public Integer getPatientId() {
-		if (this.patientId == null) {
-			this.patientId = getPersonId();
-		}
 		return this.patientId;
 	}
 	
@@ -124,19 +99,19 @@ public class Patient extends Person {
 	 * 
 	 * @return current allargy status for patient
 	 * @since 2.0
-	 * <strong>Should</strong> return allergy status maintained by the supporting infrastructure
+	 * @should return allergy status maintained by the supporting infrastructure
 	 */
 	public String getAllergyStatus() {
 		return this.allergyStatus;
 	}
 	
 	/**
-	 * Sets the allergy status for a patient. <b>This should never be called directly</b>. It should
-	 * reflect allergy status maintained by the supporting infrastructure.
+	 * Sets the allergy status for a patient. <b>This should never be called directly</b>. 
+	 * It should reflect allergy status maintained by the supporting infrastructure.
 	 * 
 	 * @param allergyStatus
 	 * @since 2.0
-	 * <strong>Should</strong> not be called by service client
+	 * @should not be called by service client
 	 */
 	public void setAllergyStatus(String allergyStatus) {
 		this.allergyStatus = allergyStatus;
@@ -153,7 +128,7 @@ public class Patient extends Person {
 		super.setPersonId(personId);
 		this.patientId = personId;
 	}
-	
+
 	/**
 	 * Get all of this patients identifiers -- both voided and non-voided ones. If you want only
 	 * non-voided identifiers, use {@link #getActiveIdentifiers()}
@@ -161,11 +136,11 @@ public class Patient extends Person {
 	 * @return Set of all known identifiers for this patient
 	 * @see org.openmrs.PatientIdentifier
 	 * @see #getActiveIdentifiers()
-	 * <strong>Should</strong> not return null
+	 * @should not return null
 	 */
 	public Set<PatientIdentifier> getIdentifiers() {
 		if (identifiers == null) {
-			identifiers = new TreeSet<>();
+			identifiers = new TreeSet<PatientIdentifier>();
 		}
 		return this.identifiers;
 	}
@@ -173,14 +148,13 @@ public class Patient extends Person {
 	/**
 	 * Update all identifiers for patient
 	 * 
-	 * @param identifiers Set&lt;PatientIdentifier&gt; to set as update all known identifiers for
-	 *            patient
+	 * @param identifiers Set&lt;PatientIdentifier&gt; to set as update all known identifiers for patient
 	 * @see org.openmrs.PatientIdentifier
 	 */
 	public void setIdentifiers(Set<PatientIdentifier> identifiers) {
 		this.identifiers = identifiers;
 	}
-
+	
 	/**
 	 * Adds this PatientIdentifier if the patient doesn't contain it already
 	 * 
@@ -201,9 +175,9 @@ public class Patient extends Person {
 	 * Will add this PatientIdentifier if the patient doesn't contain it already
 	 * 
 	 * @param patientIdentifier
-	 * <strong>Should</strong> not fail with null identifiers list
-	 * <strong>Should</strong> add identifier to current list
-	 * <strong>Should</strong> not add identifier that is in list already
+	 * @should not fail with null identifiers list
+	 * @should add identifier to current list
+	 * @should not add identifier that is in list already
 	 */
 	public void addIdentifier(PatientIdentifier patientIdentifier) {
 		if (patientIdentifier != null) {
@@ -212,13 +186,15 @@ public class Patient extends Person {
 			// identifier, identifierType
 			for (PatientIdentifier currentId : getActiveIdentifiers()) {
 				if (currentId.equalsContent(patientIdentifier)) {
-					// fail silently if someone tries to add a duplicate
-					return;
+					return; // fail silently if someone tries to add a duplicate
 				}
 			}
 		}
 		
-		getIdentifiers().add(patientIdentifier);
+		if (identifiers == null) {
+			identifiers = new TreeSet<PatientIdentifier>();
+		}
+		identifiers.add(patientIdentifier);
 	}
 	
 	/**
@@ -226,11 +202,11 @@ public class Patient extends Person {
 	 * <code>patientIdentifier</code> is null, nothing is done.
 	 * 
 	 * @param patientIdentifier the identifier to remove
-	 * <strong>Should</strong> remove identifier if exists
+	 * @should remove identifier if exists
 	 */
 	public void removeIdentifier(PatientIdentifier patientIdentifier) {
-		if (patientIdentifier != null) {
-			getIdentifiers().remove(patientIdentifier);
+		if (getIdentifiers() != null && patientIdentifier != null) {
+			identifiers.remove(patientIdentifier);
 		}
 	}
 	
@@ -243,14 +219,14 @@ public class Patient extends Person {
 	public PatientIdentifier getPatientIdentifier() {
 		// normally the DAO layer returns these in the correct order, i.e. preferred and non-voided first, but it's possible that someone
 		// has fetched a Patient, changed their identifiers around, and then calls this method, so we have to be careful.
-		if (!getIdentifiers().isEmpty()) {
+		if (getIdentifiers() != null && !getIdentifiers().isEmpty()) {
 			for (PatientIdentifier id : getIdentifiers()) {
-				if (id.getPreferred() && !id.getVoided()) {
+				if (id.isPreferred() && !id.isVoided()) {
 					return id;
 				}
 			}
 			for (PatientIdentifier id : getIdentifiers()) {
-				if (!id.getVoided()) {
+				if (!id.isVoided()) {
 					return id;
 				}
 			}
@@ -268,14 +244,14 @@ public class Patient extends Person {
 	 * @return Returns a PatientIdentifier of the specified type.
 	 */
 	public PatientIdentifier getPatientIdentifier(PatientIdentifierType pit) {
-		if (!getIdentifiers().isEmpty()) {
+		if (getIdentifiers() != null && !getIdentifiers().isEmpty()) {
 			for (PatientIdentifier id : getIdentifiers()) {
-				if (id.getPreferred() && !id.getVoided() && pit.equals(id.getIdentifierType())) {
+				if (id.isPreferred() && !id.isVoided() && pit.equals(id.getIdentifierType())) {
 					return id;
 				}
 			}
 			for (PatientIdentifier id : getIdentifiers()) {
-				if (!id.getVoided() && pit.equals(id.getIdentifierType())) {
+				if (!id.isVoided() && pit.equals(id.getIdentifierType())) {
 					return id;
 				}
 			}
@@ -291,15 +267,15 @@ public class Patient extends Person {
 	 * @return preferred patient identifier
 	 */
 	public PatientIdentifier getPatientIdentifier(Integer identifierTypeId) {
-		if (!getIdentifiers().isEmpty()) {
+		if (getIdentifiers() != null && !getIdentifiers().isEmpty()) {
 			for (PatientIdentifier id : getIdentifiers()) {
-				if (id.getPreferred() && !id.getVoided()
+				if (id.isPreferred() && !id.isVoided()
 				        && identifierTypeId.equals(id.getIdentifierType().getPatientIdentifierTypeId())) {
 					return id;
 				}
 			}
 			for (PatientIdentifier id : getIdentifiers()) {
-				if (!id.getVoided() && identifierTypeId.equals(id.getIdentifierType().getPatientIdentifierTypeId())) {
+				if (!id.isVoided() && identifierTypeId.equals(id.getIdentifierType().getPatientIdentifierTypeId())) {
 					return id;
 				}
 			}
@@ -316,14 +292,14 @@ public class Patient extends Person {
 	 * @return preferred patient identifier
 	 */
 	public PatientIdentifier getPatientIdentifier(String identifierTypeName) {
-		if (!getIdentifiers().isEmpty()) {
+		if (getIdentifiers() != null && !getIdentifiers().isEmpty()) {
 			for (PatientIdentifier id : getIdentifiers()) {
-				if (id.getPreferred() && !id.getVoided() && identifierTypeName.equals(id.getIdentifierType().getName())) {
+				if (id.isPreferred() && !id.isVoided() && identifierTypeName.equals(id.getIdentifierType().getName())) {
 					return id;
 				}
 			}
 			for (PatientIdentifier id : getIdentifiers()) {
-				if (!id.getVoided() && identifierTypeName.equals(id.getIdentifierType().getName())) {
+				if (!id.isVoided() && identifierTypeName.equals(id.getIdentifierType().getName())) {
 					return id;
 				}
 			}
@@ -338,21 +314,25 @@ public class Patient extends Person {
 	 * 
 	 * @return list of non-voided identifiers for this patient
 	 * @see #getIdentifiers()
-	 * <strong>Should</strong> return preferred identifiers first in the list
+	 * @should return preferred identifiers first in the list
 	 */
 	public List<PatientIdentifier> getActiveIdentifiers() {
-		List<PatientIdentifier> ids = new ArrayList<>();
-		List<PatientIdentifier> nonPreferred = new LinkedList<>();
-		for (PatientIdentifier pi : getIdentifiers()) {
-			if (!pi.getVoided()) {
-				if (pi.getPreferred()) {
-					ids.add(pi);
-				} else {
-					nonPreferred.add(pi);
+		List<PatientIdentifier> ids = new Vector<PatientIdentifier>();
+		if (getIdentifiers() != null) {
+			List<PatientIdentifier> nonPreferred = new LinkedList<PatientIdentifier>();
+			for (PatientIdentifier pi : getIdentifiers()) {
+				if (!pi.isVoided()) {
+					if (pi.isPreferred()) {
+						ids.add(pi);
+					} else {
+						nonPreferred.add(pi);
+					}
 				}
 			}
+			for (PatientIdentifier pi : nonPreferred) {
+				ids.add(pi);
+			}
 		}
-		ids.addAll(nonPreferred);
 		return ids;
 	}
 	
@@ -365,10 +345,12 @@ public class Patient extends Person {
 	 * @see #getIdentifiers()
 	 */
 	public List<PatientIdentifier> getPatientIdentifiers(PatientIdentifierType pit) {
-		List<PatientIdentifier> ids = new ArrayList<>();
-		for (PatientIdentifier pi : getIdentifiers()) {
-			if (!pi.getVoided() && pit.equals(pi.getIdentifierType())) {
-				ids.add(pi);
+		List<PatientIdentifier> ids = new Vector<PatientIdentifier>();
+		if (getIdentifiers() != null) {
+			for (PatientIdentifier pi : getIdentifiers()) {
+				if (!pi.isVoided() && pit.equals(pi.getIdentifierType())) {
+					ids.add(pi);
+				}
 			}
 		}
 		return ids;
@@ -395,6 +377,7 @@ public class Patient extends Person {
 	@Override
 	public void setId(Integer id) {
 		setPatientId(id);
+		
 	}
 	
 	/**
@@ -406,5 +389,4 @@ public class Patient extends Person {
 	public Person getPerson() {
 		return this;
 	}
-	
 }

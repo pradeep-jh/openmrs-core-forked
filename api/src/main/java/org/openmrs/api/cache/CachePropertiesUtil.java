@@ -10,6 +10,12 @@
 package org.openmrs.api.cache;
 
 
+import net.sf.ehcache.config.CacheConfiguration;
+import org.apache.commons.beanutils.BeanUtils;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.core.io.support.ResourcePatternResolver;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -20,17 +26,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
-import org.apache.commons.beanutils.BeanUtils;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.core.io.support.ResourcePatternResolver;
-
-import net.sf.ehcache.config.CacheConfiguration;
-
 public class CachePropertiesUtil {
-
-    private CachePropertiesUtil() {
-    }
 
     /**
      * This method looks for all apiCacheConfig.properties file located in cacheConfig folder in classpath

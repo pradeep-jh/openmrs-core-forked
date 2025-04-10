@@ -9,16 +9,14 @@
  */
 package org.openmrs;
 
-import java.util.Date;
+import org.codehaus.jackson.annotate.JsonIgnore;
+import org.hibernate.search.annotations.Field;
 
 import javax.persistence.Column;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.MappedSuperclass;
-
-import org.codehaus.jackson.annotate.JsonIgnore;
-import org.hibernate.envers.Audited;
-import org.hibernate.search.annotations.Field;
+import java.util.Date;
 
 /**
  * In OpenMRS, we distinguish between data and metadata within our data model. Data (as opposed to
@@ -29,7 +27,6 @@ import org.hibernate.search.annotations.Field;
  * @see OpenmrsData
  */
 @MappedSuperclass
-@Audited
 public abstract class BaseOpenmrsData extends BaseOpenmrsObject implements OpenmrsData {
 	
 	//***** Properties *****
@@ -72,82 +69,66 @@ public abstract class BaseOpenmrsData extends BaseOpenmrsObject implements Openm
 	//***** Property Access *****
 	
 	/**
-	 * @see org.openmrs.OpenmrsData#getCreator()
+	 * @see org.openmrs.Auditable#getCreator()
 	 */
-	@Override
 	public User getCreator() {
 		return creator;
 	}
 	
 	/**
-	 * @see org.openmrs.OpenmrsData#setCreator(org.openmrs.User)
+	 * @see org.openmrs.Auditable#setCreator(org.openmrs.User)
 	 */
-	@Override
 	public void setCreator(User creator) {
 		this.creator = creator;
 	}
 	
 	/**
-	 * @see org.openmrs.OpenmrsData#getDateCreated()
+	 * @see org.openmrs.Auditable#getDateCreated()
 	 */
-	@Override
 	public Date getDateCreated() {
 		return dateCreated;
 	}
 	
 	/**
-	 * @see org.openmrs.OpenmrsData#setDateCreated(java.util.Date)
+	 * @see org.openmrs.Auditable#setDateCreated(java.util.Date)
 	 */
-	@Override
 	public void setDateCreated(Date dateCreated) {
 		this.dateCreated = dateCreated;
 	}
 	
 	/**
-	 * @deprecated as of version 2.2
-	 * @see org.openmrs.OpenmrsData#getChangedBy()
+	 * @see org.openmrs.Auditable#getChangedBy()
 	 */
-	@Override
-	@Deprecated
 	public User getChangedBy() {
 		return changedBy;
 	}
 	
 	/**
-	 * @deprecated as of version 2.2
-	 * @see org.openmrs.OpenmrsData#setChangedBy(User)
+	 * @see org.openmrs.Auditable#setChangedBy(org.openmrs.User)
 	 */
-	@Override
-	@Deprecated
 	public void setChangedBy(User changedBy) {
 		this.changedBy = changedBy;
 	}
 	
 	/**
-	 * @deprecated as of version 2.2
-	 * @see org.openmrs.OpenmrsData#getDateChanged()
+	 * @see org.openmrs.Auditable#getDateChanged()
 	 */
-	@Override
-	@Deprecated
 	public Date getDateChanged() {
 		return dateChanged;
 	}
 	
 	/**
-	 * @deprecated as of version 2.2
-	 * @see org.openmrs.OpenmrsData#setDateChanged(Date)
+	 * @see org.openmrs.Auditable#setDateChanged(java.util.Date)
 	 */
-	@Override
-	@Deprecated
 	public void setDateChanged(Date dateChanged) {
 		this.dateChanged = dateChanged;
 	}
 	
 	/**
 	 * @deprecated as of 2.0, use {@link #getVoided()}
+	 * 
 	 * @see org.openmrs.Voidable#isVoided()
 	 */
-	@Override
 	@Deprecated
 	@JsonIgnore
 	public Boolean isVoided() {
@@ -155,9 +136,12 @@ public abstract class BaseOpenmrsData extends BaseOpenmrsObject implements Openm
 	}
 	
 	/**
-	 * @see org.openmrs.Voidable#getVoided()
+	 * This method delegates to {@link #isVoided()}. This is only needed for jstl syntax like
+	 * ${person.voided} because the return type is a Boolean object instead of a boolean primitive
+	 * type.
+	 * 
+	 * @see org.openmrs.Voidable#isVoided()
 	 */
-	@Override
 	public Boolean getVoided() {
 		return voided;
 	}
@@ -165,7 +149,6 @@ public abstract class BaseOpenmrsData extends BaseOpenmrsObject implements Openm
 	/**
 	 * @see org.openmrs.Voidable#setVoided(java.lang.Boolean)
 	 */
-	@Override
 	public void setVoided(Boolean voided) {
 		this.voided = voided;
 	}
@@ -173,7 +156,6 @@ public abstract class BaseOpenmrsData extends BaseOpenmrsObject implements Openm
 	/**
 	 * @see org.openmrs.Voidable#getDateVoided()
 	 */
-	@Override
 	public Date getDateVoided() {
 		return dateVoided;
 	}
@@ -181,7 +163,6 @@ public abstract class BaseOpenmrsData extends BaseOpenmrsObject implements Openm
 	/**
 	 * @see org.openmrs.Voidable#setDateVoided(java.util.Date)
 	 */
-	@Override
 	public void setDateVoided(Date dateVoided) {
 		this.dateVoided = dateVoided;
 	}
@@ -189,7 +170,6 @@ public abstract class BaseOpenmrsData extends BaseOpenmrsObject implements Openm
 	/**
 	 * @see org.openmrs.Voidable#getVoidedBy()
 	 */
-	@Override
 	public User getVoidedBy() {
 		return voidedBy;
 	}
@@ -197,7 +177,6 @@ public abstract class BaseOpenmrsData extends BaseOpenmrsObject implements Openm
 	/**
 	 * @see org.openmrs.Voidable#setVoidedBy(org.openmrs.User)
 	 */
-	@Override
 	public void setVoidedBy(User voidedBy) {
 		this.voidedBy = voidedBy;
 	}
@@ -205,7 +184,6 @@ public abstract class BaseOpenmrsData extends BaseOpenmrsObject implements Openm
 	/**
 	 * @see org.openmrs.Voidable#getVoidReason()
 	 */
-	@Override
 	public String getVoidReason() {
 		return voidReason;
 	}
@@ -213,7 +191,6 @@ public abstract class BaseOpenmrsData extends BaseOpenmrsObject implements Openm
 	/**
 	 * @see org.openmrs.Voidable#setVoidReason(java.lang.String)
 	 */
-	@Override
 	public void setVoidReason(String voidReason) {
 		this.voidReason = voidReason;
 	}

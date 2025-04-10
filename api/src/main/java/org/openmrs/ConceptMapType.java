@@ -10,14 +10,6 @@
 package org.openmrs;
 
 import org.codehaus.jackson.annotate.JsonIgnore;
-import org.hibernate.envers.Audited;
-
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
 
 /**
  * ConceptMapType are used to define relationships between concepts and concept reference terms e.g
@@ -25,19 +17,12 @@ import javax.persistence.Table;
  *
  * @since 1.9
  */
-@Entity
-@Table(name = "concept_map_type")
-@Audited
-public class ConceptMapType extends BaseChangeableOpenmrsMetadata {
-
+public class ConceptMapType extends BaseOpenmrsMetadata {
+	
 	private static final long serialVersionUID = 1L;
-
-	@Id
-	@Column(name = "concept_map_type_id")
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	
 	private Integer conceptMapTypeId;
-
-	@Column(name = "is_hidden", nullable = false, length = 1)
+	
 	private Boolean isHidden = Boolean.FALSE;
 	
 	public static final String SAME_AS_MAP_TYPE_UUID = "35543629-7d8c-11e1-909d-c80aa9edcf4e";
@@ -82,7 +67,6 @@ public class ConceptMapType extends BaseChangeableOpenmrsMetadata {
 	/**
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		return getConceptMapTypeId();
 	}
@@ -90,7 +74,6 @@ public class ConceptMapType extends BaseChangeableOpenmrsMetadata {
 	/**
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setConceptMapTypeId(id);
 	}
@@ -98,7 +81,6 @@ public class ConceptMapType extends BaseChangeableOpenmrsMetadata {
 	/**
 	 * @see java.lang.Object#toString()
 	 */
-	@Override
 	public String toString() {
 		if (getName() == null) {
 			return "";

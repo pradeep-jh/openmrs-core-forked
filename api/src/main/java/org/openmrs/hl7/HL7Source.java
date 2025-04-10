@@ -9,15 +9,13 @@
  */
 package org.openmrs.hl7;
 
-import org.hibernate.envers.Audited;
-import org.openmrs.BaseChangeableOpenmrsMetadata;
+import org.openmrs.BaseOpenmrsMetadata;
 
 /**
  * Names a unique location that hl7 messages could be coming from.
  */
-@Audited
-public class HL7Source extends BaseChangeableOpenmrsMetadata {
-	                                  
+public class HL7Source extends BaseOpenmrsMetadata {
+	
 	private static final long serialVersionUID = 3062136520728193223L;
 	
 	private Integer hl7SourceId;
@@ -55,7 +53,6 @@ public class HL7Source extends BaseChangeableOpenmrsMetadata {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		return getHL7SourceId();
 	}
@@ -64,7 +61,6 @@ public class HL7Source extends BaseChangeableOpenmrsMetadata {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setHL7SourceId(id);
 	}

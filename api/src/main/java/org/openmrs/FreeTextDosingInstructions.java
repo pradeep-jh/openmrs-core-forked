@@ -9,16 +9,17 @@
  */
 package org.openmrs;
 
+import java.util.Date;
+import java.util.Locale;
+
 import org.openmrs.api.APIException;
 import org.springframework.validation.Errors;
 import org.springframework.validation.ValidationUtils;
 
-import java.util.Locale;
-
 /**
  * @since 1.10
  */
-public class FreeTextDosingInstructions extends BaseDosingInstructions {
+public class FreeTextDosingInstructions implements DosingInstructions {
 	
 	private String instructions;
 	
@@ -43,7 +44,7 @@ public class FreeTextDosingInstructions extends BaseDosingInstructions {
 	 * @see DosingInstructions#getDosingInstructions(DrugOrder)
 	 */
 	@Override
-	public DosingInstructions getDosingInstructions(DrugOrder order) {
+	public DosingInstructions getDosingInstructions(DrugOrder order) throws APIException {
 		if (!order.getDosingType().equals(this.getClass())) {
 			throw new APIException("DrugOrder.error.dosingTypeIsMismatched", new Object[] { this.getClass(),
 			        order.getDosingType() });
@@ -57,6 +58,12 @@ public class FreeTextDosingInstructions extends BaseDosingInstructions {
 	public void validate(DrugOrder order, Errors errors) {
 		ValidationUtils.rejectIfEmpty(errors, "dosingInstructions",
 		    "DrugOrder.error.dosingInstructionsIsNullForDosingTypeFreeText");
+		
+	}
+	
+	@Override
+	public Date getAutoExpireDate(DrugOrder order) {
+		return null;
 	}
 	
 	public String getInstructions() {

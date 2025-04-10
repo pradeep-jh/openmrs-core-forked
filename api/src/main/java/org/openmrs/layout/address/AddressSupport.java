@@ -11,16 +11,16 @@ package org.openmrs.layout.address;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 
-import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.GlobalProperty;
 import org.openmrs.api.GlobalPropertyListener;
 import org.openmrs.api.context.Context;
 import org.openmrs.layout.LayoutSupport;
 import org.openmrs.serialization.SerializationException;
 import org.openmrs.util.OpenmrsConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @since 1.12
@@ -31,7 +31,7 @@ public class AddressSupport extends LayoutSupport<AddressTemplate> implements Gl
 	
 	private boolean initialized = false;
 	
-	private static final Logger log = LoggerFactory.getLogger(AddressSupport.class);
+	static Log log = LogFactory.getLog(AddressSupport.class);
 	
 	private AddressSupport() {
 		if (singleton == null) {
@@ -57,9 +57,9 @@ public class AddressSupport extends LayoutSupport<AddressTemplate> implements Gl
 			
 			String layoutTemplateXml = Context.getAdministrationService().getGlobalProperty(
 			    OpenmrsConstants.GLOBAL_PROPERTY_ADDRESS_TEMPLATE);
-			setAddressTemplate(StringEscapeUtils.unescapeXml(layoutTemplateXml));
+			setAddressTemplate(layoutTemplateXml);
 			
-			List<String> specialTokens = new ArrayList<>();
+			List<String> specialTokens = new ArrayList<String>();
 			specialTokens.add("address1");
 			specialTokens.add("address2");
 			specialTokens.add("address3");
@@ -84,7 +84,6 @@ public class AddressSupport extends LayoutSupport<AddressTemplate> implements Gl
 	/**
 	 * @return Returns the defaultLayoutFormat
 	 */
-	@Override
 	public String getDefaultLayoutFormat() {
 		return defaultLayoutFormat;
 	}
@@ -119,7 +118,6 @@ public class AddressSupport extends LayoutSupport<AddressTemplate> implements Gl
 	/**
 	 * @see org.openmrs.api.GlobalPropertyListener#supportsPropertyName(String)
 	 */
-	@Override
 	public boolean supportsPropertyName(String propertyName) {
 		return OpenmrsConstants.GLOBAL_PROPERTY_ADDRESS_TEMPLATE.equals(propertyName);
 	}
@@ -127,7 +125,6 @@ public class AddressSupport extends LayoutSupport<AddressTemplate> implements Gl
 	/**
 	 * @see org.openmrs.api.GlobalPropertyListener#globalPropertyChanged(org.openmrs.GlobalProperty)
 	 */
-	@Override
 	public void globalPropertyChanged(GlobalProperty newValue) {
 		if (!OpenmrsConstants.GLOBAL_PROPERTY_ADDRESS_TEMPLATE.equals(newValue.getProperty())) {
 			return;
@@ -137,7 +134,7 @@ public class AddressSupport extends LayoutSupport<AddressTemplate> implements Gl
 		}
 		catch (Exception ex) {
 			log.error("Error in new xml global property value", ex);
-			setAddressTemplate(new ArrayList<>());
+			setAddressTemplate(new Vector<AddressTemplate>());
 		}
 	}
 	
@@ -145,7 +142,7 @@ public class AddressSupport extends LayoutSupport<AddressTemplate> implements Gl
 		AddressTemplate addressTemplate;
 		try {
 			
-			addressTemplate = Context.getSerializationService().getDefaultSerializer().deserialize(StringEscapeUtils.unescapeXml(xml),
+			addressTemplate = Context.getSerializationService().getDefaultSerializer().deserialize(xml,
 			    AddressTemplate.class);
 		}
 		catch (SerializationException e) {
@@ -153,7 +150,7 @@ public class AddressSupport extends LayoutSupport<AddressTemplate> implements Gl
 			addressTemplate = new AddressTemplate("Error while deserializing address layout template.");
 		}
 		
-		List<AddressTemplate> list = new ArrayList<>();
+		List<AddressTemplate> list = new ArrayList<AddressTemplate>();
 		list.add(addressTemplate);
 		setAddressTemplate(list);
 	}
@@ -166,7 +163,7 @@ public class AddressSupport extends LayoutSupport<AddressTemplate> implements Gl
 		if (!OpenmrsConstants.GLOBAL_PROPERTY_ADDRESS_TEMPLATE.equals(propertyName)) {
 			return;
 		}
-		setAddressTemplate(new ArrayList<>());
+		setAddressTemplate(new Vector<AddressTemplate>());
 	}
 	
 }

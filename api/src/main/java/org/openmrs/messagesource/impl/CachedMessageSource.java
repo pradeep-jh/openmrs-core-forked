@@ -14,7 +14,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.ArrayList;
+import java.util.Vector;
 
 import org.openmrs.messagesource.MutableMessageSource;
 import org.openmrs.messagesource.PresentationMessage;
@@ -28,23 +28,24 @@ import org.springframework.context.support.AbstractMessageSource;
  */
 public class CachedMessageSource extends AbstractMessageSource implements MutableMessageSource {
 	
-	Map<Locale, PresentationMessageMap> localizedMap = new HashMap<>();
+	Map<Locale, PresentationMessageMap> localizedMap = new HashMap<Locale, PresentationMessageMap>();
 	
 	/* (non-Javadoc)
 	 * @see org.openmrs.messagesource.MutableMessageSource#addPresentation(org.openmrs.api.PresentationMessage)
 	 */
-	@Override
 	public void addPresentation(PresentationMessage message) {
-		PresentationMessageMap codeMessageMap = localizedMap
-				.computeIfAbsent(message.getLocale(), k -> new PresentationMessageMap(message.getLocale()));
+		PresentationMessageMap codeMessageMap = localizedMap.get(message.getLocale());
+		if (codeMessageMap == null) {
+			codeMessageMap = new PresentationMessageMap(message.getLocale());
+			localizedMap.put(message.getLocale(), codeMessageMap);
+		}
 		codeMessageMap.put(message.getCode(), message);
 	}
 	
 	/**
 	 * @see org.openmrs.messagesource.MutableMessageSource#getLocales()
-	 * <strong>Should</strong> should be able to contain multiple locales
+	 * @should should be able to contain multiple locales
 	 */
-	@Override
 	public Collection<Locale> getLocales() {
 		return localizedMap.keySet();
 	}
@@ -52,11 +53,11 @@ public class CachedMessageSource extends AbstractMessageSource implements Mutabl
 	/* (non-Javadoc)
 	 * @see org.openmrs.messagesource.MutableMessageSource#getPresentations()
 	 */
-	@Override
 	public Collection<PresentationMessage> getPresentations() {
-		Collection<PresentationMessage> allMessages = new ArrayList<>();
+		Collection<PresentationMessage> allMessages = new Vector<PresentationMessage>();
 		
-		for (PresentationMessageMap codeMessageMap : localizedMap.values()) {
+		for (Locale locale : localizedMap.keySet()) {
+			PresentationMessageMap codeMessageMap = localizedMap.get(locale);
 			allMessages.addAll(codeMessageMap.values());
 		}
 		
@@ -66,7 +67,6 @@ public class CachedMessageSource extends AbstractMessageSource implements Mutabl
 	/* (non-Javadoc)
 	 * @see org.openmrs.messagesource.MutableMessageSource#removePresentation(org.openmrs.api.PresentationMessage)
 	 */
-	@Override
 	public void removePresentation(PresentationMessage message) {
 		PresentationMessageMap codeMessageMap = localizedMap.get(message.getLocale());
 		if ((codeMessageMap != null) && codeMessageMap.containsKey(message.getCode())) {
@@ -74,7 +74,6 @@ public class CachedMessageSource extends AbstractMessageSource implements Mutabl
 		}
 	}
 	
-	@Override
 	public void merge(MutableMessageSource fromSource, boolean overwrite) {
 		for (PresentationMessage message : fromSource.getPresentations()) {
 			addPresentation(message);
@@ -84,9 +83,8 @@ public class CachedMessageSource extends AbstractMessageSource implements Mutabl
 	/**
 	 * @see org.openmrs.messagesource.MutableMessageSource#getPresentation(java.lang.String,
 	 *      java.util.Locale)
-	 * <strong>Should</strong> match get message with presentation message
+	 * @should match get message with presentation message
 	 */
-	@Override
 	public PresentationMessage getPresentation(String key, Locale forLocale) {
 		PresentationMessage foundPM = null;
 		PresentationMessageMap codeMessageMap = localizedMap.get(forLocale);
@@ -99,7 +97,6 @@ public class CachedMessageSource extends AbstractMessageSource implements Mutabl
 	/**
 	 * @see org.openmrs.messagesource.MutableMessageSource#getPresentationsInLocale(java.util.Locale)
 	 */
-	@Override
 	public Collection<PresentationMessage> getPresentationsInLocale(Locale locale) {
 		Collection<PresentationMessage> foundPresentations = null;
 		PresentationMessageMap codeMessageMap = localizedMap.get(locale);

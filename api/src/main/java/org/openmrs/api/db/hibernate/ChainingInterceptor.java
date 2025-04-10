@@ -16,13 +16,13 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.hibernate.CallbackException;
 import org.hibernate.EntityMode;
 import org.hibernate.Interceptor;
 import org.hibernate.Transaction;
 import org.hibernate.type.Type;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Used by the {@link HibernateSessionFactoryBean} to keep track of multiple interceptors <br>
@@ -33,10 +33,10 @@ import org.slf4j.LoggerFactory;
  */
 public class ChainingInterceptor implements Interceptor {
 	
-	private static final Logger log = LoggerFactory.getLogger(ChainingInterceptor.class);
+	private static final Log log = LogFactory.getLog(ChainingInterceptor.class);
 	
 	// using a linkedhashset to preserve insert order and maintain a list of unique objects
-	public Collection<Interceptor> interceptors = new LinkedHashSet<>();
+	public Collection<Interceptor> interceptors = new LinkedHashSet<Interceptor>();
 	
 	/**
 	 * Adds the given interceptor to the list of interceptors to be applied to hibernate sessions.
@@ -54,20 +54,18 @@ public class ChainingInterceptor implements Interceptor {
 		log.debug("Adding " + interceptor + " to interceptor chain");
 		
 		if (interceptors == null) {
-			interceptors = new LinkedHashSet<>();
+			interceptors = new LinkedHashSet<Interceptor>();
 		}
 		
 		interceptors.add(interceptor);
 	}
 	
-	@Override
 	public void onDelete(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
 		for (Interceptor i : interceptors) {
 			i.onDelete(entity, id, state, propertyNames, types);
 		}
 	}
 	
-	@Override
 	public boolean onFlushDirty(Object entity, Serializable id, Object[] currentState, Object[] previousState,
 	        String[] propertyNames, Type[] types) {
 		boolean objectChanged = false;
@@ -80,7 +78,6 @@ public class ChainingInterceptor implements Interceptor {
 		return objectChanged;
 	}
 	
-	@Override
 	public boolean onLoad(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
 		boolean objectChanged = false;
 		
@@ -92,7 +89,6 @@ public class ChainingInterceptor implements Interceptor {
 		return objectChanged;
 	}
 	
-	@Override
 	public boolean onSave(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
 		boolean objectChanged = false;
 		
@@ -104,21 +100,20 @@ public class ChainingInterceptor implements Interceptor {
 		return objectChanged;
 	}
 	
-	@Override
+	@SuppressWarnings("unchecked")
 	public void postFlush(Iterator entities) {
 		for (Interceptor i : interceptors) {
 			i.postFlush(entities);
 		}
 	}
 	
-	@Override
+	@SuppressWarnings("unchecked")
 	public void preFlush(Iterator entities) {
 		for (Interceptor i : interceptors) {
 			i.preFlush(entities);
 		}
 	}
 	
-	@Override
 	public Boolean isTransient(Object entity) {
 		// by default let hibernate figure it out
 		Boolean returnValue = null;
@@ -140,7 +135,6 @@ public class ChainingInterceptor implements Interceptor {
 	}
 	
 	// returns the first non-null response from all interceptors
-	@Override
 	public Object instantiate(String entityName, EntityMode entityMode, Serializable id) {
 		for (Interceptor i : interceptors) {
 			Object o = i.instantiate(entityName, entityMode, id);
@@ -152,11 +146,10 @@ public class ChainingInterceptor implements Interceptor {
 		return null;
 	}
 	
-	@Override
 	public int[] findDirty(Object entity, Serializable id, Object[] currentState, Object[] previousState,
 	        String[] propertyNames, Type[] types) {
 		
-		List<Integer> uniqueIndices = new LinkedList<>();
+		List<Integer> uniqueIndices = new LinkedList<Integer>();
 		
 		for (Interceptor i : interceptors) {
 			int[] indices = i.findDirty(entity, id, currentState, previousState, propertyNames, types);
@@ -178,14 +171,13 @@ public class ChainingInterceptor implements Interceptor {
 		int[] uniquePrimitiveIndices = new int[uniqueIndices.size()];
 		
 		for (int x = 0; x < uniqueIndices.size(); x++) {
-			uniquePrimitiveIndices[x] = uniqueIndices.get(x);
+			uniquePrimitiveIndices[x] = uniqueIndices.get(x).intValue();
 		}
 		
 		return uniquePrimitiveIndices;
 	}
 	
 	// returns the first non-null name from the interceptors
-	@Override
 	public String getEntityName(Object object) {
 		for (Interceptor i : interceptors) {
 			String name = i.getEntityName(object);
@@ -197,7 +189,6 @@ public class ChainingInterceptor implements Interceptor {
 		return null;
 	}
 	
-	@Override
 	public Object getEntity(String entityName, Serializable id) {
 		for (Interceptor i : interceptors) {
 			Object o = i.getEntity(entityName, id);
@@ -209,21 +200,18 @@ public class ChainingInterceptor implements Interceptor {
 		return null;
 	}
 	
-	@Override
 	public void afterTransactionBegin(Transaction tx) {
 		for (Interceptor i : interceptors) {
 			i.afterTransactionBegin(tx);
 		}
 	}
 	
-	@Override
 	public void afterTransactionCompletion(Transaction tx) {
 		for (Interceptor i : interceptors) {
 			i.afterTransactionCompletion(tx);
 		}
 	}
 	
-	@Override
 	public void beforeTransactionCompletion(Transaction tx) {
 		for (Interceptor i : interceptors) {
 			i.beforeTransactionCompletion(tx);
@@ -231,7 +219,6 @@ public class ChainingInterceptor implements Interceptor {
 	}
 	
 	// passes the sql returned from each previous onPrepareStatement onto the next
-	@Override
 	public String onPrepareStatement(String sql) {
 		for (Interceptor i : interceptors) {
 			sql = i.onPrepareStatement(sql);
@@ -240,21 +227,18 @@ public class ChainingInterceptor implements Interceptor {
 		return sql;
 	}
 	
-	@Override
 	public void onCollectionRemove(Object collection, Serializable key) throws CallbackException {
 		for (Interceptor i : interceptors) {
 			i.onCollectionRemove(collection, key);
 		}
 	}
 	
-	@Override
 	public void onCollectionRecreate(Object collection, Serializable key) throws CallbackException {
 		for (Interceptor i : interceptors) {
 			i.onCollectionRecreate(collection, key);
 		}
 	}
 	
-	@Override
 	public void onCollectionUpdate(Object collection, Serializable key) throws CallbackException {
 		for (Interceptor i : interceptors) {
 			i.onCollectionUpdate(collection, key);

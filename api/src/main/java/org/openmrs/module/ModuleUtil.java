@@ -12,14 +12,15 @@ package org.openmrs.module;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.Vector;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Matcher;
@@ -38,8 +40,10 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.GlobalProperty;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.context.Context;
@@ -48,30 +52,25 @@ import org.openmrs.scheduler.SchedulerUtil;
 import org.openmrs.util.OpenmrsClassLoader;
 import org.openmrs.util.OpenmrsConstants;
 import org.openmrs.util.OpenmrsUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.support.AbstractRefreshableApplicationContext;
 
 /**
  * Utility methods for working and manipulating modules
  */
 public class ModuleUtil {
-
-	private ModuleUtil() {
-	}
 	
-	private static final Logger log = LoggerFactory.getLogger(ModuleUtil.class);
+	private static Log log = LogFactory.getLog(ModuleUtil.class);
 	
 	/**
 	 * Start up the module system with the given properties.
 	 *
 	 * @param props Properties (OpenMRS runtime properties)
 	 */
-	public static void startup(Properties props) throws ModuleMustStartException {
+	public static void startup(Properties props) throws ModuleMustStartException, OpenmrsCoreModuleException {
 		
 		String moduleListString = props.getProperty(ModuleConstants.RUNTIMEPROPERTY_MODULE_LIST_TO_LOAD);
 		
-		if (moduleListString == null || moduleListString.isEmpty()) {
+		if (moduleListString == null || moduleListString.length() == 0) {
 			// Attempt to get all of the modules from the modules folder
 			// and store them in the modules list
 			log.debug("Starting all modules");
@@ -81,7 +80,7 @@ public class ModuleUtil {
 			log.debug("Starting all modules in this list: " + moduleListString);
 			
 			String[] moduleArray = moduleListString.split(" ");
-			List<File> modulesToLoad = new ArrayList<>();
+			List<File> modulesToLoad = new Vector<File>();
 			
 			for (String modulePath : moduleArray) {
 				if (modulePath != null && modulePath.length() > 0) {
@@ -135,7 +134,7 @@ public class ModuleUtil {
 			if (modules == null || modules.isEmpty()) {
 				log.debug("No modules loaded");
 			} else {
-				log.debug("Found and loaded {} module(s)", modules.size());
+				log.debug("Found and loaded " + modules.size() + " module(s)");
 			}
 		}
 		
@@ -150,11 +149,14 @@ public class ModuleUtil {
 	 * Stops the module system by calling stopModule for all modules that are currently started
 	 */
 	public static void shutdown() {
-
-		List<Module> modules = new ArrayList<>(ModuleFactory.getStartedModules());
+		
+		List<Module> modules = new Vector<Module>();
+		modules.addAll(ModuleFactory.getStartedModules());
 		
 		for (Module mod : modules) {
-			log.debug("stopping module: {}", mod.getModuleId());
+			if (log.isDebugEnabled()) {
+				log.debug("stopping module: " + mod.getModuleId());
+			}
 			
 			if (mod.isStarted()) {
 				ModuleFactory.stopModule(mod, true, true);
@@ -164,10 +166,10 @@ public class ModuleUtil {
 		log.debug("done shutting down modules");
 		
 		// clean up the static variables just in case they weren't done before
-		ModuleFactory.extensionMap.clear();
-		ModuleFactory.loadedModules.invalidateAll();
-		ModuleFactory.moduleClassLoaders.invalidateAll();
-		ModuleFactory.startedModules.invalidateAll();
+		ModuleFactory.extensionMap = null;
+		ModuleFactory.loadedModules = null;
+		ModuleFactory.moduleClassLoaders = null;
+		ModuleFactory.startedModules = null;
 	}
 	
 	/**
@@ -186,8 +188,13 @@ public class ModuleUtil {
 		
 		File file = new File(folder.getAbsolutePath(), filename);
 		
-		try (FileOutputStream outputStream = new FileOutputStream(file)) {
+		FileOutputStream outputStream = null;
+		try {
+			outputStream = new FileOutputStream(file);
 			OpenmrsUtil.copyFile(inputStream, outputStream);
+		}
+		catch (FileNotFoundException e) {
+			throw new ModuleException("Can't create module file for " + filename, e);
 		}
 		catch (IOException e) {
 			throw new ModuleException("Can't create module file for " + filename, e);
@@ -195,6 +202,10 @@ public class ModuleUtil {
 		finally {
 			try {
 				inputStream.close();
+			}
+			catch (Exception e) { /* pass */}
+			try {
+				outputStream.close();
 			}
 			catch (Exception e) { /* pass */}
 		}
@@ -210,12 +221,13 @@ public class ModuleUtil {
 	 *
 	 * @param versions the openmrs versions to be checked against the current openmrs version
 	 * @return true if the current openmrs version is in versions otherwise false
-	 * <strong>Should</strong> return false when versions is null
-	 * <strong>Should</strong> return false when versions is empty
-	 * <strong>Should</strong> return true if current openmrs version matches one element in versions
-	 * <strong>Should</strong> return false if current openmrs version does not match any element in versions
+	 * @should return false when versions is null
+	 * @should return false when versions is empty
+	 * @should return true if current openmrs version matches one element in versions
+	 * @should return false if current openmrs version does not match any element in versions
 	 */
 	public static boolean isOpenmrsVersionInVersions(String ...versions) {
+
 		if (versions == null || versions.length == 0) {
 			return false;
 		}
@@ -256,29 +268,29 @@ public class ModuleUtil {
 	 * @param version openmrs version number to be compared
 	 * @param versionRange value in the config file for required openmrs version
 	 * @return true if the <code>version</code> is within the <code>value</code>
-	 * <strong>Should</strong> allow ranged required version
-	 * <strong>Should</strong> allow ranged required version with wild card
-	 * <strong>Should</strong> allow ranged required version with wild card on one end
-	 * <strong>Should</strong> allow single entry for required version
-	 * <strong>Should</strong> allow required version with wild card
-	 * <strong>Should</strong> allow non numeric character required version
-	 * <strong>Should</strong> allow ranged non numeric character required version
-	 * <strong>Should</strong> allow ranged non numeric character with wild card
-	 * <strong>Should</strong> allow ranged non numeric character with wild card on one end
-	 * <strong>Should</strong> return false when openmrs version beyond wild card range
-	 * <strong>Should</strong> return false when required version beyond openmrs version
-	 * <strong>Should</strong> return false when required version with wild card beyond openmrs version
-	 * <strong>Should</strong> return false when required version with wild card on one end beyond openmrs version
-	 * <strong>Should</strong> return false when single entry required version beyond openmrs version
-	 * <strong>Should</strong> allow release type in the version
-	 * <strong>Should</strong> match when revision number is below maximum revision number
-	 * <strong>Should</strong> not match when revision number is above maximum revision number
-	 * <strong>Should</strong> correctly set upper and lower limit for versionRange with qualifiers and wild card
-	 * <strong>Should</strong> match when version has wild card plus qualifier and is within boundary
-	 * <strong>Should</strong> not match when version has wild card plus qualifier and is outside boundary
-	 * <strong>Should</strong> match when version has wild card and is within boundary
-	 * <strong>Should</strong> not match when version has wild card and is outside boundary
-	 * <strong>Should</strong> return true when required version is empty
+	 * @should allow ranged required version
+	 * @should allow ranged required version with wild card
+	 * @should allow ranged required version with wild card on one end
+	 * @should allow single entry for required version
+	 * @should allow required version with wild card
+	 * @should allow non numeric character required version
+	 * @should allow ranged non numeric character required version
+	 * @should allow ranged non numeric character with wild card
+	 * @should allow ranged non numeric character with wild card on one end
+	 * @should return false when openmrs version beyond wild card range
+	 * @should return false when required version beyond openmrs version
+	 * @should return false when required version with wild card beyond openmrs version
+	 * @should return false when required version with wild card on one end beyond openmrs version
+	 * @should return false when single entry required version beyond openmrs version
+	 * @should allow release type in the version
+	 * @should match when revision number is below maximum revision number
+	 * @should not match when revision number is above maximum revision number
+	 * @should correctly set upper and lower limit for versionRange with qualifiers and wild card
+	 * @should match when version has wild card plus qualifier and is within boundary
+	 * @should not match when version has wild card plus qualifier and is outside boundary
+	 * @should match when version has wild card and is within boundary
+	 * @should not match when version has wild card and is outside boundary
+	 * @should return true when required version is empty
 	 */
 	public static boolean matchRequiredVersions(String version, String versionRange) {
 		// There is a null check so no risk in keeping the literal on the right side
@@ -322,9 +334,9 @@ public class ModuleUtil {
 						upperBound = upperBound.replaceAll("\\*", Integer.toString(Integer.MAX_VALUE));
 					}
 					
-					int lowerReturn = compareVersionIgnoringQualifier(version, lowerBound);
+					int lowerReturn = compareVersion(version, lowerBound);
 					
-					int upperReturn = compareVersionIgnoringQualifier(version, upperBound);
+					int upperReturn = compareVersion(version, upperBound);
 					
 					if (lowerReturn < 0 || upperReturn > 0) {
 						log.debug("Version " + version + " is not between " + lowerBound + " and " + upperBound);
@@ -332,7 +344,7 @@ public class ModuleUtil {
 						return true;
 					}
 				} else {
-					if (compareVersionIgnoringQualifier(version, range) < 0) {
+					if (compareVersion(version, range) < 0) {
 						log.debug("Version " + version + " is below " + range);
 					} else {
 						return true;
@@ -373,15 +385,15 @@ public class ModuleUtil {
 	 * @param version openmrs version number to be compared
 	 * @param versionRange value in the config file for required openmrs version
 	 * @throws ModuleException if the <code>version</code> is not within the <code>value</code>
-	 * <strong>Should</strong> throw ModuleException if openmrs version beyond wild card range
-	 * <strong>Should</strong> throw ModuleException if required version beyond openmrs version
-	 * <strong>Should</strong> throw ModuleException if required version with wild card beyond openmrs version
-	 * <strong>Should</strong> throw ModuleException if required version with wild card on one end beyond openmrs
+	 * @should throw ModuleException if openmrs version beyond wild card range
+	 * @should throw ModuleException if required version beyond openmrs version
+	 * @should throw ModuleException if required version with wild card beyond openmrs version
+	 * @should throw ModuleException if required version with wild card on one end beyond openmrs
 	 *         version
-	 * <strong>Should</strong> throw ModuleException if single entry required version beyond openmrs version
-	 * <strong>Should</strong> throw ModuleException if SNAPSHOT not handled correctly
-	 * <strong>Should</strong> handle SNAPSHOT versions
-	 * <strong>Should</strong> handle ALPHA versions
+	 * @should throw ModuleException if single entry required version beyond openmrs version
+	 * @should throw ModuleException if SNAPSHOT not handled correctly
+	 * @should handle SNAPSHOT versions
+	 * @should handle ALPHA versions
 	 */
 	public static void checkRequiredVersion(String version, String versionRange) throws ModuleException {
 		if (!matchRequiredVersions(version, versionRange)) {
@@ -392,87 +404,65 @@ public class ModuleUtil {
 	}
 	
 	/**
-	 * Compare two version strings.
+	 * Compares <code>version</code> to <code>value</code> version and value are strings like
+	 * 1.9.2.0 Returns <code>0</code> if either <code>version</code> or <code>value</code> is null.
 	 *
-	 * @param versionA String like 1.9.2.0, may include a qualifier like "-SNAPSHOT", may be null
-	 * @param versionB String like 1.9.2.0, may include a qualifier like "-SNAPSHOT", may be null
-	 * @return the value <code>0</code> if versions are equal; a value less than <code>0</code> if first version is
-	 * 		   before the second one; a value greater than <code>0</code> if first version is after the second one.
-	 * 		   If version numbers are equal and only one of them has a qualifier, the version without the qualifier is
-	 * 		   considered greater.
+	 * @param version String like 1.9.2.0
+	 * @param value String like 1.9.2.0
+	 * @return the value <code>0</code> if <code>version</code> is equal to the argument
+	 *         <code>value</code>; a value less than <code>0</code> if <code>version</code> is
+	 *         numerically less than the argument <code>value</code>; and a value greater than
+	 *         <code>0</code> if <code>version</code> is numerically greater than the argument
+	 *         <code>value</code>
+	 * @should correctly comparing two version numbers
+	 * @should treat SNAPSHOT as earliest version
 	 */
-	public static int compareVersion(String versionA, String versionB) {
-		return compareVersion(versionA, versionB, false);
-	}
-
-	/**
-	 * Compare two version strings. Any version qualifiers are ignored in the comparison.
-	 *
-	 * @param versionA String like 1.9.2.0, may include a qualifier like "-SNAPSHOT", may be null
-	 * @param versionB String like 1.9.2.0, may include a qualifier like "-SNAPSHOT", may be null
-	 * @return the value <code>0</code> if versions are equal; a value less than <code>0</code> if first version is
-	 * 		   before the second one; a value greater than <code>0</code> if first version is after the second one.
-	 */
-	public static int compareVersionIgnoringQualifier(String versionA, String versionB) {
-		return compareVersion(versionA, versionB, true);
-	}
-
-	private static int compareVersion(String versionA, String versionB, boolean ignoreQualifier) {
+	public static int compareVersion(String version, String value) {
 		try {
-			if (versionA == null || versionB == null) {
+			if (version == null || value == null) {
 				return 0;
 			}
-
-			List<String> versionANumbers = new ArrayList<>();
-			List<String> versionBNumbers = new ArrayList<>();
-			String qualifierSeparator = "-";
-
+			
+			List<String> versions = new Vector<String>();
+			List<String> values = new Vector<String>();
+			String separator = "-";
+			
 			// strip off any qualifier e.g. "-SNAPSHOT"
-			int qualifierIndexA = versionA.indexOf(qualifierSeparator);
-			if (qualifierIndexA != -1) {
-				versionA = versionA.substring(0, qualifierIndexA);
+			int qualifierIndex = version.indexOf(separator);
+			if (qualifierIndex != -1) {
+				version = version.substring(0, qualifierIndex);
 			}
-
-			// strip off any qualifier e.g. "-SNAPSHOT"
-			int qualifierIndexB = versionB.indexOf(qualifierSeparator);
-			if (qualifierIndexB != -1) {
-				versionB = versionB.substring(0, qualifierIndexB);
+			
+			qualifierIndex = value.indexOf(separator);
+			if (qualifierIndex != -1) {
+				value = value.substring(0, qualifierIndex);
 			}
-
-			Collections.addAll(versionANumbers, versionA.split("\\."));
-			Collections.addAll(versionBNumbers, versionB.split("\\."));
-
+			
+			Collections.addAll(versions, version.split("\\."));
+			Collections.addAll(values, value.split("\\."));
+			
 			// match the sizes of the lists
-			while (versionANumbers.size() < versionBNumbers.size()) {
-				versionANumbers.add("0");
+			while (versions.size() < values.size()) {
+				versions.add("0");
 			}
-			while (versionBNumbers.size() < versionANumbers.size()) {
-				versionBNumbers.add("0");
+			while (values.size() < versions.size()) {
+				values.add("0");
 			}
-
-			for (int x = 0; x < versionANumbers.size(); x++) {
-				String verAPartString = versionANumbers.get(x).trim();
-				String verBPartString = versionBNumbers.get(x).trim();
-				Long verAPart = NumberUtils.toLong(verAPartString, 0);
-				Long verBPart = NumberUtils.toLong(verBPartString, 0);
-
-				int ret = verAPart.compareTo(verBPart);
+			
+			for (int x = 0; x < versions.size(); x++) {
+				String verNum = versions.get(x).trim();
+				String valNum = values.get(x).trim();
+				Long ver = NumberUtils.toLong(verNum, 0);
+				Long val = NumberUtils.toLong(valNum, 0);
+				
+				int ret = ver.compareTo(val);
 				if (ret != 0) {
 					return ret;
 				}
 			}
-			
-			// At this point the version numbers are equal.
-			if (!ignoreQualifier) {
-				if (qualifierIndexA >= 0 && qualifierIndexB < 0) {
-					return -1;
-				} else if (qualifierIndexA < 0 && qualifierIndexB >= 0) {
-					return 1;
-				}
-			}
 		}
 		catch (NumberFormatException e) {
-			log.error("Error while converting a version/value to an integer: " + versionA + "/" + versionB, e);
+			log.error("Error while converting a version/value to an integer: " + version + "/" + value, e);
 		}
 		
 		// default return value if an error occurs or elements are equal
@@ -494,8 +484,8 @@ public class ModuleUtil {
 	 * Gets the folder where modules are stored. ModuleExceptions are thrown on errors
 	 *
 	 * @return folder containing modules
-	 * <strong>Should</strong> use the runtime property as the first choice if specified
-	 * <strong>Should</strong> return the correct file if the runtime property is an absolute path
+	 * @should use the runtime property as the first choice if specified
+	 * @should return the correct file if the runtime property is an absolute path
 	 */
 	public static File getModuleRepository() {
 		
@@ -541,7 +531,13 @@ public class ModuleUtil {
 		try {
 			return file.getCanonicalFile().toURI().toURL();
 		}
-		catch (IOException | NoSuchMethodError ioe) {
+		catch (MalformedURLException mue) {
+			throw mue;
+		}
+		catch (IOException ioe) {
+			throw new MalformedURLException("Cannot convert: " + file.getName() + " to url");
+		}
+		catch (NoSuchMethodError nsme) {
 			throw new MalformedURLException("Cannot convert: " + file.getName() + " to url");
 		}
 	}
@@ -558,15 +554,18 @@ public class ModuleUtil {
 	 * @param keepFullPath if true, will recreate entire directory structure in tmpModuleDir
 	 *            relating to <code>name</code>. if false will start directory structure at
 	 *            <code>name</code>
-	 * <strong>Should</strong> expand entire jar if name is null
-	 * <strong>Should</strong> expand entire jar if name is empty string
-	 * <strong>Should</strong> expand directory with parent tree if name is directory and keepFullPath is true
-	 * <strong>Should</strong> expand directory without parent tree if name is directory and keepFullPath is false
-	 * <strong>Should</strong> expand file with parent tree if name is file and keepFullPath is true
+	 * @should expand entire jar if name is null
+	 * @should expand entire jar if name is empty string
+	 * @should expand directory with parent tree if name is directory and keepFullPath is true
+	 * @should expand directory without parent tree if name is directory and keepFullPath is false
+	 * @should expand file with parent tree if name is file and keepFullPath is true
 	 */
 	public static void expandJar(File fileToExpand, File tmpModuleDir, String name, boolean keepFullPath) throws IOException {
+		JarFile jarFile = null;
+		InputStream input = null;
 		String docBase = tmpModuleDir.getAbsolutePath();
-		try (JarFile jarFile = new JarFile(fileToExpand)) {
+		try {
+			jarFile = new JarFile(fileToExpand);
 			Enumeration<JarEntry> jarEntries = jarFile.entries();
 			boolean foundName = (name == null);
 			
@@ -591,9 +590,10 @@ public class ModuleUtil {
 					if (entryName.endsWith("/") || "".equals(entryName)) {
 						continue;
 					}
-					try(InputStream input = jarFile.getInputStream(jarEntry)) {
-						expand(input, docBase, entryName);
-					}
+					input = jarFile.getInputStream(jarEntry);
+					expand(input, docBase, entryName);
+					input.close();
+					input = null;
 					foundName = true;
 				}
 			}
@@ -605,6 +605,16 @@ public class ModuleUtil {
 		catch (IOException e) {
 			log.warn("Unable to delete tmpModuleFile on error", e);
 			throw e;
+		}
+		finally {
+			try {
+				input.close();
+			}
+			catch (Exception e) { /* pass */}
+			try {
+				jarFile.close();
+			}
+			catch (Exception e) { /* pass */}
 		}
 	}
 	
@@ -619,18 +629,25 @@ public class ModuleUtil {
 	 * @return File the file created by the expansion.
 	 * @throws IOException if an error occurred while copying
 	 */
-	private static void expand(InputStream input, String fileDir, String name) throws IOException {
-		log.debug("expanding: {}", name);
-
-		File file = new File(fileDir, name);
-
-		if (!file.toPath().normalize().startsWith(fileDir)) {
-			throw new UnsupportedOperationException("Attempted to write file '" + name + "' rejected as it attempts to write outside the chosen directory. This may be the result of a zip-slip style attack.");
+	private static File expand(InputStream input, String fileDir, String name) throws IOException {
+		if (log.isDebugEnabled()) {
+			log.debug("expanding: " + name);
 		}
 		
-		try (FileOutputStream outStream = new FileOutputStream(file)) {
+		File file = new File(fileDir, name);
+		FileOutputStream outStream = null;
+		try {
+			outStream = new FileOutputStream(file);
 			OpenmrsUtil.copyFile(input, outStream);
 		}
+		finally {
+			try {
+				outStream.close();
+			}
+			catch (Exception e) { /* pass */}
+		}
+		
+		return file;
 	}
 	
 	/**
@@ -638,7 +655,7 @@ public class ModuleUtil {
 	 *
 	 * @param url
 	 * @return InputStream of contents
-	 * <strong>Should</strong> return a valid input stream for old module urls
+	 * @should return a valid input stream for old module urls
 	 */
 	public static InputStream getURLStream(URL url) {
 		InputStream in = null;
@@ -673,7 +690,7 @@ public class ModuleUtil {
 	protected static InputStream openConnectionCheckRedirects(URLConnection c) throws IOException {
 		boolean redir;
 		int redirects = 0;
-		InputStream in;
+		InputStream in = null;
 		do {
 			if (c instanceof HttpURLConnection) {
 				((HttpURLConnection) c).setInstanceFollowRedirects(false);
@@ -713,13 +730,13 @@ public class ModuleUtil {
 	 *
 	 * @param url
 	 * @return String contents of the URL
-	 * <strong>Should</strong> return an update rdf page for old https dev urls
-	 * <strong>Should</strong> return an update rdf page for old https module urls
-	 * <strong>Should</strong> return an update rdf page for module urls
+	 * @should return an update rdf page for old https dev urls
+	 * @should return an update rdf page for old https module urls
+	 * @should return an update rdf page for module urls
 	 */
 	public static String getURL(URL url) {
 		InputStream in = null;
-		ByteArrayOutputStream out = null;
+		OutputStream out = null;
 		String output = "";
 		try {
 			in = getURLStream(url);
@@ -730,7 +747,7 @@ public class ModuleUtil {
 			
 			out = new ByteArrayOutputStream();
 			OpenmrsUtil.copyFile(in, out);
-			output = out.toString(StandardCharsets.UTF_8.name());
+			output = out.toString();
 		}
 		catch (IOException io) {
 			log.warn("io while reading: " + url, io);
@@ -843,11 +860,10 @@ public class ModuleUtil {
 	public static AbstractRefreshableApplicationContext refreshApplicationContext(AbstractRefreshableApplicationContext ctx,
 	        boolean isOpenmrsStartup, Module startedModule) {
 		//notify all started modules that we are about to refresh the context
-		Set<Module> startedModules = new LinkedHashSet<>(ModuleFactory.getStartedModulesInOrder());
+		Set<Module> startedModules = new LinkedHashSet<Module>(ModuleFactory.getStartedModulesInOrder());
 		for (Module module : startedModules) {
 			try {
 				if (module.getModuleActivator() != null) {
-					Thread.currentThread().setContextClassLoader(ModuleFactory.getModuleClassLoader(module));
 					module.getModuleActivator().willRefreshContext();
 				}
 			}
@@ -890,7 +906,9 @@ public class ModuleUtil {
 		OpenmrsClassLoader.setThreadsToNewClassLoader();
 		
 		// reload the advice points that were lost when refreshing Spring
-		log.debug("Reloading advice for all started modules: {}", startedModules.size());
+		if (log.isDebugEnabled()) {
+			log.debug("Reloading advice for all started modules: " + startedModules.size());
+		}
 		
 		try {
 			//The call backs in this block may need lazy loading of objects
@@ -943,7 +961,7 @@ public class ModuleUtil {
 	 * sure that all mandatory modules have been started successfully.
 	 *
 	 * @throws ModuleException if a mandatory module isn't started
-	 * <strong>Should</strong> throw ModuleException if a mandatory module is not started
+	 * @should throw ModuleException if a mandatory module is not started
 	 */
 	protected static void checkMandatoryModulesStarted() throws ModuleException {
 		
@@ -964,7 +982,7 @@ public class ModuleUtil {
 	 * needs.
 	 *
 	 * @throws ModuleException if a module that is core to OpenMRS is not started
-	 * <strong>Should</strong> throw ModuleException if a core module is not started
+	 * @should throw ModuleException if a core module is not started
 	 */
 	protected static void checkOpenmrsCoreModulesStarted() throws OpenmrsCoreModuleException {
 		
@@ -974,7 +992,7 @@ public class ModuleUtil {
 		}
 		
 		// make a copy of the constant so we can modify the list
-		Map<String, String> coreModules = new HashMap<>(ModuleConstants.CORE_MODULES);
+		Map<String, String> coreModules = new HashMap<String, String>(ModuleConstants.CORE_MODULES);
 		
 		Collection<Module> startedModules = ModuleFactory.getStartedModulesMap().values();
 		
@@ -1014,11 +1032,11 @@ public class ModuleUtil {
 	 * &lt;moduleid&gt;.mandatory=true global property.
 	 *
 	 * @return list of modules ids for mandatory modules
-	 * <strong>Should</strong> return mandatory module ids
+	 * @should return mandatory module ids
 	 */
 	public static List<String> getMandatoryModules() {
 		
-		List<String> mandatoryModuleIds = new ArrayList<>();
+		List<String> mandatoryModuleIds = new ArrayList<String>();
 		
 		try {
 			List<GlobalProperty> props = Context.getAdministrationService().getGlobalPropertiesBySuffix(".mandatory");
@@ -1051,9 +1069,9 @@ public class ModuleUtil {
 	 *
 	 * @param path
 	 * @return the running module that matches the most of the given path
-	 * <strong>Should</strong> handle ui springmvc css ui dot css when ui dot springmvc module is running
-	 * <strong>Should</strong> handle ui springmvc css ui dot css when ui module is running
-	 * <strong>Should</strong> return null for ui springmvc css ui dot css when no relevant module is running
+	 * @should handle ui springmvc css ui dot css when ui dot springmvc module is running
+	 * @should handle ui springmvc css ui dot css when ui module is running
+	 * @should return null for ui springmvc css ui dot css when no relevant module is running
 	 */
 	public static Module getModuleForPath(String path) {
 		int ind = path.lastIndexOf('/');
@@ -1087,7 +1105,7 @@ public class ModuleUtil {
 	 * @param module
 	 * @param path
 	 * @return local path
-	 * <strong>Should</strong> handle ui springmvc css ui dot css example
+	 * @should handle ui springmvc css ui dot css example
 	 */
 	public static String getPathForResource(Module module, String path) {
 		if (path.startsWith("/")) {
@@ -1107,10 +1125,10 @@ public class ModuleUtil {
 		
 		// End early if we're given a non jar file
 		if (!file.getName().endsWith(".jar")) {
-			return Collections.emptySet();
+			return Collections.<String> emptySet();
 		}
 		
-		Set<String> packagesProvided = new HashSet<>();
+		Set<String> packagesProvided = new HashSet<String>();
 		
 		JarFile jar = null;
 		try {
@@ -1138,8 +1156,10 @@ public class ModuleUtil {
 				
 				packageName = packageName.replaceAll("/", ".");
 				
-				if (packagesProvided.add(packageName) && log.isTraceEnabled()) {
-					log.trace("Adding module's jarentry with package: " + packageName);
+				if (packagesProvided.add(packageName)) {
+					if (log.isTraceEnabled()) {
+						log.trace("Adding module's jarentry with package: " + packageName);
+					}
 				}
 			}
 			
@@ -1170,9 +1190,9 @@ public class ModuleUtil {
 	 * @param version version of the module
 	 * @param resource name of a resource from the api jar
 	 * @return resource as an input stream or <code>null</code> if resource cannot be loaded
-	 * <strong>Should</strong> load file from api as input stream
-	 * <strong>Should</strong> return null if api is not found
-	 * <strong>Should</strong> return null if file is not found in api
+	 * @should load file from api as input stream
+	 * @should return null if api is not found
+	 * @should return null if file is not found in api
 	 */
 	public static InputStream getResourceFromApi(JarFile jarFile, String moduleId, String version, String resource) {
 		String apiLocation = "lib/" + moduleId + "-api-" + version + ".jar";

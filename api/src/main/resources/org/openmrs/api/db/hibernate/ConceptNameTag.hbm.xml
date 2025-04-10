@@ -18,13 +18,13 @@
 	<class name="ConceptNameTag" table="concept_name_tag" batch-size="25">
 
 		<id name="conceptNameTagId" type="int" column="concept_name_tag_id">
-			<generator class="identity">
+			<generator class="native">
 				<param name="sequence">concept_name_tag_concept_name_tag_id_seq</param>
 			</generator>
 		</id>
 		
 		<property name="tag" type="java.lang.String" length="50" not-null="true" />
-		<property name="description" type="text" length="65535"/>
+		<property name="description" type="java.lang.String" length="65535"/>
 		
 		<property name="dateCreated" type="java.util.Date" column="date_created" not-null="true"/>
 		<many-to-one name="creator" class="User" column="creator" not-null="true"/>

@@ -9,12 +9,11 @@
  */
 package org.openmrs.validator;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.Location;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 
@@ -27,22 +26,24 @@ public class LocationValidatorTest extends BaseContextSensitiveTest {
 	 * @see LocationValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfNameIsNullOrEmpty() {
+	@Verifies(value = "should fail validation if name is null or empty", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfNameIsNullOrEmpty() throws Exception {
 		Location location = new Location();
 		location.setDescription("desc");
 		
 		Errors errors = new BindException(location, "location");
 		new LocationValidator().validate(location, errors);
 		
-		assertTrue(errors.hasFieldErrors("name"));
-		assertFalse(errors.hasFieldErrors("description"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertFalse(errors.hasFieldErrors("description"));
 	}
 	
 	/**
 	 * @see LocationValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfRetiredAndRetireReasonIsNullOrEmpty() {
+	@Verifies(value = "should fail validation if retired and retireReason is null or empty", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfRetiredAndRetireReasonIsNullOrEmpty() throws Exception {
 		Location location = new Location();
 		location.setName("County General");
 		location.setRetired(true);
@@ -50,14 +51,15 @@ public class LocationValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(location, "location");
 		new LocationValidator().validate(location, errors);
 		
-		assertTrue(errors.hasFieldErrors("retireReason"));
+		Assert.assertTrue(errors.hasFieldErrors("retireReason"));
 	}
 	
 	/**
 	 * @see LocationValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldSetRetiredToFalseIfRetireReasonIsNullOrEmpty() {
+	@Verifies(value = "should set retired to false if retireReason is null or empty", method = "validate(Object,Errors)")
+	public void validate_shouldSetRetiredToFalseIfRetireReasonIsNullOrEmpty() throws Exception {
 		Location location = new Location();
 		location.setName("County General");
 		location.setRetired(true);
@@ -65,14 +67,15 @@ public class LocationValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(location, "location");
 		new LocationValidator().validate(location, errors);
 		
-		assertFalse(location.getRetired());
+		Assert.assertFalse(location.getRetired());
 	}
 	
 	/**
 	 * @see LocationValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfAllFieldsAreCorrect() {
+	@Verifies(value = "should pass validation if all fields are correct", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfAllFieldsAreCorrect() throws Exception {
 		Location location = new Location();
 		location.setName("County General");
 		location.setDescription("desc");
@@ -80,14 +83,15 @@ public class LocationValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(location, "location");
 		new LocationValidator().validate(location, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see LocationValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfRetiredLocationIsGivenRetiredReason() {
+	@Verifies(value = "should pass validation if retired location is given retired reason", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfRetiredLocationIsGivenRetiredReason() throws Exception {
 		Location location = new Location();
 		location.setName("County General");
 		location.setDescription("desc");
@@ -97,14 +101,15 @@ public class LocationValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(location, "location");
 		new LocationValidator().validate(location, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see LocationValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfParentLocationCreatesALoop() {
+	@Verifies(value = "should fail validation if parent location creates a loop", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfParentLocationCreatesALoop() throws Exception {
 		Location location1 = new Location();
 		Location location2 = new Location();
 		Location location3 = new Location();
@@ -118,14 +123,15 @@ public class LocationValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(location1, "location");
 		new LocationValidator().validate(location1, errors);
 		
-		assertTrue(errors.hasFieldErrors("parentLocation"));
+		Assert.assertTrue(errors.hasFieldErrors("parentLocation"));
 	}
 	
 	/**
 	 * @see org.openmrs.validator.LocationValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfLocationNameAlreadyExist() {
+	@Verifies(value = "should fail validation if location name is already exist", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfLocationNameAlreadyExist() throws Exception {
 		Location location = new Location();
 		location.setName("Unknown Location");
 		location.setDescription("desc");
@@ -133,14 +139,15 @@ public class LocationValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(location, "location");
 		new LocationValidator().validate(location, errors);
 		
-		assertTrue(errors.hasErrors());
+		Assert.assertTrue(errors.hasErrors());
 	}
 	
 	/**
 	 * @see LocationValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() {
+	@Verifies(value = "should pass validation if field lengths are correct", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() throws Exception {
 		Location location = new Location();
 		location.setName("name");
 		location.setDescription("description");
@@ -162,14 +169,15 @@ public class LocationValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(location, "location");
 		new LocationValidator().validate(location, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see LocationValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() {
+	@Verifies(value = "should fail validation if field lengths are not correct", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() throws Exception {
 		Location location = new Location();
 		String longString = "too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text";
 		location.setName(longString);
@@ -201,30 +209,30 @@ public class LocationValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(location, "location");
 		new LocationValidator().validate(location, errors);
 		
-		assertTrue(errors.hasFieldErrors("name"));
-		assertTrue(errors.hasFieldErrors("description"));
-		assertTrue(errors.hasFieldErrors("address1"));
-		assertTrue(errors.hasFieldErrors("address2"));
-		assertTrue(errors.hasFieldErrors("address3"));
-		assertTrue(errors.hasFieldErrors("address4"));
-		assertTrue(errors.hasFieldErrors("address5"));
-		assertTrue(errors.hasFieldErrors("address6"));
-		assertTrue(errors.hasFieldErrors("address7"));
-		assertTrue(errors.hasFieldErrors("address8"));
-		assertTrue(errors.hasFieldErrors("address9"));
-		assertTrue(errors.hasFieldErrors("address10"));
-		assertTrue(errors.hasFieldErrors("address11"));
-		assertTrue(errors.hasFieldErrors("address12"));
-		assertTrue(errors.hasFieldErrors("address13"));
-		assertTrue(errors.hasFieldErrors("address14"));
-		assertTrue(errors.hasFieldErrors("address15"));
-		assertTrue(errors.hasFieldErrors("cityVillage"));
-		assertTrue(errors.hasFieldErrors("stateProvince"));
-		assertTrue(errors.hasFieldErrors("country"));
-		assertTrue(errors.hasFieldErrors("postalCode"));
-		assertTrue(errors.hasFieldErrors("latitude"));
-		assertTrue(errors.hasFieldErrors("longitude"));
-		assertTrue(errors.hasFieldErrors("countyDistrict"));
-		assertTrue(errors.hasFieldErrors("retireReason"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("description"));
+		Assert.assertTrue(errors.hasFieldErrors("address1"));
+		Assert.assertTrue(errors.hasFieldErrors("address2"));
+		Assert.assertTrue(errors.hasFieldErrors("address3"));
+		Assert.assertTrue(errors.hasFieldErrors("address4"));
+		Assert.assertTrue(errors.hasFieldErrors("address5"));
+		Assert.assertTrue(errors.hasFieldErrors("address6"));
+		Assert.assertTrue(errors.hasFieldErrors("address7"));
+		Assert.assertTrue(errors.hasFieldErrors("address8"));
+		Assert.assertTrue(errors.hasFieldErrors("address9"));
+		Assert.assertTrue(errors.hasFieldErrors("address10"));
+		Assert.assertTrue(errors.hasFieldErrors("address11"));
+		Assert.assertTrue(errors.hasFieldErrors("address12"));
+		Assert.assertTrue(errors.hasFieldErrors("address13"));
+		Assert.assertTrue(errors.hasFieldErrors("address14"));
+		Assert.assertTrue(errors.hasFieldErrors("address15"));
+		Assert.assertTrue(errors.hasFieldErrors("cityVillage"));
+		Assert.assertTrue(errors.hasFieldErrors("stateProvince"));
+		Assert.assertTrue(errors.hasFieldErrors("country"));
+		Assert.assertTrue(errors.hasFieldErrors("postalCode"));
+		Assert.assertTrue(errors.hasFieldErrors("latitude"));
+		Assert.assertTrue(errors.hasFieldErrors("longitude"));
+		Assert.assertTrue(errors.hasFieldErrors("countyDistrict"));
+		Assert.assertTrue(errors.hasFieldErrors("retireReason"));
 	}
 }

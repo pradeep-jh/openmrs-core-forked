@@ -9,23 +9,20 @@
  */
 package org.openmrs;
 
-import java.util.Date;
-
 import org.codehaus.jackson.annotate.JsonIgnore;
-import org.hibernate.envers.Audited;
 import org.openmrs.customdatatype.CustomDatatype;
 import org.openmrs.customdatatype.CustomDatatypeUtil;
 import org.openmrs.customdatatype.CustomValueDescriptor;
+import org.openmrs.customdatatype.InvalidCustomValueException;
 import org.openmrs.customdatatype.SingleCustomValue;
+
+import java.util.Date;
 
 /**
  * Global properties are simple key-value pairs persisted in the database GPs can be thought of as
  * something similar to environment variables used in operating systems.
  */
-@Audited
 public class GlobalProperty extends BaseOpenmrsObject implements CustomValueDescriptor, SingleCustomValue<GlobalProperty> {
-	
-	private static final long serialVersionUID = 1L;
 	
 	private String property = "";
 	
@@ -49,13 +46,6 @@ public class GlobalProperty extends BaseOpenmrsObject implements CustomValueDesc
 	private User changedBy;
 	
 	private Date dateChanged;
-	
-	private Privilege viewPrivilege;
-	
-	private Privilege editPrivilege;
-	
-	private Privilege deletePrivilege;
-	
 	
 	/**
 	 * Default empty constructor
@@ -159,7 +149,6 @@ public class GlobalProperty extends BaseOpenmrsObject implements CustomValueDesc
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		throw new UnsupportedOperationException();
 	}
@@ -168,7 +157,6 @@ public class GlobalProperty extends BaseOpenmrsObject implements CustomValueDesc
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		throw new UnsupportedOperationException();
 	}
@@ -244,7 +232,6 @@ public class GlobalProperty extends BaseOpenmrsObject implements CustomValueDesc
 	/**
 	 * @see java.lang.Object#toString()
 	 */
-	@Override
 	public String toString() {
 		return "property: " + getProperty() + " value: " + getPropertyValue();
 	}
@@ -275,7 +262,7 @@ public class GlobalProperty extends BaseOpenmrsObject implements CustomValueDesc
 	 * @since 1.9
 	 */
 	@Override
-	public void setValueReferenceInternal(String valueToPersist) {
+	public void setValueReferenceInternal(String valueToPersist) throws InvalidCustomValueException {
 		setPropertyValue(valueToPersist);
 	}
 	
@@ -285,7 +272,7 @@ public class GlobalProperty extends BaseOpenmrsObject implements CustomValueDesc
 	 * @since 1.9
 	 */
 	@Override
-	public Object getValue() {
+	public Object getValue() throws InvalidCustomValueException {
 		if (typedValue == null) {
 			typedValue = CustomDatatypeUtil.getDatatypeOrDefault(this).fromReferenceString(getValueReference());
 		}
@@ -298,7 +285,7 @@ public class GlobalProperty extends BaseOpenmrsObject implements CustomValueDesc
 	 * @since 1.9
 	 */
 	@Override
-	public <T> void setValue(T typedValue){
+	public <T> void setValue(T typedValue) throws InvalidCustomValueException {
 		this.typedValue = typedValue;
 		dirty = true;
 	}
@@ -345,65 +332,5 @@ public class GlobalProperty extends BaseOpenmrsObject implements CustomValueDesc
 	 */
 	public void setDateChanged(Date dateChanged) {
 		this.dateChanged = dateChanged;
-	}
-
-	/**
-	 * Gets privilege which can view this globalProperty
-	 * @return the viewPrivilege the privilege instance
-	 * 
-	 * @since 2.7.0
-	 */
-	public Privilege getViewPrivilege() {
-		return viewPrivilege;
-	}
-
-	/**
-	 * Sets privilege which can view this globalProperty
-	 * @param viewPrivilege the viewPrivilege to set
-	 *                      
-	 * @since 2.7.0
-	 */
-	public void setViewPrivilege(Privilege viewPrivilege) {
-		this.viewPrivilege = viewPrivilege;
-	}
-
-	/**
-	 * Gets privilege which can edit this globalProperty
-	 * @return the editPrivilege the privilege instance
-	 * 
-	 * @since 2.7.0
-	 */
-	public Privilege getEditPrivilege() {
-		return editPrivilege;
-	}
-
-	/**
-	 * Sets privilege which can edit this globalProperty
-	 * @param editPrivilege the editPrivilege to set
-	 *                      
-	 * @since 2.7.0
-	 */
-	public void setEditPrivilege(Privilege editPrivilege) {
-		this.editPrivilege = editPrivilege;
-	}
-
-	/**
-	 * Get privilege which can delete this globalProperty
-	 * @return the deletePrivilege the privilege instance
-	 *
-	 * @since 2.7.0
-	 */
-	public Privilege getDeletePrivilege() {
-		return deletePrivilege;
-	}
-
-	/**
-	 * Sets privilege which can delete this globalProperty
-	 * @param deletePrivilege the deletePrivilege to set
-	 *
-	 * @since 2.7.0
-	 */
-	public void setDeletePrivilege(Privilege deletePrivilege) {
-		this.deletePrivilege = deletePrivilege;
 	}
 }

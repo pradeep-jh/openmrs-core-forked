@@ -9,7 +9,8 @@
  */
 package org.openmrs;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+import org.openmrs.test.Verifies;
 
 public class EncounterRoleTest {
 	
@@ -17,7 +18,8 @@ public class EncounterRoleTest {
 	 * @see Encounter#toString()
 	 */
 	@Test
-	public void toString_shouldNotFailWithEmptyObject() {
+	@Verifies(value = "should not fail with empty object", method = "toString()")
+	public void toString_shouldNotFailWithEmptyObject() throws Exception {
 		EncounterRole encounterRole = new EncounterRole();
 		@SuppressWarnings("unused")
 		String toStringOutput = encounterRole.toString();

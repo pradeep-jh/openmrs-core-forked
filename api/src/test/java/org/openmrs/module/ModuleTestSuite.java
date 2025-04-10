@@ -9,14 +9,14 @@
  */
 package org.openmrs.module;
 
-import org.junit.jupiter.api.Disabled;
+import org.junit.Ignore;
 
 /**
  *
  */
 //@RunWith(Suite.class)
 //@SuiteClasses( { ContextWithModuleTest.class, ModuleInteroperabilityTest.class })
-@Disabled
+@Ignore
 public class ModuleTestSuite {
 
 }

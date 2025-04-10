@@ -11,8 +11,9 @@ package org.openmrs.api.db.hibernate;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.openmrs.api.db.ClobDatatypeStorage;
+import org.hibernate.criterion.Restrictions;
 import org.openmrs.api.db.DatatypeDAO;
+import org.openmrs.api.db.ClobDatatypeStorage;
 
 /**
  * Hibernate-specific Datatype-related functions. This class should not be used directly. All calls
@@ -48,7 +49,7 @@ public class HibernateDatatypeDAO implements DatatypeDAO {
 	 */
 	@Override
 	public ClobDatatypeStorage getClobDatatypeStorage(Integer id) {
-		return session().get(ClobDatatypeStorage.class, id);
+		return (ClobDatatypeStorage) session().get(ClobDatatypeStorage.class, id);
 	}
 	
 	/**
@@ -56,7 +57,8 @@ public class HibernateDatatypeDAO implements DatatypeDAO {
 	 */
 	@Override
 	public ClobDatatypeStorage getClobDatatypeStorageByUuid(String uuid) {
-		return HibernateUtil.getUniqueEntityByUUID(sessionFactory, ClobDatatypeStorage.class, uuid);
+		return (ClobDatatypeStorage) session().createCriteria(ClobDatatypeStorage.class).add(Restrictions.eq("uuid", uuid))
+		        .uniqueResult();
 	}
 	
 	/**

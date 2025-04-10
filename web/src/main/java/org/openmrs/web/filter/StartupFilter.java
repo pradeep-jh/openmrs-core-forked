@@ -9,19 +9,15 @@
  */
 package org.openmrs.web.filter;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
@@ -36,8 +32,9 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.RuntimeConstants;
@@ -49,22 +46,17 @@ import org.apache.velocity.tools.config.DefaultKey;
 import org.apache.velocity.tools.config.FactoryConfiguration;
 import org.apache.velocity.tools.config.ToolConfiguration;
 import org.apache.velocity.tools.config.ToolboxConfiguration;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.openmrs.OpenmrsCharacterEscapes;
 import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
-import org.openmrs.logging.MemoryAppender;
-import org.openmrs.logging.OpenmrsLoggingUtil;
 import org.openmrs.util.LocaleUtility;
 import org.openmrs.util.OpenmrsUtil;
-import org.openmrs.web.Listener;
 import org.openmrs.web.WebConstants;
 import org.openmrs.web.filter.initialization.InitializationFilter;
 import org.openmrs.web.filter.update.UpdateFilter;
 import org.openmrs.web.filter.util.FilterUtil;
 import org.openmrs.web.filter.util.LocalizationTool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.MediaType;
 
 /**
  * Abstract class used when a small wizard is needed before Spring, jsp, etc has been started up.
@@ -74,7 +66,7 @@ import org.springframework.http.MediaType;
  */
 public abstract class StartupFilter implements Filter {
 	
-	private static final Logger log = LoggerFactory.getLogger(StartupFilter.class);
+	protected final Log log = LogFactory.getLog(getClass());
 	
 	protected static VelocityEngine velocityEngine = null;
 	
@@ -89,12 +81,12 @@ public abstract class StartupFilter implements Filter {
 	/**
 	 * Records errors that will be displayed to the user
 	 */
-	protected Map<String, Object[]> errors = new HashMap<>();
+	protected Map<String, Object[]> errors = new HashMap<String, Object[]>();
 	
 	/**
 	 * Messages that will be displayed to the user
 	 */
-	protected Map<String, Object[]> msgs = new HashMap<>();
+	protected Map<String, Object[]> msgs = new HashMap<String, Object[]>();
 	
 	/**
 	 * Used for configuring tools within velocity toolbox
@@ -104,16 +96,12 @@ public abstract class StartupFilter implements Filter {
 	/**
 	 * The web.xml file sets this {@link StartupFilter} to be the first filter for all requests.
 	 *
-	 * @see javax.servlet.Filter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse,
-	 *      javax.servlet.FilterChain)
+	 * @see javax.servlet.Filter#doFilter(javax.servlet.ServletRequest,
+	 *      javax.servlet.ServletResponse, javax.servlet.FilterChain)
 	 */
-	@Override
-	public final void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-	        throws IOException, ServletException {
-		if (((HttpServletRequest)request).getServletPath().equals("/health/started")) {
-			((HttpServletResponse) response).setStatus(Listener.isOpenmrsStarted() ? HttpServletResponse.SC_OK : HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-		}
-		else if (skipFilter((HttpServletRequest) request)) {
+	public final void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException,
+	    ServletException {
+		if (skipFilter((HttpServletRequest) request)) {
 			chain.doFilter(request, response);
 		} else {
 			
@@ -125,49 +113,34 @@ public abstract class StartupFilter implements Filter {
 			// (the "/initfilter" part is needed so that the openmrs_static_context-servlet.xml file doesn't
 			//  get instantiated early, before the locale messages are all set up)
 			if (servletPath.startsWith("/images") || servletPath.startsWith("/initfilter/scripts")) {
-				// strip out the /initfilter part
-				servletPath = servletPath.replaceFirst("/initfilter", "/WEB-INF/view");
-				// writes the actual file path to the response
-				Path filePath = Paths.get(filterConfig.getServletContext().getRealPath(servletPath)).normalize();
-				Path fullFilePath = filePath;
-				
+				servletPath = servletPath.replaceFirst("/initfilter", "/WEB-INF/view"); // strip out the /initfilter part
+				// writes the actual image file path to the response
+				File file = new File(filterConfig.getServletContext().getRealPath(servletPath));
 				if (httpRequest.getPathInfo() != null) {
-					fullFilePath = fullFilePath.resolve(httpRequest.getPathInfo());
-					if (!(fullFilePath.normalize().startsWith(filePath))) {
-						log.warn("Detected attempted directory traversal in request for {}", httpRequest.getPathInfo());
-						return;
-					}
+					file = new File(file, httpRequest.getPathInfo());
 				}
 				
-				String contentType = httpRequest.getServletContext().getMimeType(fullFilePath.toString());
-				if (contentType == null || contentType.isEmpty()) {
-					try {
-						contentType = Files.probeContentType(fullFilePath);
-					} catch (IOException ignored) {}
-				}
-
-				MediaType mediaType;
-				if (contentType != null && !contentType.isEmpty()) {
-					mediaType = MediaType.parseMediaType(contentType);
-				} else {
-					mediaType = MediaType.APPLICATION_OCTET_STREAM;
-				}
-				
-				response.setContentType(mediaType.toString());
-				
-				try (InputStream fis = new FileInputStream(fullFilePath.normalize().toFile())) {
-					OpenmrsUtil.copyFile(fis, httpResponse.getOutputStream());
+				InputStream imageFileInputStream = null;
+				try {
+					imageFileInputStream = new FileInputStream(file);
+					OpenmrsUtil.copyFile(imageFileInputStream, httpResponse.getOutputStream());
 				}
 				catch (FileNotFoundException e) {
-					log.error("Unable to find file: {}", filePath, e);
+					log.error("Unable to find file: " + file.getAbsolutePath());
 				}
-				catch (IOException e) {
-					log.warn("An error occurred while handling file {}", filePath, e);
+				finally {
+					if (imageFileInputStream != null) {
+						try {
+							imageFileInputStream.close();
+						}
+						catch (IOException io) {
+							log.warn("Couldn't close imageFileInputStream: " + io);
+						}
+					}
 				}
 			} else if (servletPath.startsWith("/scripts")) {
-				log.error(
-				    "Calling /scripts during the initializationfilter pages will cause the openmrs_static_context-servlet.xml to initialize too early and cause errors after startup.  Use '/initfilter"
-				            + servletPath + "' instead.");
+				log.error("Calling /scripts during the initializationfilter pages will cause the openmrs_static_context-servlet.xml to initialize too early and cause errors after startup.  Use '/initfilter"
+				        + servletPath + "' instead.");
 			}
 			// for anything but /initialsetup
 			else if (!httpRequest.getServletPath().equals("/" + WebConstants.SETUP_PAGE_URL)
@@ -216,7 +189,7 @@ public abstract class StartupFilter implements Filter {
 				velocityEngine.init(props);
 			}
 			catch (Exception e) {
-				log.error("velocity init failed, because: {}", e, e);
+				log.error("velocity init failed, because: " + e);
 			}
 		}
 	}
@@ -227,8 +200,8 @@ public abstract class StartupFilter implements Filter {
 	 * @param httpRequest
 	 * @param httpResponse
 	 */
-	protected abstract void doGet(HttpServletRequest httpRequest, HttpServletResponse httpResponse)
-	        throws IOException, ServletException;
+	protected abstract void doGet(HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException,
+	    ServletException;
 	
 	/**
 	 * Called by {@link #doFilter(ServletRequest, ServletResponse, FilterChain)} on POST requests
@@ -236,12 +209,12 @@ public abstract class StartupFilter implements Filter {
 	 * @param httpRequest
 	 * @param httpResponse
 	 */
-	protected abstract void doPost(HttpServletRequest httpRequest, HttpServletResponse httpResponse)
-	        throws IOException, ServletException;
+	protected abstract void doPost(HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException,
+	    ServletException;
 	
 	/**
-	 * All private attributes on this class are returned to the template via the velocity context and
-	 * reflection
+	 * All private attributes on this class are returned to the template via the velocity context
+	 * and reflection
 	 *
 	 * @param templateName the name of the velocity file to render. This name is prepended with
 	 *            {@link #getTemplatePrefix()}
@@ -249,7 +222,7 @@ public abstract class StartupFilter implements Filter {
 	 * @param httpResponse
 	 */
 	protected void renderTemplate(String templateName, Map<String, Object> referenceMap, HttpServletResponse httpResponse)
-	        throws IOException {
+	    throws IOException {
 		// first we should get velocity tools context for current client request (within
 		// his http session) and merge that tools context with basic velocity context
 		if (referenceMap == null) {
@@ -257,15 +230,14 @@ public abstract class StartupFilter implements Filter {
 		}
 		
 		Object locale = referenceMap.get(FilterUtil.LOCALE_ATTRIBUTE);
-		ToolContext velocityToolContext = getToolContext(
-		    locale != null ? locale.toString() : Context.getLocale().toString());
-		VelocityContext velocityContext = new VelocityContext(velocityToolContext);
+		ToolContext toolContext = getToolContext(locale != null ? locale.toString() : Context.getLocale().toString());
+		VelocityContext velocityContext = new VelocityContext(toolContext);
 		
 		for (Map.Entry<String, Object> entry : referenceMap.entrySet()) {
 			velocityContext.put(entry.getKey(), entry.getValue());
 		}
 		
-		Object model = getUpdateFilterModel();
+		Object model = getModel();
 		
 		// put each of the private varibles into the template for convenience
 		for (Field field : model.getClass().getDeclaredFields()) {
@@ -273,7 +245,10 @@ public abstract class StartupFilter implements Filter {
 				field.setAccessible(true);
 				velocityContext.put(field.getName(), field.get(model));
 			}
-			catch (IllegalArgumentException | IllegalAccessException e) {
+			catch (IllegalArgumentException e) {
+				log.error("Error generated while getting field value: " + field.getName(), e);
+			}
+			catch (IllegalAccessException e) {
 				log.error("Error generated while getting field value: " + field.getName(), e);
 			}
 		}
@@ -292,17 +267,16 @@ public abstract class StartupFilter implements Filter {
 		
 		try {
 			velocityEngine.evaluate(velocityContext, httpResponse.getWriter(), this.getClass().getName(),
-			    new InputStreamReader(templateInputStream, StandardCharsets.UTF_8));
+			    new InputStreamReader(templateInputStream));
 		}
 		catch (Exception e) {
-			throw new APIException("Unable to process template: " + fullTemplatePath, e);
+			throw new RuntimeException("Unable to process template: " + fullTemplatePath, e);
 		}
 	}
 	
 	/**
 	 * @see javax.servlet.Filter#init(javax.servlet.FilterConfig)
 	 */
-	@Override
 	public void init(FilterConfig filterConfig) throws ServletException {
 		this.filterConfig = filterConfig;
 		initializeVelocity();
@@ -311,7 +285,6 @@ public abstract class StartupFilter implements Filter {
 	/**
 	 * @see javax.servlet.Filter#destroy()
 	 */
-	@Override
 	public void destroy() {
 	}
 	
@@ -326,54 +299,31 @@ public abstract class StartupFilter implements Filter {
 	}
 	
 	/**
-	 * The model that is used as the backer for all pages in this startup wizard. Should never return
-	 * null.
+	 * The model that is used as the backer for all pages in this startup wizard. Should never
+	 * return null.
 	 *
 	 * @return the stored formbacking/model object
 	 */
-	protected abstract Object getUpdateFilterModel();
+	protected abstract Object getModel();
 	
 	/**
-	 * If this returns true, this filter fails early and quickly. All logic is skipped and startup and
-	 * usage continue normally.
+	 * If this returns true, this filter fails early and quickly. All logic is skipped and startup
+	 * and usage continue normally.
 	 *
 	 * @return true if this filter can be skipped
 	 */
 	public abstract boolean skipFilter(HttpServletRequest request);
-
-	/**
-	 * Convenience method to read the last 5 log lines from the MemoryAppender
-	 * 
-	 * The log lines will be added to the "logLines" key
-	 * 
-	 * @param result A map to be returned as a JSON document
-	 */
-	protected void addLogLinesToResponse(Map<String, Object> result) {
-		MemoryAppender appender = OpenmrsLoggingUtil.getMemoryAppender();
-		if (appender != null) {
-			List<String> logLines = appender.getLogLines();
-			
-			// truncate the list to the last five so we don't overwhelm jquery
-			if (logLines.size() > 5) {
-				logLines = logLines.subList(logLines.size() - 5, logLines.size());
-			}
-			
-			result.put("logLines", logLines);
-		} else {
-			result.put("logLines", Collections.emptyList());
-		}
-	}
 	
 	/**
-	 * Convenience method to convert the given object to a JSON string. Supports Maps, Lists, Strings,
-	 * Boolean, Double
+	 * Convenience method to convert the given object to a JSON string. Supports Maps, Lists,
+	 * Strings, Boolean, Double
 	 *
 	 * @param object object to convert to json
 	 * @return JSON string to be eval'd in javascript
 	 */
 	protected String toJSONString(Object object) {
 		ObjectMapper mapper = new ObjectMapper();
-		mapper.getFactory().setCharacterEscapes(new OpenmrsCharacterEscapes());
+		mapper.getJsonFactory().setCharacterEscapes(new OpenmrsCharacterEscapes());
 		try {
 			return mapper.writeValueAsString(object);
 		}
@@ -425,8 +375,9 @@ public abstract class StartupFilter implements Filter {
 			// from tool context, then changing its locale property and putting this tool back to the context
 			// First, we need to obtain the value of default key annotation of our localization tool
 			// class using reflection
-			DefaultKey annotation = LocalizationTool.class.getAnnotation(DefaultKey.class);
-			String key = annotation.value();
+			Annotation annotation = LocalizationTool.class.getAnnotation(DefaultKey.class);
+			DefaultKey defaultKeyAnnotation = (DefaultKey) annotation;
+			String key = defaultKeyAnnotation.value();
 			//
 			LocalizationTool localizationTool = (LocalizationTool) toolContext.get(key);
 			localizationTool.setLocale(systemLocale);

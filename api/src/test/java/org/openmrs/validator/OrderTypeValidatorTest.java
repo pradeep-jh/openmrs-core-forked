@@ -9,25 +9,23 @@
  */
 package org.openmrs.validator;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Set;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.openmrs.ConceptClass;
 import org.openmrs.OrderType;
 import org.openmrs.api.APIException;
 import org.openmrs.api.OrderService;
 import org.openmrs.api.context.Context;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
@@ -40,80 +38,89 @@ public class OrderTypeValidatorTest extends BaseContextSensitiveTest {
 	@Autowired
 	private OrderService orderService;
 	
+	@Rule
+	public ExpectedException expectedException = ExpectedException.none();
 	
 	/**
 	 * @see OrderTypeValidator#validate(Object,Errors)
 	 */
-	@Test
-	public void validate_shouldFailIfTheOrderTypeObjectIsNull() {
+	@Test(expected = IllegalArgumentException.class)
+	@Verifies(value = "should fail if the orderType object is null", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfTheOrderTypeObjectIsNull() throws Exception {
 		Errors errors = new BindException(new OrderType(), "orderType");
-		assertThrows(IllegalArgumentException.class, () -> new OrderTypeValidator().validate(null, errors));
+		new OrderTypeValidator().validate(null, errors);
 	}
 	
 	/**
 	 * @see OrderTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfNameIsNull() {
+	@Verifies(value = "should fail if name is null", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfNameIsNull() throws Exception {
 		OrderType orderType = new OrderType();
 		Errors errors = new BindException(orderType, "orderType");
 		new OrderTypeValidator().validate(orderType, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertEquals(true, errors.hasFieldErrors("name"));
 	}
 	
 	/**
 	 * @see OrderTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfNameIsEmpty() {
+	@Verifies(value = "should fail if name is empty", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfNameIsEmpty() throws Exception {
 		OrderType orderType = new OrderType();
 		orderType.setName("");
 		Errors errors = new BindException(orderType, "orderType");
 		new OrderTypeValidator().validate(orderType, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertEquals(true, errors.hasFieldErrors("name"));
 	}
 	
 	/**
+	 * @verifies fail if name is whitespace
 	 * @see OrderTypeValidator#validate(Object, org.springframework.validation.Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfNameIsWhitespace() {
+	public void validate_shouldFailIfNameIsWhitespace() throws Exception {
 		OrderType orderType = new OrderType();
 		orderType.setName("");
 		Errors errors = new BindException(orderType, "orderType");
 		new OrderTypeValidator().validate(orderType, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertEquals(true, errors.hasFieldErrors("name"));
 	}
 	
 	/**
 	 * @see OrderTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfNameIsWhiteSpace() {
+	@Verifies(value = "should fail if name is white space", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfNameIsWhiteSpace() throws Exception {
 		OrderType orderType = new OrderType();
 		orderType.setName(" ");
 		Errors errors = new BindException(orderType, "orderType");
 		new OrderTypeValidator().validate(orderType, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertEquals(true, errors.hasFieldErrors("name"));
 	}
 	
 	/**
 	 * @see OrderTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfNameIsADuplicate() {
+	@Verifies(value = "should fail if name is a duplicate", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfNameIsADuplicate() throws Exception {
 		OrderType orderType = new OrderType();
 		orderType.setName(orderService.getOrderType(1).getName());
 		Errors errors = new BindException(orderType, "orderType");
 		new OrderTypeValidator().validate(orderType, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertEquals(true, errors.hasFieldErrors("name"));
 	}
 	
 	/**
 	 * @see OrderTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfConceptClassIsADuplicate() {
+	@Verifies(value = "should fail if conceptClass is a duplicate", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfConceptClassIsADuplicate() throws Exception {
 		OrderType orderType = new OrderType();
 		orderType.setName("concept class test");
 		OrderType existing = orderService.getOrderType(2);
@@ -121,88 +128,95 @@ public class OrderTypeValidatorTest extends BaseContextSensitiveTest {
 		orderType.addConceptClass(existing.getConceptClasses().iterator().next());
 		Errors errors = new BindException(orderType, "orderType");
 		new OrderTypeValidator().validate(orderType, errors);
-		assertTrue(errors.hasFieldErrors("conceptClasses[0]"));
+		Assert.assertEquals(true, errors.hasFieldErrors("conceptClasses[0]"));
 	}
 	
 	/**
 	 * @see OrderTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfParentIsAmongItsDescendants() {
+	@Verifies(value = "should fail if parent is among its descendants", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfParentIsAmongItsDescendants() throws Exception {
 		OrderType orderType = orderService.getOrderType(2);
 		OrderType descendant = orderService.getOrderType(9);
-		assertTrue(descendant.getParent().getParent().equals(orderType));
+		Assert.assertTrue(descendant.getParent().getParent().equals(orderType));
 		orderType.setParent(descendant);
 		Errors errors = new BindException(orderType, "orderType");
 		new OrderTypeValidator().validate(orderType, errors);
-		assertTrue(errors.hasFieldErrors("parent"));
+		Assert.assertEquals(true, errors.hasFieldErrors("parent"));
 	}
 	
 	/**
 	 * @see OrderTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfParentIsAlsoADirectChild() {
+	@Verifies(value = "should fail if parent is also a direct child", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfParentIsAlsoADirectChild() throws Exception {
 		OrderType orderType = orderService.getOrderType(8);
 		OrderType descendant = orderService.getOrderType(12);
-		assertTrue(descendant.getParent().equals(orderType));
+		Assert.assertTrue(descendant.getParent().equals(orderType));
 		orderType.setParent(descendant);
 		Errors errors = new BindException(orderType, "orderType");
 		new OrderTypeValidator().validate(orderType, errors);
-		assertTrue(errors.hasFieldErrors("parent"));
+		Assert.assertEquals(true, errors.hasFieldErrors("parent"));
 	}
 	
 	/**
+	 * @verifies pass if all fields are correct for a new order type
 	 * @see OrderTypeValidator#validate(Object, org.springframework.validation.Errors)
 	 */
 	@Test
-	public void validate_shouldPassIfAllFieldsAreCorrectForANewOrderType() {
+	public void validate_shouldPassIfAllFieldsAreCorrectForANewOrderType() throws Exception {
 		OrderType orderType = new OrderType();
 		orderType.setName("unique name");
 		orderType.setJavaClassName("org.openmrs.TestDrugOrder");
-		Set<ConceptClass> col = new HashSet<>();
+		Collection<ConceptClass> col = new HashSet<>();
 		col.add(Context.getConceptService().getConceptClass(2));
 		orderType.setConceptClasses(col);
 		Errors errors = new BindException(orderType, "orderType");
 		new OrderTypeValidator().validate(orderType, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
+	 * @verifies pass if all fields are correct for an existing order type
 	 * @see OrderTypeValidator#validate(Object, org.springframework.validation.Errors)
 	 */
 	@Test
-	public void validate_shouldPassIfAllFieldsAreCorrectForAnExistingOrderType() {
+	public void validate_shouldPassIfAllFieldsAreCorrectForAnExistingOrderType() throws Exception {
 		OrderType orderType = orderService.getOrderType(1);
 		assertNotNull(orderType);
 		Errors errors = new BindException(orderType, "orderType");
 		new OrderTypeValidator().validate(orderType, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
+	 * @verifies be invoked when an order type is saved
 	 * @see OrderTypeValidator#validate(Object, org.springframework.validation.Errors)
 	 */
 	@Test
-	public void validate_shouldBeInvokedWhenAnOrderTypeIsSaved() {
+	public void validate_shouldBeInvokedWhenAnOrderTypeIsSaved() throws Exception {
 		OrderType orderType = orderService.getOrderType(1);
 		orderType.setName(null);
+		expectedException.expect(APIException.class);
 		String expectedMsg = "'" + orderType + "' failed to validate with reason: name: " + Context.getMessageSourceService().getMessage("error.name");
-		APIException exception = assertThrows(APIException.class, () -> orderService.saveOrderType(orderType));
-		assertThat(exception.getMessage(), is(expectedMsg));
+		expectedException.expectMessage(expectedMsg);
+		orderService.saveOrderType(orderType);
 	}
 	
 	/**
+	 * @verifies pass validation if field lengths are correct
 	 * @see OrderTypeValidator#validate(Object, org.springframework.validation.Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() {
+	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() throws Exception {
 		OrderType orderType = new OrderType();
 		orderType.setName("unique name");
 		orderType.setJavaClassName("org.openmrs.TestDrugOrder");
-		Set<ConceptClass> col = new HashSet<>();
+		Collection<ConceptClass> col = new HashSet<>();
 		col.add(Context.getConceptService().getConceptClass(2));
 		orderType.setConceptClasses(col);
 		
@@ -212,20 +226,21 @@ public class OrderTypeValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(orderType, "orderType");
 		new OrderTypeValidator().validate(orderType, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
+	 * @verifies fail validation if field lengths are not correct
 	 * @see OrderTypeValidator#validate(Object, org.springframework.validation.Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() {
+	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() throws Exception {
 		OrderType orderType = new OrderType();
 		orderType
 		        .setName("too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text");
 		orderType
 		        .setJavaClassName("too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text");
-		Set<ConceptClass> col = new HashSet<>();
+		Collection<ConceptClass> col = new HashSet<>();
 		col.add(Context.getConceptService().getConceptClass(2));
 		orderType.setConceptClasses(col);
 		
@@ -237,9 +252,9 @@ public class OrderTypeValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(orderType, "orderType");
 		new OrderTypeValidator().validate(orderType, errors);
 		
-		assertTrue(errors.hasFieldErrors("name"));
-		assertTrue(errors.hasFieldErrors("javaClassName"));
-		assertTrue(errors.hasFieldErrors("description"));
-		assertTrue(errors.hasFieldErrors("retireReason"));
+		Assert.assertEquals(true, errors.hasFieldErrors("name"));
+		Assert.assertEquals(true, errors.hasFieldErrors("javaClassName"));
+		Assert.assertEquals(true, errors.hasFieldErrors("description"));
+		Assert.assertEquals(true, errors.hasFieldErrors("retireReason"));
 	}
 }

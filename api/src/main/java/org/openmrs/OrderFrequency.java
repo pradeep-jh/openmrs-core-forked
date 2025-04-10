@@ -9,8 +9,6 @@
  */
 package org.openmrs;
 
-import org.hibernate.envers.Audited;
-
 /**
  * The frequency at which an Order's action should be repeated, e.g. TWICE DAILY or EVERY 6 HOURS.
  * This class is backed by a Concept for i18n, synonyms, mappings, etc, but it contains additional
@@ -18,8 +16,7 @@ import org.hibernate.envers.Audited;
  * 
  * @since 1.10
  */
-@Audited
-public class OrderFrequency extends BaseChangeableOpenmrsMetadata {
+public class OrderFrequency extends BaseOpenmrsMetadata {
 	
 	private static final long serialVersionUID = 1L;
 	
@@ -61,12 +58,10 @@ public class OrderFrequency extends BaseChangeableOpenmrsMetadata {
 	/**
 	 * Get the uuid
 	 */
-	@Override
 	public String getUuid() {
 		return uuid;
 	}
 	
-	@Override
 	public void setUuid(String uuid) {
 		this.uuid = uuid;
 	}
@@ -74,7 +69,6 @@ public class OrderFrequency extends BaseChangeableOpenmrsMetadata {
 	/**
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		return getOrderFrequencyId();
 	}
@@ -82,7 +76,6 @@ public class OrderFrequency extends BaseChangeableOpenmrsMetadata {
 	/**
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setOrderFrequencyId(id);
 	}

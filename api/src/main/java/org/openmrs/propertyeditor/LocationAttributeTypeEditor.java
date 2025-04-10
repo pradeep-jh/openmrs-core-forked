@@ -9,23 +9,50 @@
  */
 package org.openmrs.propertyeditor;
 
+import java.beans.PropertyEditorSupport;
+
 import org.openmrs.LocationAttributeType;
+import org.openmrs.api.LocationService;
 import org.openmrs.api.context.Context;
+import org.springframework.util.StringUtils;
 
 /**
  * Property editor for {@link LocationAttributeType}s
  * 
  * @since 1.9
  */
-public class LocationAttributeTypeEditor extends OpenmrsPropertyEditor<LocationAttributeType> {
+public class LocationAttributeTypeEditor extends PropertyEditorSupport {
 	
-	@Override
-	protected LocationAttributeType getObjectById(Integer id) {
-		return Context.getLocationService().getLocationAttributeType(id);
+	/**
+	 * @see java.beans.PropertyEditorSupport#getAsText()
+	 */
+	public String getAsText() {
+		LocationAttributeType lat = (LocationAttributeType) getValue();
+		return lat == null ? null : lat.getId().toString();
 	}
 	
-	@Override
-	protected LocationAttributeType getObjectByUuid(String uuid) {
-		return Context.getLocationService().getLocationAttributeTypeByUuid(uuid);
+	/**
+	 * @should set using id
+	 * @should set using uuid
+	 * 
+	 * @see java.beans.PropertyEditorSupport#setAsText(java.lang.String)
+	 */
+	public void setAsText(String text) throws IllegalArgumentException {
+		LocationService ls = Context.getLocationService();
+		if (Context.isAuthenticated() && StringUtils.hasText(text)) {
+			try {
+				setValue(ls.getLocationAttributeType(Integer.valueOf(text)));
+			}
+			catch (Exception ex) {
+				LocationAttributeType lat = ls.getLocationAttributeTypeByUuid(text);
+				setValue(lat);
+				if (lat == null) {
+					throw new IllegalArgumentException("LocationAttributeType not found for " + text, ex);
+				}
+			}
+		} else {
+			setValue(null);
+		}
 	}
+	
 }

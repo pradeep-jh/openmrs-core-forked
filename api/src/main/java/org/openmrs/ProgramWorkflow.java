@@ -9,6 +9,8 @@
  */
 package org.openmrs;
 
+import org.openmrs.util.NaturalStrings;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -17,14 +19,10 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.hibernate.envers.Audited;
-import org.openmrs.util.NaturalStrings;
-
 /**
  * ProgramWorkflow
  */
-@Audited
-public class ProgramWorkflow extends BaseChangeableOpenmrsMetadata {
+public class ProgramWorkflow extends BaseOpenmrsMetadata {
 	
 	private static final long serialVersionUID = 1L;
 	
@@ -38,7 +36,7 @@ public class ProgramWorkflow extends BaseChangeableOpenmrsMetadata {
 	
 	private Concept concept;
 	
-	private Set<ProgramWorkflowState> states = new HashSet<>();
+	private Set<ProgramWorkflowState> states = new HashSet<ProgramWorkflowState>();
 	
 	// ******************
 	// Constructors
@@ -164,9 +162,9 @@ public class ProgramWorkflow extends BaseChangeableOpenmrsMetadata {
 	 * @return Set&lt;ProgramWorkflowState&gt; - all ProgramWorkflowStates matching input parameters
 	 */
 	public Set<ProgramWorkflowState> getStates(boolean includeRetired) {
-		Set<ProgramWorkflowState> ret = new HashSet<>();
+		Set<ProgramWorkflowState> ret = new HashSet<ProgramWorkflowState>();
 		for (ProgramWorkflowState s : getStates()) {
-			if (includeRetired || !s.getRetired()) {
+			if (includeRetired || !s.isRetired()) {
 				ret.add(s);
 			}
 		}
@@ -178,14 +176,20 @@ public class ProgramWorkflow extends BaseChangeableOpenmrsMetadata {
 	 * {@link ConceptName}
 	 * 
 	 * @return Set&lt;ProgramWorkflowState&gt; - all ProgramWorkflowStates, sorted by {@link ConceptName}
-	 * <strong>Should</strong> sort names containing numbers intelligently
+	 * @should sort names containing numbers intelligently
 	 */
 	public Set<ProgramWorkflowState> getSortedStates() {
 		final Comparator<String> naturalComparator = NaturalStrings.getNaturalComparator();
 		
-		Comparator<ProgramWorkflowState> stateComparator = (o1, o2) -> naturalComparator.compare(o1.getConcept().getName().getName(), o2.getConcept().getName().getName());
+		Comparator<ProgramWorkflowState> stateComparator = new Comparator<ProgramWorkflowState>() {
+			
+			public int compare(ProgramWorkflowState o1, ProgramWorkflowState o2) {
+				return naturalComparator.compare(o1.getConcept().getName().getName(), o2.getConcept().getName().getName());
+			}
+			
+		};
 		
-		Set<ProgramWorkflowState> sorted = new TreeSet<>(stateComparator);
+		Set<ProgramWorkflowState> sorted = new TreeSet<ProgramWorkflowState>(stateComparator);
 		if (getStates() != null) {
 			sorted.addAll(getStates());
 		}
@@ -201,7 +205,7 @@ public class ProgramWorkflow extends BaseChangeableOpenmrsMetadata {
 	 *         {@link PatientProgram} ordered by {@link ConceptName}
 	 */
 	public List<ProgramWorkflowState> getPossibleNextStates(PatientProgram patientProgram) {
-		List<ProgramWorkflowState> ret = new ArrayList<>();
+		List<ProgramWorkflowState> ret = new ArrayList<ProgramWorkflowState>();
 		PatientState currentState = patientProgram.getCurrentState(this);
 		for (ProgramWorkflowState st : getSortedStates()) {
 			if (isLegalTransition(currentState == null ? null : currentState.getState(), st)) {
@@ -227,7 +231,12 @@ public class ProgramWorkflow extends BaseChangeableOpenmrsMetadata {
 		}
 		
 		// Does not allow patient to move into the same state
-		return !fromState.equals(toState);
+		if (fromState.equals(toState)) {
+			return false;
+		}
+		
+		// Otherwise all other state transitions are legal
+		return true;
 	}
 	
 	/** @see Object#toString() */
@@ -276,7 +285,6 @@ public class ProgramWorkflow extends BaseChangeableOpenmrsMetadata {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		
 		return getProgramWorkflowId();
@@ -286,7 +294,6 @@ public class ProgramWorkflow extends BaseChangeableOpenmrsMetadata {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setProgramWorkflowId(id);
 		

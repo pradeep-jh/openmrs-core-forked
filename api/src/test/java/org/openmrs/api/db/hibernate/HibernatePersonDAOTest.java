@@ -9,32 +9,24 @@
  */
 package org.openmrs.api.db.hibernate;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.hibernate.SessionFactory;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.openmrs.Person;
+import org.openmrs.api.context.Context;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.util.GlobalPropertiesTestHelper;
+import org.openmrs.util.OpenmrsConstants;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.List;
 
-import org.hibernate.SessionFactory;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.openmrs.Person;
-import org.openmrs.RelationshipType;
-import org.openmrs.api.PersonService;
-import org.openmrs.api.context.Context;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
-import org.openmrs.util.GlobalPropertiesTestHelper;
-import org.openmrs.util.OpenmrsConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class HibernatePersonDAOTest extends BaseContextSensitiveTest {
 	
-	private static final Logger log = LoggerFactory.getLogger(HibernatePersonDAOTest.class);
+	private final static Log log = LogFactory.getLog(HibernatePersonDAOTest.class);
 	
 	private final static String PEOPLE_FROM_THE_SHIRE_XML = "org/openmrs/api/db/hibernate/include/HibernatePersonDAOTest-people.xml";
 	
@@ -46,8 +38,8 @@ public class HibernatePersonDAOTest extends BaseContextSensitiveTest {
 	
  	private GlobalPropertiesTestHelper globalPropertiesTestHelper;
 
-	@BeforeEach
-	public void getPersonDAO() {
+	@Before
+	public void getPersonDAO() throws Exception {
 		executeDataSet(PEOPLE_FROM_THE_SHIRE_XML);
 
 		updateSearchIndex();
@@ -66,34 +58,38 @@ public class HibernatePersonDAOTest extends BaseContextSensitiveTest {
 	}
 	
 	private void logPerson(Person person) {
-		String info = "class=" + person.getClass().getCanonicalName() + ", person=" + person.toString() +
-				", person.names=" + person.getNames().toString() + ", person.attributes=" +
-				person.getAttributes().toString();
-
-		log.debug(info);
+		StringBuilder builder = new StringBuilder();
+		
+		builder.append("class=").append(person.getClass().getCanonicalName()).append(", person=").append(person.toString())
+		        .append(", person.names=").append(person.getNames().toString()).append(", person.attributes=").append(
+		            person.getAttributes().toString());
+		
+		log.debug(builder.toString());
 	}
 	
 	/**
+	 * @verifies get no one by null
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetNoOneByNull() {
+	public void getPeople_shouldGetNoOneByNull() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople(null, false);
 		logPeople(people);
 		
-		assertEquals(0, people.size());
+		Assert.assertEquals(0, people.size());
 	}
 	
 	/**
+	 * @verifies get every one except Voided by empty string
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetEveryOneExceptVoidedByEmptyString() {
+	public void getPeople_shouldGetEveryOneExceptVoidedByEmptyString() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("", false);
 		logPeople(people);
 		
 		// PEOPLE_FROM_THE_SHIRE_XML contains 7 people but more people are defined in the standard test data set
-		assertTrue(people.size() >= 7);
+		Assert.assertTrue(people.size() >= 7);
 		
 		// assert that all 7 people from PEOPLE_FROM_THE_SHIRE_XML (who are neither dead nor voided) are retrieved
 		assertPeopleContainPersonID(people, 42);
@@ -106,10 +102,11 @@ public class HibernatePersonDAOTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies get every one by empty string
 	 * @see HibernatePersonDAO#getPeople(String, Boolean, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetEveryOneByEmptyStringIncludingVoided() {
+	public void getPeople_shouldGetEveryOneByEmptyStringIncludingVoided() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("", false, true);
 		logPeople(people);
 		assertPeopleContainPersonID(people, 42);
@@ -123,14 +120,15 @@ public class HibernatePersonDAOTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies no voided people should be returned
 	 * @see HibernatePersonDAO#getPeople(String, Boolean, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldNotGetVoided() {
+	public void getPeople_shouldNotGetVoided() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("", false, false);
 		logPeople(people);
 		for (Person p : people)
-			assertFalse(p.getVoided());
+			Assert.assertFalse(p.getVoided());
 	}
 	
 	private void assertPeopleContainPersonID(List<Person> people, Integer personID) {
@@ -139,498 +137,534 @@ public class HibernatePersonDAOTest extends BaseContextSensitiveTest {
 				return;
 			}
 		}
-		fail("list of people does not contain person with ID = " + personID);
+		Assert.fail("list of people does not contain person with ID = " + personID);
 	}
 	
 	/**
+	 * @verifies get no one by non-existing attribute
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetNoOneByNonexistingAttribute() {
-		assertFalse(personAttributeHelper.personAttributeExists("Wizard"));
+	public void getPeople_shouldGetNoOneByNonexistingAttribute() throws Exception {
+		Assert.assertFalse(personAttributeHelper.personAttributeExists("Wizard"));
 		
 		List<Person> people = hibernatePersonDAO.getPeople("Wizard", false);
 		logPeople(people);
 		
-		assertEquals(0, people.size());
+		Assert.assertEquals(0, people.size());
 	}
 	
 	/**
+	 * @verifies get no one by non-searchable attribute
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetNoOneByNonsearchableAttribute() {
-		assertTrue(personAttributeHelper.nonSearchablePersonAttributeExists("Porridge with honey"));
+	public void getPeople_shouldGetNoOneByNonsearchableAttribute() throws Exception {
+		Assert.assertTrue(personAttributeHelper.nonSearchablePersonAttributeExists("Porridge with honey"));
 		
 		List<Person> people = hibernatePersonDAO.getPeople("Porridge honey", false);
 		logPeople(people);
 		
-		assertEquals(0, people.size());
+		Assert.assertEquals(0, people.size());
 	}
 	
 	/**
+	 * @verifies get no one by voided attribute
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetNoOneByVoidedAttribute() {
-		assertTrue(personAttributeHelper.voidedPersonAttributeExists("Master thief"));
+	public void getPeople_shouldGetNoOneByVoidedAttribute() throws Exception {
+		Assert.assertTrue(personAttributeHelper.voidedPersonAttributeExists("Master thief"));
 		
 		List<Person> people = hibernatePersonDAO.getPeople("Master thief", false);
 		logPeople(people);
 		
-		assertEquals(0, people.size());
+		Assert.assertEquals(0, people.size());
 	}
 	
 	/**
+	 * @verifies get one person by attribute
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetOnePersonByAttribute() {
+	public void getPeople_shouldGetOnePersonByAttribute() throws Exception {
 		globalPropertiesTestHelper.setGlobalProperty(OpenmrsConstants.GLOBAL_PROPERTY_PERSON_ATTRIBUTE_SEARCH_MATCH_MODE,
 		    OpenmrsConstants.GLOBAL_PROPERTY_PERSON_ATTRIBUTE_SEARCH_MATCH_ANYWHERE);
-		assertTrue(personAttributeHelper.personAttributeExists("Story teller"));
+		Assert.assertTrue(personAttributeHelper.personAttributeExists("Story teller"));
 		
 		List<Person> people = hibernatePersonDAO.getPeople("Story Teller", false);
 		logPeople(people);
 		
-		assertEquals(1, people.size());
-		assertEquals("Bilbo Odilon", people.get(0).getGivenName());
+		Assert.assertEquals(1, people.size());
+		Assert.assertEquals("Bilbo Odilon", people.get(0).getGivenName());
 	}
 	
 	/**
+	 * @verifies get one person by random case attribute
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetOnePersonByRandomCaseAttribute() {
+	public void getPeople_shouldGetOnePersonByRandomCaseAttribute() throws Exception {
 		globalPropertiesTestHelper.setGlobalProperty(OpenmrsConstants.GLOBAL_PROPERTY_PERSON_ATTRIBUTE_SEARCH_MATCH_MODE,
 		    OpenmrsConstants.GLOBAL_PROPERTY_PERSON_ATTRIBUTE_SEARCH_MATCH_ANYWHERE);
-		assertTrue(personAttributeHelper.personAttributeExists("Story teller"));
+		Assert.assertTrue(personAttributeHelper.personAttributeExists("Story teller"));
 		
 		List<Person> people = hibernatePersonDAO.getPeople("sToRy TeLlEr", false);
 		logPeople(people);
 		
-		assertEquals(1, people.size());
-		assertEquals("Bilbo Odilon", people.get(0).getGivenName());
+		Assert.assertEquals(1, people.size());
+		Assert.assertEquals("Bilbo Odilon", people.get(0).getGivenName());
 	}
 	
 	/**
+	 * @verifies get one person by searching for a mix of attribute and voided attribute
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetOnePersonBySearchingForAMixOfAttributeAndVoidedAttribute() {
+	public void getPeople_shouldGetOnePersonBySearchingForAMixOfAttributeAndVoidedAttribute() throws Exception {
 		globalPropertiesTestHelper.setGlobalProperty(OpenmrsConstants.GLOBAL_PROPERTY_PERSON_ATTRIBUTE_SEARCH_MATCH_MODE,
 		    OpenmrsConstants.GLOBAL_PROPERTY_PERSON_ATTRIBUTE_SEARCH_MATCH_ANYWHERE);
-		assertTrue(personAttributeHelper.personAttributeExists("Story teller"));
-		assertFalse(personAttributeHelper.voidedPersonAttributeExists("Story teller"));
-		assertTrue(personAttributeHelper.voidedPersonAttributeExists("Master thief"));
+		Assert.assertTrue(personAttributeHelper.personAttributeExists("Story teller"));
+		Assert.assertFalse(personAttributeHelper.voidedPersonAttributeExists("Story teller"));
+		Assert.assertTrue(personAttributeHelper.voidedPersonAttributeExists("Master thief"));
 		
 		List<Person> people = hibernatePersonDAO.getPeople("Story Thief", false);
 		logPeople(people);
 		
-		assertEquals(1, people.size());
-		assertEquals("Bilbo Odilon", people.get(0).getGivenName());
+		Assert.assertEquals(1, people.size());
+		Assert.assertEquals("Bilbo Odilon", people.get(0).getGivenName());
 	}
 	
 	/**
+	 * @verifies get multiple people by single attribute
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetMultiplePeopleBySingleAttribute() {
+	public void getPeople_shouldGetMultiplePeopleBySingleAttribute() throws Exception {
 		globalPropertiesTestHelper.setGlobalProperty(OpenmrsConstants.GLOBAL_PROPERTY_PERSON_ATTRIBUTE_SEARCH_MATCH_MODE,
 		    OpenmrsConstants.GLOBAL_PROPERTY_PERSON_ATTRIBUTE_SEARCH_MATCH_ANYWHERE);
-		assertTrue(personAttributeHelper.personAttributeExists("Senior ring bearer"));
+		Assert.assertTrue(personAttributeHelper.personAttributeExists("Senior ring bearer"));
 		List<Person> people = hibernatePersonDAO.getPeople("Senior ring bearer", false);
 		logPeople(people);
 		
-		assertEquals(2, people.size());
+		Assert.assertEquals(2, people.size());
 		
-		assertEquals("Baggins", people.get(0).getFamilyName());
-		assertEquals("Baggins", people.get(1).getFamilyName());
-		assertFalse(people.get(0).getGivenName().equalsIgnoreCase(people.get(1).getGivenName()));
+		Assert.assertEquals("Baggins", people.get(0).getFamilyName());
+		Assert.assertEquals("Baggins", people.get(1).getFamilyName());
+		Assert.assertFalse(people.get(0).getGivenName().equalsIgnoreCase(people.get(1).getGivenName()));
 	}
 	
 	/**
+	 * @verifies get multiple people by multiple attributes
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetMultiplePeopleByMultipleAttributes() {
+	public void getPeople_shouldGetMultiplePeopleByMultipleAttributes() throws Exception {
 		globalPropertiesTestHelper.setGlobalProperty(OpenmrsConstants.GLOBAL_PROPERTY_PERSON_ATTRIBUTE_SEARCH_MATCH_MODE,
 		    OpenmrsConstants.GLOBAL_PROPERTY_PERSON_ATTRIBUTE_SEARCH_MATCH_ANYWHERE);
-		assertTrue(personAttributeHelper.personAttributeExists("Senior ring bearer"));
-		assertTrue(personAttributeHelper.personAttributeExists("Story teller"));
+		Assert.assertTrue(personAttributeHelper.personAttributeExists("Senior ring bearer"));
+		Assert.assertTrue(personAttributeHelper.personAttributeExists("Story teller"));
 		List<Person> people = hibernatePersonDAO.getPeople("Story Bearer", false);
 		logPeople(people);
 		
-		assertEquals(2, people.size());
+		Assert.assertEquals(2, people.size());
 		
-		assertEquals("Baggins", people.get(0).getFamilyName());
-		assertEquals("Baggins", people.get(1).getFamilyName());
-		assertFalse(people.get(0).getGivenName().equalsIgnoreCase(people.get(1).getGivenName()));
+		Assert.assertEquals("Baggins", people.get(0).getFamilyName());
+		Assert.assertEquals("Baggins", people.get(1).getFamilyName());
+		Assert.assertFalse(people.get(0).getGivenName().equalsIgnoreCase(people.get(1).getGivenName()));
 	}
 	
 	/**
+	 * @verifies get no one by non-existing name
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetNoOneByNonexistingName() {
+	public void getPeople_shouldGetNoOneByNonexistingName() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("Gandalf", false);
 		logPeople(people);
 		
-		assertEquals(0, people.size());
+		Assert.assertEquals(0, people.size());
 	}
 	
 	/**
+	 * @verifies get one person by name
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetOnePersonByName() {
+	public void getPeople_shouldGetOnePersonByName() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("Bilbo", false);
 		logPeople(people);
 		
-		assertEquals(1, people.size());
-		assertEquals("Bilbo Odilon", people.get(0).getGivenName());
+		Assert.assertEquals(1, people.size());
+		Assert.assertEquals("Bilbo Odilon", people.get(0).getGivenName());
 	}
 	
 	/**
+	 * @verifies get one person by random case name
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetOnePersonByRandomCaseName() {
+	public void getPeople_shouldGetOnePersonByRandomCaseName() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("fRoDo", false);
 		logPeople(people);
 		
-		assertEquals(1, people.size());
-		assertEquals("Frodo Ansilon", people.get(0).getGivenName());
+		Assert.assertEquals(1, people.size());
+		Assert.assertEquals("Frodo Ansilon", people.get(0).getGivenName());
 	}
 	
 	/**
+	 * @verifies get multiple people by single name
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetMultiplePeopleBySingleName() {
+	public void getPeople_shouldGetMultiplePeopleBySingleName() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("Baggins", false);
 		logPeople(people);
 		
-		assertEquals(2, people.size());
+		Assert.assertEquals(2, people.size());
 		
-		assertEquals("Baggins", people.get(0).getFamilyName());
-		assertEquals("Baggins", people.get(1).getFamilyName());
-		assertFalse(people.get(0).getGivenName().equalsIgnoreCase(people.get(1).getGivenName()));
+		Assert.assertEquals("Baggins", people.get(0).getFamilyName());
+		Assert.assertEquals("Baggins", people.get(1).getFamilyName());
+		Assert.assertFalse(people.get(0).getGivenName().equalsIgnoreCase(people.get(1).getGivenName()));
 	}
 	
 	/**
+	 * @verifies get multiple people by multiple names
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetMultiplePeopleByMultipleNames() {
+	public void getPeople_shouldGetMultiplePeopleByMultipleNames() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("Bilbo Frodo", false);
 		logPeople(people);
 		
-		assertEquals(2, people.size());
+		Assert.assertEquals(2, people.size());
 		
-		assertEquals("Baggins", people.get(0).getFamilyName());
-		assertEquals("Baggins", people.get(1).getFamilyName());
-		assertFalse(people.get(0).getGivenName().equalsIgnoreCase(people.get(1).getGivenName()));
+		Assert.assertEquals("Baggins", people.get(0).getFamilyName());
+		Assert.assertEquals("Baggins", people.get(1).getFamilyName());
+		Assert.assertFalse(people.get(0).getGivenName().equalsIgnoreCase(people.get(1).getGivenName()));
 	}
 
     /**
+	 * @verifies get no one by non-existing name and non-existing attribute
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetNoOneByNonexistingNameAndNonexistingAttribute() {
-		assertFalse(personAttributeHelper.personAttributeExists("Wizard"));
+	public void getPeople_shouldGetNoOneByNonexistingNameAndNonexistingAttribute() throws Exception {
+		Assert.assertFalse(personAttributeHelper.personAttributeExists("Wizard"));
 		
 		List<Person> people = hibernatePersonDAO.getPeople("Gandalf Wizard", false);
 		logPeople(people);
 		
-		assertEquals(0, people.size());
+		Assert.assertEquals(0, people.size());
 	}
 	
 	/**
+	 * @verifies get no one by non-existing name and non-searchable attribute
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetNoOneByNonexistingNameAndNonsearchableAttribute() {
-		assertTrue(personAttributeHelper.nonSearchablePersonAttributeExists("Mushroom pie"));
+	public void getPeople_shouldGetNoOneByNonexistingNameAndNonsearchableAttribute() throws Exception {
+		Assert.assertTrue(personAttributeHelper.nonSearchablePersonAttributeExists("Mushroom pie"));
 		List<Person> people = hibernatePersonDAO.getPeople("Gandalf Mushroom pie", false);
 		logPeople(people);
 		
-		assertEquals(0, people.size());
+		Assert.assertEquals(0, people.size());
 	}
 	
 	/**
+	 * @verifies get no one by non-existing name and voided attribute
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetNoOneByNonexistingNameAndVoidedAttribute() {
-		assertTrue(personAttributeHelper.voidedPersonAttributeExists("Master Thief"));
+	public void getPeople_shouldGetNoOneByNonexistingNameAndVoidedAttribute() throws Exception {
+		Assert.assertTrue(personAttributeHelper.voidedPersonAttributeExists("Master Thief"));
 		List<Person> people = hibernatePersonDAO.getPeople("Gandalf Master Thief", false);
 		logPeople(people);
 		
-		assertEquals(0, people.size());
+		Assert.assertEquals(0, people.size());
 	}
 	
 	/**
+	 * @verifies get one person by name and attribute
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetOnePersonByNameAndAttribute() {
-		assertTrue(personAttributeHelper.personAttributeExists("Story teller"));
+	public void getPeople_shouldGetOnePersonByNameAndAttribute() throws Exception {
+		Assert.assertTrue(personAttributeHelper.personAttributeExists("Story teller"));
 		List<Person> people = hibernatePersonDAO.getPeople("Bilbo Story Teller", false);
 		logPeople(people);
 		
-		assertEquals(1, people.size());
-		assertEquals("Bilbo Odilon", people.get(0).getGivenName());
+		Assert.assertEquals(1, people.size());
+		Assert.assertEquals("Bilbo Odilon", people.get(0).getGivenName());
 	}
 	
 	/**
+	 * @verifies get one person by name and voided attribute
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetOnePersonByNameAndVoidedAttribute() {
-		assertTrue(personAttributeHelper.voidedPersonAttributeExists("Master Thief"));
+	public void getPeople_shouldGetOnePersonByNameAndVoidedAttribute() throws Exception {
+		Assert.assertTrue(personAttributeHelper.voidedPersonAttributeExists("Master Thief"));
 		List<Person> people = hibernatePersonDAO.getPeople("Frodo Master Thief", false);
 		logPeople(people);
 		
-		assertEquals(1, people.size());
-		assertEquals("Frodo Ansilon", people.get(0).getGivenName());
+		Assert.assertEquals(1, people.size());
+		Assert.assertEquals("Frodo Ansilon", people.get(0).getGivenName());
 	}
 	
 	/**
+	 * @verifies get multiple people by name and attribute
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetMultiplePeopleByNameAndAttribute() {
+	public void getPeople_shouldGetMultiplePeopleByNameAndAttribute() throws Exception {
 		List<Person> people = hibernatePersonDAO
 		        .getPeople(
 		            "Bilbo Baggins Story Teller Master Thief Porridge Honey Frodo Baggins Ring Bearer Mushroom Pie Gandalf Wizard Beer",
 		            false);
 		logPeople(people);
 		
-		assertEquals(2, people.size());
-		assertEquals("Baggins", people.get(0).getFamilyName());
-		assertEquals("Baggins", people.get(1).getFamilyName());
-		assertFalse(people.get(0).getGivenName().equalsIgnoreCase(people.get(1).getGivenName()));
+		Assert.assertEquals(2, people.size());
+		Assert.assertEquals("Baggins", people.get(0).getFamilyName());
+		Assert.assertEquals("Baggins", people.get(1).getFamilyName());
+		Assert.assertFalse(people.get(0).getGivenName().equalsIgnoreCase(people.get(1).getGivenName()));
 	}
 	
 	/**
+	 * @verifies get one person by given name
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetOnePersonByGivenName() {
+	public void getPeople_shouldGetOnePersonByGivenName() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("bravo", false);
 		logPeople(people);
 		
-		assertEquals(1, people.size());
-		assertEquals("bravo", people.get(0).getGivenName());
+		Assert.assertEquals(1, people.size());
+		Assert.assertEquals("bravo", people.get(0).getGivenName());
 	}
 	
 	/**
+	 * @verifies get multiple people by given name
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetMultiplePeopleByGivenName() {
+	public void getPeople_shouldGetMultiplePeopleByGivenName() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("alpha", false);
 		logPeople(people);
 		
-		assertEquals(2, people.size());
-		assertEquals("alpha", people.get(0).getGivenName());
-		assertEquals("alpha", people.get(1).getGivenName());
-		assertTrue(people.get(0).getMiddleName() != people.get(1).getMiddleName());
+		Assert.assertEquals(2, people.size());
+		Assert.assertEquals("alpha", people.get(0).getGivenName());
+		Assert.assertEquals("alpha", people.get(1).getGivenName());
+		Assert.assertTrue(people.get(0).getMiddleName() != people.get(1).getMiddleName());
 	}
 	
 	/**
+	 * @verifies get one person by middle name
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetOnePersonByMiddleName() {
+	public void getPeople_shouldGetOnePersonByMiddleName() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("echo", false);
 		logPeople(people);
 		
-		assertEquals(1, people.size());
-		assertEquals("echo", people.get(0).getMiddleName());
+		Assert.assertEquals(1, people.size());
+		Assert.assertEquals("echo", people.get(0).getMiddleName());
 	}
 	
 	/**
+	 * @verifies get multiple people by middle name
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetMultiplePeopleByMiddleName() {
+	public void getPeople_shouldGetMultiplePeopleByMiddleName() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("foxtrot", false);
 		logPeople(people);
 		
-		assertEquals(2, people.size());
-		assertEquals("foxtrot", people.get(0).getMiddleName());
-		assertEquals("foxtrot", people.get(1).getMiddleName());
-		assertTrue(people.get(0).getFamilyName() != people.get(1).getFamilyName());
+		Assert.assertEquals(2, people.size());
+		Assert.assertEquals("foxtrot", people.get(0).getMiddleName());
+		Assert.assertEquals("foxtrot", people.get(1).getMiddleName());
+		Assert.assertTrue(people.get(0).getFamilyName() != people.get(1).getFamilyName());
 	}
 	
 	/**
+	 * @verifies get one person by family name
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetOnePersonByFamilyName() {
+	public void getPeople_shouldGetOnePersonByFamilyName() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("lima", false);
 		logPeople(people);
 		
-		assertEquals(1, people.size());
-		assertEquals("lima", people.get(0).getFamilyName());
+		Assert.assertEquals(1, people.size());
+		Assert.assertEquals("lima", people.get(0).getFamilyName());
 	}
 	
 	/**
+	 * @verifies get multiple people by family name
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetMultiplePeopleByFamilyName() {
+	public void getPeople_shouldGetMultiplePeopleByFamilyName() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("kilo", false);
 		logPeople(people);
 		
-		assertEquals(2, people.size());
-		assertEquals("kilo", people.get(0).getFamilyName());
-		assertEquals("kilo", people.get(1).getFamilyName());
-		assertTrue(people.get(0).getGivenName() != people.get(1).getGivenName());
+		Assert.assertEquals(2, people.size());
+		Assert.assertEquals("kilo", people.get(0).getFamilyName());
+		Assert.assertEquals("kilo", people.get(1).getFamilyName());
+		Assert.assertTrue(people.get(0).getGivenName() != people.get(1).getGivenName());
 	}
 	
 	/**
+	 * @verifies get one person by family name2
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetOnePersonByFamilyName2() {
+	public void getPeople_shouldGetOnePersonByFamilyName2() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("mike", false);
 		logPeople(people);
 		
-		assertEquals(1, people.size());
-		assertEquals("alpha", people.get(0).getGivenName());
+		Assert.assertEquals(1, people.size());
+		Assert.assertEquals("alpha", people.get(0).getGivenName());
 	}
 	
 	/**
+	 * @verifies get multiple people by family name2
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetMultiplePeopleByFamilyName2() {
+	public void getPeople_shouldGetMultiplePeopleByFamilyName2() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("papa", false);
 		logPeople(people);
 		
-		assertEquals(2, people.size());
-		assertEquals("papa", people.get(0).getPersonName().getFamilyName2());
-		assertEquals("papa", people.get(1).getPersonName().getFamilyName2());
-		assertTrue(people.get(0).getFamilyName() != people.get(1).getFamilyName());
+		Assert.assertEquals(2, people.size());
+		Assert.assertEquals("papa", people.get(0).getPersonName().getFamilyName2());
+		Assert.assertEquals("papa", people.get(1).getPersonName().getFamilyName2());
+		Assert.assertTrue(people.get(0).getFamilyName() != people.get(1).getFamilyName());
 	}
 	
 	/**
+	 * @verifies get one person by multiple name parts
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetOnePersonByMultipleNameParts() {
+	public void getPeople_shouldGetOnePersonByMultipleNameParts() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("echo india mike", false);
 		logPeople(people);
 		
-		assertEquals(1, people.size());
-		assertEquals("alpha", people.get(0).getGivenName());
+		Assert.assertEquals(1, people.size());
+		Assert.assertEquals("alpha", people.get(0).getGivenName());
 	}
 	
 	/**
+	 * @verifies get multiple people by multiple name parts
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetMultiplePeopleByMultipleNameParts() {
+	public void getPeople_shouldGetMultiplePeopleByMultipleNameParts() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("bravo delta golf juliet mike ", false);
 		logPeople(people);
 		
-		assertEquals(5, people.size());
+		Assert.assertEquals(5, people.size());
 	}
 	
 	/**
+	 * @verifies get no one by voided name
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetNoOneByVoidedName() {
+	public void getPeople_shouldGetNoOneByVoidedName() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("voided-delta", false);
 		logPeople(people);
 		
-		assertEquals(0, people.size());
+		Assert.assertEquals(0, people.size());
 	}
 	
 	/**
+	 * @verifies get voided person when voided=true is passed
 	 * @see HibernatePersonDAO#getPeople(String, Boolean, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetVoidedByVoidedNameWhenVoidedIsTrue() {
+	public void getPeople_shouldGetVoidedByVoidedNameWhenVoidedIsTrue() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("voided-bravo", false, true);
 		logPeople(people);
 		
-		assertEquals(1, people.size());
+		Assert.assertEquals(1, people.size());
 	}
 	
 	/**
+	 * @verifies not get voided person
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldNotGetVoidedPerson() {
+	public void getPeople_shouldNotGetVoidedPerson() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("voided-bravo", false);
 		logPeople(people);
 		
-		assertEquals(0, people.size());
+		Assert.assertEquals(0, people.size());
 	}
 	
 	/**
+	 * @verifies not get dead person
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldNotGetDeadPerson() {
+	public void getPeople_shouldNotGetDeadPerson() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("dead-charlie", false);
 		logPeople(people);
 		
-		assertEquals(0, people.size());
+		Assert.assertEquals(0, people.size());
 	}
 	
 	/**
+	 * @verifies get single dead person
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetSingleDeadPerson() {
+	public void getPeople_shouldGetSingleDeadPerson() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("dead-charlie", true);
 		logPeople(people);
 		
-		assertEquals(1, people.size());
-		assertEquals("dead-charlie", people.get(0).getGivenName());
+		Assert.assertEquals(1, people.size());
+		Assert.assertEquals("dead-charlie", people.get(0).getGivenName());
 	}
 	
 	/**
+	 * @verifies get multiple dead people
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldGetMultipleDeadPeople() {
+	public void getPeople_shouldGetMultipleDeadPeople() throws Exception {
 		List<Person> people = hibernatePersonDAO.getPeople("dead-papa", true);
 		logPeople(people);
 		
-		assertEquals(2, people.size());
-		assertEquals("dead-papa", people.get(0).getPersonName().getFamilyName2());
-		assertEquals("dead-papa", people.get(1).getPersonName().getFamilyName2());
-		assertTrue(people.get(0).getFamilyName() != people.get(1).getFamilyName());
+		Assert.assertEquals(2, people.size());
+		Assert.assertEquals("dead-papa", people.get(0).getPersonName().getFamilyName2());
+		Assert.assertEquals("dead-papa", people.get(1).getPersonName().getFamilyName2());
+		Assert.assertTrue(people.get(0).getFamilyName() != people.get(1).getFamilyName());
 	}
 	
 	/**
+	 * @verifies obey attribute match mode
 	 * @see HibernatePersonDAO#getPeople(String, Boolean)
 	 */
 	@Test
-	public void getPeople_shouldObeyAttributeMatchMode() {
+	public void getPeople_shouldObeyAttributeMatchMode() throws Exception {
 		// exact match mode
 		long patientCount = hibernatePersonDAO.getPeople("337-4820", false).size();
-		assertEquals(1, patientCount);
+		Assert.assertEquals(1, patientCount);
 		
 		patientCount = hibernatePersonDAO.getPeople("337", false).size();
-		assertEquals(0, patientCount);
+		Assert.assertEquals(0, patientCount);
 		
 		globalPropertiesTestHelper.setGlobalProperty(OpenmrsConstants.GLOBAL_PROPERTY_PERSON_ATTRIBUTE_SEARCH_MATCH_MODE,
 		    OpenmrsConstants.GLOBAL_PROPERTY_PERSON_ATTRIBUTE_SEARCH_MATCH_ANYWHERE);
 		
 		patientCount = hibernatePersonDAO.getPeople("337", false).size();
-		assertEquals(1, patientCount);
+		Assert.assertEquals(1, patientCount);
 	}
 	
 	@Test
-	public void savePerson_shouldSavePersonWithBirthDateTime() throws ParseException {
+	public void savePerson_shouldSavePersonWithBirthDateTime() throws Exception {
 		Person person = new Person();
 		person.setBirthtime(new SimpleDateFormat("HH:mm:ss").parse("15:23:56"));
 		person.setBirthdate(new SimpleDateFormat("yyyy-MM-dd").parse("2012-05-29"));
@@ -641,29 +675,7 @@ public class HibernatePersonDAOTest extends BaseContextSensitiveTest {
 		hibernatePersonDAO.savePerson(person);
 
 		Person savedPerson = hibernatePersonDAO.getPerson(345);
-		assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2012-05-29 15:23:56"), savedPerson.getBirthDateTime());
-	}
-
-	/**
-	 * @see HibernatePersonDAO#getRelationshipTypes(String, Boolean)
-	 */
-	@Test
-	public void getRelationshipTypes_shouldReturnEmptyListForNullRelationshipTypeName() {
-		executeDataSet("org/openmrs/api/include/PersonServiceTest-createRetiredRelationship.xml");
-		List<RelationshipType> relationshipTypes = hibernatePersonDAO.getRelationshipTypes(null, true);
-		assertNotNull(relationshipTypes);
-		assertTrue(relationshipTypes.isEmpty(), "Should return an empty list for null relationshipTypeName");
-	}
-
-	/**
-	 * @see HibernatePersonDAO#getRelationshipTypes(String, Boolean)
-	 */
-	@Test
-	public void getRelationshipTypes_shouldReturnEmptyListForEmptyRelationshipTypeName() {
-		executeDataSet("org/openmrs/api/include/PersonServiceTest-createRetiredRelationship.xml");
-		List<RelationshipType> relationshipTypes = hibernatePersonDAO.getRelationshipTypes("", true);
-		assertNotNull(relationshipTypes);
-		assertTrue(relationshipTypes.isEmpty(), "Should return an empty list for empty relationshipTypeName");
+		Assert.assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2012-05-29 15:23:56"), savedPerson.getBirthDateTime());
 	}
 
 }

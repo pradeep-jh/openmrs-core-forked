@@ -9,12 +9,12 @@
  */
 package org.openmrs;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import org.junit.Test;
 
 import java.util.Date;
 
-import org.junit.jupiter.api.Test;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 public class PersonAddressTest {
 	
@@ -152,8 +152,8 @@ public class PersonAddressTest {
 	public void equalsContent_shouldIndicateUnequalWhenOnlyStartDateDiffers() {
 		PersonAddress address1 = new PersonAddress();
 		PersonAddress address2 = new PersonAddress();
-		address2.setStartDate(new Date(123L));
-		address1.setStartDate(new Date(1000000L));
+		address2.setStartDate(new Date(123l));
+		address1.setStartDate(new Date(1000000l));
 		
 		assertThat(address2.equalsContent(address1), is(false));
 	}
@@ -162,8 +162,8 @@ public class PersonAddressTest {
 	public void equalsContent_shouldIndicateUnequalWhenOnlyEndDateDiffers() {
 		PersonAddress address1 = new PersonAddress();
 		PersonAddress address2 = new PersonAddress();
-		address2.setStartDate(new Date(123L));
-		address1.setStartDate(new Date(1000000L));
+		address2.setStartDate(new Date(123l));
+		address1.setStartDate(new Date(1000000l));
 		
 		assertThat(address2.equalsContent(address1), is(false));
 	}

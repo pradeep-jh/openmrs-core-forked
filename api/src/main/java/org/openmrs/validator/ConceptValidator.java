@@ -15,7 +15,9 @@ import java.util.Locale;
 import java.util.Set;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.Concept;
 import org.openmrs.ConceptAnswer;
 import org.openmrs.ConceptMap;
@@ -24,8 +26,6 @@ import org.openmrs.annotation.Handler;
 import org.openmrs.api.APIException;
 import org.openmrs.api.DuplicateConceptNameException;
 import org.openmrs.api.context.Context;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.validation.Errors;
 import org.springframework.validation.ValidationUtils;
 import org.springframework.validation.Validator;
@@ -39,8 +39,8 @@ import org.springframework.validation.Validator;
 @Handler(supports = { Concept.class }, order = 50)
 public class ConceptValidator extends BaseCustomizableValidator implements Validator {
 	
-	// Logger for this class
-	private static final Logger log = LoggerFactory.getLogger(ConceptValidator.class);
+	// Log for this class
+	private static final Log log = LogFactory.getLog(ConceptValidator.class);
 	
 	/**
 	 * Determines if the command object being submitted is a valid type
@@ -57,38 +57,36 @@ public class ConceptValidator extends BaseCustomizableValidator implements Valid
 	 *
 	 * @see org.springframework.validation.Validator#validate(java.lang.Object,
 	 *      org.springframework.validation.Errors)
-	 * <strong>Should</strong> pass if the concept has at least one fully specified name added to it
-	 * <strong>Should</strong> fail if there is a duplicate unretired concept name in the locale
-	 * <strong>Should</strong> fail if there is a duplicate unretired preferred name in the same locale
-	 * <strong>Should</strong> fail if there is a duplicate unretired fully specified name in the same locale
-	 * <strong>Should</strong> fail if any names in the same locale for this concept are similar
-	 * <strong>Should</strong> pass if the concept with a duplicate name is retired
-	 * <strong>Should</strong> pass if the concept being validated is retired and has a duplicate name
-	 * <strong>Should</strong> fail if any name is an empty string
-	 * <strong>Should</strong> fail if the object parameter is null
-	 * <strong>Should</strong> pass if the concept is being updated with no name change
-	 * <strong>Should</strong> fail if any name is a null value
-	 * <strong>Should</strong> not allow multiple preferred names in a given locale
-	 * <strong>Should</strong> not allow multiple fully specified conceptNames in a given locale
-	 * <strong>Should</strong> not allow multiple short names in a given locale
-	 * <strong>Should</strong> not allow an index term to be a locale preferred name
-	 * <strong>Should</strong> fail if there is no name explicitly marked as fully specified
-	 * <strong>Should</strong> pass if the duplicate ConceptName is neither preferred nor fully Specified
-	 * <strong>Should</strong> pass if the concept has a synonym that is also a short name
-	 * <strong>Should</strong> fail if a term is mapped multiple times to the same concept
-	 * <strong>Should</strong> not fail if a term has two new mappings on it
-	 * <strong>Should</strong> fail if there is a duplicate unretired concept name in the same locale different than
+	 * @should pass if the concept has at least one fully specified name added to it
+	 * @should fail if there is a duplicate unretired concept name in the locale
+	 * @should fail if there is a duplicate unretired preferred name in the same locale
+	 * @should fail if there is a duplicate unretired fully specified name in the same locale
+	 * @should fail if any names in the same locale for this concept are similar
+	 * @should pass if the concept with a duplicate name is retired
+	 * @should pass if the concept being validated is retired and has a duplicate name
+	 * @should fail if any name is an empty string
+	 * @should fail if the object parameter is null
+	 * @should pass if the concept is being updated with no name change
+	 * @should fail if any name is a null value
+	 * @should not allow multiple preferred names in a given locale
+	 * @should not allow multiple fully specified conceptNames in a given locale
+	 * @should not allow multiple short names in a given locale
+	 * @should not allow an index term to be a locale preferred name
+	 * @should fail if there is no name explicitly marked as fully specified
+	 * @should pass if the duplicate ConceptName is neither preferred nor fully Specified
+	 * @should pass if the concept has a synonym that is also a short name
+	 * @should fail if a term is mapped multiple times to the same concept
+	 * @should not fail if a term has two new mappings on it
+	 * @should fail if there is a duplicate unretired concept name in the same locale different than
 	 *         the system locale
-	 * <strong>Should</strong> pass for a new concept with a map created with deprecated concept map methods
-	 * <strong>Should</strong> pass for an edited concept with a map created with deprecated concept map methods
-	 * <strong>Should</strong> pass validation if field lengths are correct
-	 * <strong>Should</strong> fail validation if field lengths are not correct
-	 * <strong>Should</strong> pass if fully specified name is the same as short name
-	 * <strong>Should</strong> pass if different concepts have the same short name
-	 * <strong>Should</strong> fail if the concept datatype is null
-	 * <strong>Should</strong> fail if the concept class is null
-	 * <strong>Should</strong> pass if the concept is retired and the only validation failures would be in ConceptName 
-	 * or ConceptMap, as a retired Concept bypasses ConceptName and ConceptMap validation.
+	 * @should pass for a new concept with a map created with deprecated concept map methods
+	 * @should pass for an edited concept with a map created with deprecated concept map methods
+	 * @should pass validation if field lengths are correct
+	 * @should fail validation if field lengths are not correct
+	 * @should pass if fully specified name is the same as short name
+	 * @should pass if different concepts have the same short name
+	 * @should fail if the concept datatype is null
+	 * @should fail if the concept class is null
 	 */
 	@Override
 	public void validate(Object obj, Errors errors) throws APIException, DuplicateConceptNameException {
@@ -106,13 +104,9 @@ public class ConceptValidator extends BaseCustomizableValidator implements Valid
 
 		ValidationUtils.rejectIfEmpty(errors, "datatype", "Concept.datatype.empty");
 		ValidationUtils.rejectIfEmpty(errors, "conceptClass", "Concept.conceptClass.empty");
-		
+
 		boolean hasFullySpecifiedName = false;
 		for (Locale conceptNameLocale : conceptToValidate.getAllConceptNameLocales()) {
-			if (conceptToValidate.getRetired()) {
-				continue;
-			}
-			
 			boolean fullySpecifiedNameForLocaleFound = false;
 			boolean preferredNameForLocaleFound = false;
 			boolean shortNameForLocaleFound = false;
@@ -200,17 +194,19 @@ public class ConceptValidator extends BaseCustomizableValidator implements Valid
 					        + "' is a duplicate name in locale '" + conceptNameLocale.toString() + "' for the same concept");
 				}
 				
-				log.debug("Valid name found: {}", nameInLocale.getName());
+				if (log.isDebugEnabled()) {
+					log.debug("Valid name found: " + nameInLocale.getName());
+				}
 			}
 		}
 		
 		//Ensure that each concept has at least a fully specified name
-		if (!hasFullySpecifiedName && !conceptToValidate.getRetired()) {
+		if (!hasFullySpecifiedName) {
 			log.debug("Concept has no fully specified name");
 			errors.reject("Concept.error.no.FullySpecifiedName");
 		}
 		
-		if (CollectionUtils.isNotEmpty(conceptToValidate.getConceptMappings()) && !conceptToValidate.getRetired()) {
+		if (CollectionUtils.isNotEmpty(conceptToValidate.getConceptMappings())) {
 			//validate all the concept maps
 			int index = 0;
 			Set<Integer> mappedTermIds = null;
@@ -227,6 +223,11 @@ public class ConceptValidator extends BaseCustomizableValidator implements Valid
 					}
 					
 				}
+				/*if (map.getConceptMapType() == null) {
+					errors.rejectValue("conceptMappings[" + index + "].conceptMapType", "Concept.map.typeRequired",
+					    "The concept map type is required for a concept map");
+					return;
+				}*/
 
 				//don't proceed to the next maps since the current one already has errors
 				if (errors.hasErrors()) {

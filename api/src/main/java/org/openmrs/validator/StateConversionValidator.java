@@ -9,10 +9,10 @@
  */
 package org.openmrs.validator;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.ConceptStateConversion;
 import org.openmrs.annotation.Handler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.validation.Errors;
 import org.springframework.validation.ValidationUtils;
 import org.springframework.validation.Validator;
@@ -25,7 +25,7 @@ import org.springframework.validation.Validator;
 @Handler(supports = { ConceptStateConversion.class }, order = 50)
 public class StateConversionValidator implements Validator {
 	
-	private static final Logger log = LoggerFactory.getLogger(StateConversionValidator.class);
+	protected final Log log = LogFactory.getLog(getClass());
 	
 	/**
 	 * Determines if the command object being submitted is a valid type
@@ -42,10 +42,10 @@ public class StateConversionValidator implements Validator {
 	 * 
 	 * @see org.springframework.validation.Validator#validate(java.lang.Object,
 	 *      org.springframework.validation.Errors)
-	 * <strong>Should</strong> fail validation if concept is null or empty or whitespace
-	 * <strong>Should</strong> fail validation if programWorkflow is null or empty or whitespace
-	 * <strong>Should</strong> fail validation if programWorkflowState is null or empty or whitespace
-	 * <strong>Should</strong> pass validation if all required fields have proper values
+	 * @should fail validation if concept is null or empty or whitespace
+	 * @should fail validation if programWorkflow is null or empty or whitespace
+	 * @should fail validation if programWorkflowState is null or empty or whitespace
+	 * @should pass validation if all required fields have proper values
 	 */
 	@Override
 	public void validate(Object obj, Errors errors) {

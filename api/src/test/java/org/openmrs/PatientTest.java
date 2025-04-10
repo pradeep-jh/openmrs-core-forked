@@ -9,19 +9,17 @@
  */
 package org.openmrs;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.hasSize;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
+import org.openmrs.test.Verifies;
+
+import static org.hamcrest.Matchers.contains;
+import static org.junit.Assert.assertThat;
 
 /**
  * This class should test all methods on the patient object. It should not worry about the extended
@@ -32,70 +30,13 @@ import org.junit.jupiter.api.Test;
 public class PatientTest {
 	
 	/**
-	 * Test the constructor method in patient object that takes in a patient as object and creates a copy
-	 */
-	@Test
-	public void patient_shouldConstructCloneWhenPassedPatient() {
-		Patient p = new Patient();
-		
-		Set<PersonName> pnSet = new HashSet<>();
-		PersonName pn = new PersonName();
-		pn.setFamilyName("familyName");
-		pn.setGivenName("givenName");
-		pn.setMiddleName("middleName");
-		pnSet.add(pn);
-			
-		PatientIdentifier pi1 = new PatientIdentifier();
-		PatientIdentifierType identifierType = new PatientIdentifierType(1);
-		Location location = new Location(1);
-
-		pi1.setIdentifier("theid");
-		pi1.setIdentifierType(identifierType);
-		pi1.setLocation(location);
-		pi1.setVoided(true);
-
-		PatientIdentifier pi2 = new PatientIdentifier();
-		PatientIdentifierType identifierType2 = new PatientIdentifierType(2);
-		Location location2 = new Location(2);
-
-		pi2.setIdentifier("theid2");
-		pi2.setIdentifierType(identifierType2);
-		pi2.setLocation(location2);
-		pi2.setVoided(false);
-		
-		p.setNames(pnSet);
-		p.addIdentifier(pi1);
-		p.addIdentifier(pi2);
-		p.setAllergyStatus("TestAllergy");
-		p.setId(1);
-		
-		Patient p2 = new Patient(p);
-
-		assertEquals(p, p2);
-		assertEquals(p.getAllergyStatus(), p2.getAllergyStatus());
-		assertEquals(p.getNames(), p2.getNames());
-		assertEquals(p.getGivenName(), p2.getGivenName());
-		assertEquals(p.getIdentifiers(),p2.getIdentifiers());
-		// Check that each identifier refers to the correct patient object
-		for (PatientIdentifier pid : p2.getIdentifiers()) {
-			assertSame(p2, pid.getPatient());
-		}
-		// Make sure that the original patient hasn't been dirtied
-		for (PatientIdentifier pid : p.getIdentifiers()) {
-			assertSame(p, pid.getPatient());
-		}
-		assertEquals(p.getPatientId(), p2.getPatientId());
-		assertEquals(p.getId(), p2.getId());
-		assertEquals(p.getPerson(), p2.getPerson());
-	}
-	
-	/**
 	 * Test the add/removeIdentifiers method in the patient object
 	 * 
 	 * @see Patient#addIdentifier(PatientIdentifier)
 	 */
 	@Test
-	public void addIdentifier_shouldAddIdentifierToCurrentList() {
+	@Verifies(value = "should add identifier to current list", method = "addIdentifier(PatientIdentifier)")
+	public void addIdentifier_shouldAddIdentifierToCurrentList() throws Exception {
 		
 		Patient p = new Patient();
 		
@@ -110,11 +51,15 @@ public class PatientTest {
 		p.addIdentifier(pa1);
 		
 		// make sure the identifier is added.
-		assertThat(p.getIdentifiers(), hasSize(1));
+		assertTrue(
+		    "There should be 1 identifier in the patient object but there is actually : " + p.getIdentifiers().size(), p
+		            .getIdentifiers().size() == 1);
 		
 		// adding the same identifier should not increment the size
 		p.addIdentifier(pa1);
-		assertThat(p.getIdentifiers(), hasSize(1));
+		assertTrue(
+		    "There should be 1 identifier in the patient object but there is actually : " + p.getIdentifiers().size(), p
+		            .getIdentifiers().size() == 1);
 		
 		PatientIdentifier pa2 = new PatientIdentifier();
 		pa2.setIdentifier("secondtest");
@@ -124,7 +69,8 @@ public class PatientTest {
 		p.addIdentifier(pa2);
 		
 		// make sure the identifier is added
-		assertThat(p.getIdentifiers(), hasSize(2));
+		assertTrue("There should be 2 identifiers in the patient object but there is actually : "
+		        + p.getIdentifiers().size(), p.getIdentifiers().size() == 2);
 		
 		PatientIdentifier pa3 = new PatientIdentifier();
 		pa3.setIdentifier(pa1.getIdentifier());
@@ -134,30 +80,33 @@ public class PatientTest {
 		
 		p.addIdentifier(pa3);
 		// make sure the identifier is NOT added
-		assertThat(p.getIdentifiers(), hasSize(2));
+		assertTrue("There should be 2 identifiers in the patient object but there is actually : "
+		        + p.getIdentifiers().size(), p.getIdentifiers().size() == 2);
 		
 		pa3.setIdentifier(pa3.getIdentifier() + "some new string to make sure it gets added");
 		p.addIdentifier(pa3);
 		// make sure the identifier IS added
-		assertThat(p.getIdentifiers(), hasSize(3));
+		assertTrue("There should be 3 identifiers in the patient object but there is actually : "
+		        + p.getIdentifiers().size(), p.getIdentifiers().size() == 3);
 		
 		p.removeIdentifier(pa3);
-		assertThat(p.getIdentifiers(), hasSize(2));
+		assertTrue("There should be only 2 identifiers in the patient object now", p.getIdentifiers().size() == 2);
 		
 		pa3.setDateCreated(new Date(pa1.getDateCreated().getTime() + 1));
 		p.addIdentifier(pa3);
 		// make sure the identifier IS added
-		assertThat(p.getIdentifiers(), hasSize(3));
+		assertTrue("There should be 3 identifiers in the patient object but there is actually : "
+		        + p.getIdentifiers().size(), p.getIdentifiers().size() == 3);
 		
 		// test removing all of the identifiers
 		p.removeIdentifier(pa3);
-		assertThat(p.getIdentifiers(), hasSize(2));
+		assertTrue("There should be only 2 identifiers in the patient object now", p.getIdentifiers().size() == 2);
 		p.removeIdentifier(pa2);
-		assertThat(p.getIdentifiers(), hasSize(1));
+		assertTrue("There should be only 1 identifier in the patient object now", p.getIdentifiers().size() == 1);
 		p.removeIdentifier(pa2);
-		assertThat(p.getIdentifiers(), hasSize(1));
+		assertTrue("There should still be only 1 identifier in the patient object now", p.getIdentifiers().size() == 1);
 		p.removeIdentifier(pa1);
-		assertThat(p.getIdentifiers(), hasSize(0));
+		assertTrue("There shouldn't be any identifiers in the patient object now", p.getIdentifiers().size() == 0);
 	}
 	
 	/**
@@ -186,14 +135,15 @@ public class PatientTest {
 		p.addIdentifier(pa2);
 		
 		// make sure we still have it in there
-		assertTrue(p.getActiveIdentifiers().contains(pa2), "The second identifier has not been added as a new identifier");
+		assertTrue("The second identifier has not been added as a new identifier", p.getActiveIdentifiers().contains(pa2));
 	}
 	
 	/**
 	 * @see Patient#addIdentifier(PatientIdentifier)
 	 */
 	@Test
-	public void addIdentifier_shouldNotFailWithNullIdentifiersList() {
+	@Verifies(value = "should not fail with null identifiers list", method = "addIdentifier(PatientIdentifier)")
+	public void addIdentifier_shouldNotFailWithNullIdentifiersList() throws Exception {
 		Patient p = new Patient();
 		p.setIdentifiers(null);
 		p.addIdentifier(new PatientIdentifier());
@@ -203,17 +153,19 @@ public class PatientTest {
 	 * @see Patient#getIdentifiers()
 	 */
 	@Test
-	public void getIdentifiers_shouldNotReturnNull() {
+	@Verifies(value = "should not return null", method = "getIdentifiers()")
+	public void getIdentifiers_shouldNotReturnNull() throws Exception {
 		Patient p = new Patient();
 		p.setIdentifiers(null);
-		assertNotNull(p.getIdentifiers());
+		Assert.assertNotNull(p.getIdentifiers());
 	}
 	
 	/**
 	 * @see Patient#addIdentifier(PatientIdentifier)
 	 */
 	@Test
-	public void addIdentifier_shouldNotAddIdentifierThatIsInListAlready() {
+	@Verifies(value = "should not add identifier that is in list already", method = "addIdentifier(PatientIdentifier)")
+	public void addIdentifier_shouldNotAddIdentifierThatIsInListAlready() throws Exception {
 		Patient p = new Patient();
 		
 		assertNotNull(p.getIdentifiers());
@@ -228,7 +180,9 @@ public class PatientTest {
 		
 		// adding the same identifier should not increment the size
 		p.addIdentifier(pa1);
-		assertThat(p.getIdentifiers(), hasSize(1));
+		assertTrue(
+		    "There should be 1 identifier in the patient object but there is actually : " + p.getIdentifiers().size(), p
+		            .getIdentifiers().size() == 1);
 		
 	}
 	
@@ -236,7 +190,8 @@ public class PatientTest {
 	 * @see Patient#removeIdentifier(PatientIdentifier)
 	 */
 	@Test
-	public void removeIdentifier_shouldRemoveIdentifierIfExists() {
+	@Verifies(value = "should remove identifier if exists", method = "removeIdentifier(PatientIdentifier)")
+	public void removeIdentifier_shouldRemoveIdentifierIfExists() throws Exception {
 		Patient p = new Patient();
 		
 		PatientIdentifier pa1 = new PatientIdentifier();
@@ -266,17 +221,18 @@ public class PatientTest {
 		
 		// test removing all of the identifiers
 		p.removeIdentifier(pa3);
-		assertThat(p.getIdentifiers(), hasSize(2));
+		assertTrue("There should be only 2 identifiers in the patient object now", p.getIdentifiers().size() == 2);
 		p.removeIdentifier(pa2);
-		assertThat(p.getIdentifiers(), hasSize(1));
+		assertTrue("There should be only 1 identifier in the patient object now", p.getIdentifiers().size() == 1);
 		p.removeIdentifier(pa2);
-		assertThat(p.getIdentifiers(), hasSize(1));
+		assertTrue("There should still be only 1 identifier in the patient object now", p.getIdentifiers().size() == 1);
 		p.removeIdentifier(pa1);
-		assertThat(p.getIdentifiers(), hasSize(0));
+		assertTrue("There shouldn't be any identifiers in the patient object now", p.getIdentifiers().size() == 0);
 	}
 	
 	@Test
-	public void removeIdentifier_shouldTestIdentifierCollectionChanged() {
+	@Verifies(value = "should verify identifiers order in the collection order", method = "removeIdentifier(PatientIdentifier)")
+	public void removeIdentifier_shouldTestIdentifierCollectionChanged() throws Exception {
 		Patient p = new Patient();
 		
 		PatientIdentifier pa1 = new PatientIdentifier();
@@ -334,7 +290,8 @@ public class PatientTest {
 	 * @see Patient#getActiveIdentifiers()
 	 */
 	@Test
-	public void getActiveIdentifiers_shouldReturnPreferredIdentifiersFirstInTheList() {
+	@Verifies(value = "should return preferred identifiers first in the list", method = "getActiveIdentifiers()")
+	public void getActiveIdentifiers_shouldReturnPreferredIdentifiersFirstInTheList() throws Exception {
 		Patient p = new Patient();
 		p.setIdentifiers(null);
 		PatientIdentifier pa1 = new PatientIdentifier();
@@ -367,8 +324,9 @@ public class PatientTest {
 		pa2.setPreferred(true);
 		pa3.setVoided(true);
 		
-		assertThat(p.getActiveIdentifiers(), hasSize(2));
-		assertEquals(pa2, p.getActiveIdentifiers().get(0), "Preferred identifier should be first in the list");
-		assertEquals(pa1, p.getActiveIdentifiers().get(1), "Non-preferred identifier should be last in the list");
+		assertTrue("With the third identifier voided, there should only be 2 identifiers",
+		    p.getActiveIdentifiers().size() == 2);
+		assertTrue("Preferred identifier should be first in the list", p.getActiveIdentifiers().get(0) == pa2);
+		assertTrue("Non-preferred identifier should be last in the list", p.getActiveIdentifiers().get(1) == pa1);
 	}
 }

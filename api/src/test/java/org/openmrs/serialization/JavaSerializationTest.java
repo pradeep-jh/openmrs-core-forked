@@ -9,23 +9,23 @@
  */
 package org.openmrs.serialization;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.CoreMatchers.is;
-
-import java.util.Date;
-
-import org.apache.commons.lang3.SerializationUtils;
-import org.junit.jupiter.api.Test;
+import org.apache.commons.lang.SerializationUtils;
+import org.junit.Test;
 import org.openmrs.Concept;
 import org.openmrs.ConceptClass;
 import org.openmrs.ConceptDatatype;
 import org.openmrs.Person;
 import org.openmrs.User;
 
+import java.util.Date;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 public class JavaSerializationTest {
 	
 	@Test
-	public void shouldSerializeOpenMrsData() {
+	public void shouldSerializeOpenMrsData() throws Exception {
 
         Date date = new Date();
         User user = new User(1);
@@ -45,7 +45,7 @@ public class JavaSerializationTest {
         originalPerson.setVoidReason("test");
 
         byte[] serialized = SerializationUtils.serialize(originalPerson);
-        Person copyPerson = SerializationUtils.deserialize(serialized);
+        Person copyPerson = (Person) SerializationUtils.deserialize(serialized);
 
         assertThat(copyPerson.getGender(), is(originalPerson.getGender()));
         assertThat(copyPerson.getBirthdate(), is(originalPerson.getBirthdate()));
@@ -62,7 +62,7 @@ public class JavaSerializationTest {
     }
 
     @Test
-	public void shouldSerializeOpenMrsMetadata() {
+    public void shouldSerializeOpenMrsMetadata() throws Exception {
 
         Date date = new Date();
         User user = new User(1);
@@ -81,7 +81,7 @@ public class JavaSerializationTest {
         originalConcept.setRetireReason("test");
 
         byte[] serialized = SerializationUtils.serialize(originalConcept);
-        Concept copyConcept = SerializationUtils.deserialize(serialized);
+        Concept copyConcept = (Concept) SerializationUtils.deserialize(serialized);
 
         assertThat(copyConcept.getConceptClass(), is(originalConcept.getConceptClass()));
         assertThat(copyConcept.getDatatype(), is(originalConcept.getDatatype()));

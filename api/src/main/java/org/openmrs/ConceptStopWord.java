@@ -9,11 +9,10 @@
  */
 package org.openmrs;
 
-import java.util.Locale;
-
-import org.hibernate.envers.Audited;
 import org.openmrs.api.context.Context;
 import org.springframework.util.StringUtils;
+
+import java.util.Locale;
 
 /**
  * ConceptStopWord is the real world term used to filter the words for indexing
@@ -22,7 +21,6 @@ import org.springframework.util.StringUtils;
  * 
  * @since 1.8
  */
-@Audited
 public class ConceptStopWord extends BaseOpenmrsObject {
 	
 	private static final long serialVersionUID = 3671020002642184656L;
@@ -90,12 +88,10 @@ public class ConceptStopWord extends BaseOpenmrsObject {
 		this.conceptStopWordId = conceptStopWordId;
 	}
 	
-	@Override
 	public Integer getId() {
 		return getConceptStopWordId();
 	}
 	
-	@Override
 	public void setId(Integer id) {
 		setConceptStopWordId(id);
 	}

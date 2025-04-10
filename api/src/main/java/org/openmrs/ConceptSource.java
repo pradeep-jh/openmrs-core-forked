@@ -9,16 +9,13 @@
  */
 package org.openmrs;
 
-import org.hibernate.envers.Audited;
-
 import java.util.Date;
 
 /**
  * A concept source is defined as any institution that keeps a concept dictionary. Examples are
  * ICD9, ICD10, SNOMED, or any other OpenMRS implementation
  */
-@Audited
-public class ConceptSource extends BaseChangeableOpenmrsMetadata {
+public class ConceptSource extends BaseOpenmrsMetadata {
 	
 	public static final long serialVersionUID = 375L;
 	
@@ -55,6 +52,36 @@ public class ConceptSource extends BaseChangeableOpenmrsMetadata {
 		this.conceptSourceId = conceptSourceId;
 	}
 	
+	public User getCreator() {
+		return super.getCreator();
+	}
+	
+	public void setCreator(User creator) {
+		super.setCreator(creator);
+	}
+	
+	/**
+	 * @return Returns the dateCreated.
+	 */
+	public Date getDateCreated() {
+		return super.getDateCreated();
+	}
+	
+	/**
+	 * @param dateCreated The dateCreated to set.
+	 */
+	public void setDateCreated(Date dateCreated) {
+		super.setDateCreated(dateCreated);
+	}
+	
+	public String getDescription() {
+		return super.getDescription();
+	}
+	
+	public void setDescription(String description) {
+		super.setDescription(description);
+	}
+	
 	/**
 	 * @return Returns the hl7Code.
 	 */
@@ -83,11 +110,18 @@ public class ConceptSource extends BaseChangeableOpenmrsMetadata {
 		this.uniqueId = uniqueId;
 	}
 	
+	public String getName() {
+		return super.getName();
+	}
+	
+	public void setName(String name) {
+		super.setName(name);
+	}
+	
 	/**
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		return getConceptSourceId();
 	}
@@ -96,7 +130,6 @@ public class ConceptSource extends BaseChangeableOpenmrsMetadata {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setConceptSourceId(id);
 	}

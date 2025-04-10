@@ -9,13 +9,9 @@
  */
 package org.openmrs.api.db;
 
-import java.sql.Connection;
-import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Future;
 
-import org.hibernate.SessionFactory;
-import org.openmrs.OpenmrsObject;
 import org.openmrs.User;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.context.ContextAuthenticationException;
@@ -33,26 +29,26 @@ public interface ContextDAO {
 	 * @param password user's password
 	 * @return a valid user if authentication succeeds
 	 * @throws ContextAuthenticationException
-	 * <strong>Should</strong> authenticate given username and password
-	 * <strong>Should</strong> authenticate given systemId and password
-	 * <strong>Should</strong> authenticate given systemId without hyphen and password
-	 * <strong>Should</strong> not authenticate given username and incorrect password
-	 * <strong>Should</strong> not authenticate given systemId and incorrect password
-	 * <strong>Should</strong> not authenticate given incorrect username
-	 * <strong>Should</strong> not authenticate given incorrect systemId
-	 * <strong>Should</strong> not authenticate given null login
-	 * <strong>Should</strong> not authenticate given empty login
-	 * <strong>Should</strong> not authenticate given null password when password in database is null
-	 * <strong>Should</strong> not authenticate given non null password when password in database is null
-	 * <strong>Should</strong> not authenticate when password in database is empty
-	 * <strong>Should</strong> give identical error messages between username and password mismatch
-	 * <strong>Should</strong> lockout user after eight failed attempts
-	 * <strong>Should</strong> authenticateWithCorrectHashedPassword
-	 * <strong>Should</strong> authenticateWithIncorrectHashedPassword
-	 * <strong>Should</strong> set uuid on user property when authentication fails with valid user
-	 * <strong>Should</strong> pass regression test for 1580
-	 * <strong>Should</strong> throw a ContextAuthenticationException if username is an empty string
-	 * <strong>Should</strong> throw a ContextAuthenticationException if username is white space
+	 * @should authenticate given username and password
+	 * @should authenticate given systemId and password
+	 * @should authenticate given systemId without hyphen and password
+	 * @should not authenticate given username and incorrect password
+	 * @should not authenticate given systemId and incorrect password
+	 * @should not authenticate given incorrect username
+	 * @should not authenticate given incorrect systemId
+	 * @should not authenticate given null login
+	 * @should not authenticate given empty login
+	 * @should not authenticate given null password when password in database is null
+	 * @should not authenticate given non null password when password in database is null
+	 * @should not authenticate when password in database is empty
+	 * @should give identical error messages between username and password mismatch
+	 * @should lockout user after eight failed attempts
+	 * @should authenticateWithCorrectHashedPassword
+	 * @should authenticateWithIncorrectHashedPassword
+	 * @should set uuid on user property when authentication fails with valid user
+	 * @should pass regression test for 1580
+	 * @should throw a ContextAuthenticationException if username is an empty string
+	 * @should throw a ContextAuthenticationException if username is white space
 	 */
 	public User authenticate(String username, String password) throws ContextAuthenticationException;
 	
@@ -65,32 +61,6 @@ public interface ContextDAO {
 	 * @throws ContextAuthenticationException
 	 */
 	public User getUserByUuid(String uuid) throws ContextAuthenticationException;
-	
-	/**
-	 * Gets a user given the username. Privilege checks are not done here because this is used by the
-	 * {@link Context#getAuthenticatedUser()} or {@link Context#authenticate(org.openmrs.api.context.Credentials)} methods.
-	 * 
-	 * @param username The username of the user to fetch
-	 * @return The matched user, null otherwise.
-	 * 
-	 * @since 2.3.0
-	 */
-	public User getUserByUsername(String username);
-	
-	/**
-	 * Creates a new user.
-	 * When the users are managed by a third-party authentication provider, it will happen that a successfully authenticated user still needs to be created in OpenMRS.
-	 * This method is made available to authentication schemes to create new users on the fly.
-	 * 
-	 * @param user A new user to be created.
-	 * @param password The password for the new user.
-	 * @param roleNames A list of role names to add to the user.
-	 * @return The newly created user
-	 * @throws Exception 
-	 * 
-	 * @since 2.3.0
-	 */
-	public User createUser(User user, String password, List<String> roleNames) throws Exception;
 	
 	/**
 	 * Open session.
@@ -121,29 +91,6 @@ public interface ContextDAO {
 	 * @see org.openmrs.api.context.Context#evictFromSession(Object)
 	 */
 	public void evictFromSession(Object obj);
-
-	/**
-	 * Evicts the entity data for a particular entity instance.
-	 *
-	 * @param object entity instance to evict from the DB cache
-	 * @see org.openmrs.api.context.Context#evictEntity(OpenmrsObject)   
-	 */
-	public void evictEntity(OpenmrsObject object);
-
-	/**
-	 * Evicts all entity data of a particular class from the given region.
-	
-	 * @param entityClass entity class to evict from the DB cache
-	 * @see org.openmrs.api.context.Context#evictAllEntities(Class)
-	 */
-	public void evictAllEntities(Class<?> entityClass);
-
-	/**
-	 * Evicts data from all cache regions.
-	 *
-	 * @see org.openmrs.api.context.Context#clearEntireCache()
-	 */
-	public void clearEntireCache();
 
 	/**
 	 * Used to re-read the state of the given instance from the underlying database.
@@ -203,10 +150,4 @@ public interface ContextDAO {
 	 * @see Context#updateSearchIndexForType(Class)
 	 */
 	public void updateSearchIndexForType(Class<?> type);
-
-	/**
-	 * @return a Connection from the OpenMRS database connection pool
-	 * @since 2.5.7
-	 */
-	public Connection getDatabaseConnection();
 }

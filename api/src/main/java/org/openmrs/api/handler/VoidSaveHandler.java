@@ -47,24 +47,23 @@ public class VoidSaveHandler implements SaveHandler<Voidable> {
 	 * 
 	 * @see org.openmrs.api.handler.RequiredDataHandler#handle(org.openmrs.OpenmrsObject,
 	 *      org.openmrs.User, java.util.Date, java.lang.String)
-	 * <strong>Should</strong> not set the voided bit
-	 * <strong>Should</strong> not set the voidReason
-	 * <strong>Should</strong> set voided by
-	 * <strong>Should</strong> not set voided by if non null
-	 * <strong>Should</strong> set dateVoided
-	 * <strong>Should</strong> not set dateVoided if non null
-	 * <strong>Should</strong> not set the dateVoided if voided is false
-	 * <strong>Should</strong> set voidReason to null if voided is true
-	 * <strong>Should</strong> set dateVoided to null if voided is true
-	 * <strong>Should</strong> set voidedBy to null if voided is true
+	 * @should not set the voided bit
+	 * @should not set the voidReason
+	 * @should set voided by
+	 * @should not set voided by if non null
+	 * @should set dateVoided
+	 * @should not set dateVoided if non null
+	 * @should not set the dateVoided if voided is false
+	 * @should set voidReason to null if voided is true
+	 * @should set dateVoided to null if voided is true
+	 * @should set voidedBy to null if voided is true
 	 */
-	@Override
 	public void handle(Voidable voidableObject, User currentUser, Date currentDate, String notUsed) {
 		
 		// void reason is not set here, it should be set prior to this method
 		
 		// only set the values if the user saved this object and set the voided bit
-		if (voidableObject.getVoided()) {
+		if (voidableObject.isVoided()) {
 			
 			if (voidableObject.getVoidedBy() == null) {
 				voidableObject.setVoidedBy(currentUser);

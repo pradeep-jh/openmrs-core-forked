@@ -13,25 +13,23 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
+import java.util.Vector;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.messagesource.MutableMessageSource;
 import org.openmrs.messagesource.PresentationMessage;
 import org.openmrs.module.Module;
-import org.openmrs.module.ModuleClassLoader;
 import org.openmrs.module.ModuleFactory;
 import org.openmrs.util.LocaleUtility;
 import org.openmrs.util.OpenmrsClassLoader;
 import org.openmrs.util.OpenmrsUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -43,7 +41,7 @@ import org.springframework.core.io.support.ResourcePatternResolver;
  */
 public class MutableResourceBundleMessageSource extends ReloadableResourceBundleMessageSource implements MutableMessageSource {
 
-	private static final Logger log = LoggerFactory.getLogger(MutableResourceBundleMessageSource.class);
+	private Log log = LogFactory.getLog(getClass());
 	
 	/**
 	 * Local reference to basenames used to search for properties files.
@@ -60,7 +58,6 @@ public class MutableResourceBundleMessageSource extends ReloadableResourceBundle
 	/**
 	 * @see org.openmrs.messagesource.MessageSourceService#getLocales()
 	 */
-	@Override
 	public Collection<Locale> getLocales() {
 		long now = System.currentTimeMillis();
 		if (locales == null || cacheMilliseconds <= 0 || now - cacheMilliseconds > lastCached) {
@@ -85,7 +82,7 @@ public class MutableResourceBundleMessageSource extends ReloadableResourceBundle
 	 * @see #findPropertiesFiles()
 	 */
 	private Collection<Locale> findLocales() {
-		Collection<Locale> foundLocales = new HashSet<>();
+		Collection<Locale> foundLocales = new HashSet<Locale>();
 		
 		for (Resource propertiesFile : findPropertiesFiles()) {
 			String filename = propertiesFile.getFilename();
@@ -111,7 +108,7 @@ public class MutableResourceBundleMessageSource extends ReloadableResourceBundle
 	 * @return Locale derived from the given string
 	 */
 	private Locale parseLocaleFrom(String filename) {
-		Locale parsedLocale;
+		Locale parsedLocale = null;
 		
 		// trim off leading basename
 		filename = filename.substring("messages".length());
@@ -133,9 +130,8 @@ public class MutableResourceBundleMessageSource extends ReloadableResourceBundle
 	 *
 	 * @see org.openmrs.messagesource.MessageSourceService#getPresentations()
 	 */
-	@Override
 	public Collection<PresentationMessage> getPresentations() {
-		Collection<PresentationMessage> presentations = new ArrayList<>();
+		Collection<PresentationMessage> presentations = new Vector<PresentationMessage>();
 		
 		for (Resource propertiesFile : findPropertiesFiles()) {
 			Locale currentLocale = parseLocaleFrom(propertiesFile.getFilename());
@@ -199,7 +195,6 @@ public class MutableResourceBundleMessageSource extends ReloadableResourceBundle
 	/**
 	 * @see org.openmrs.messagesource.MutableMessageSource#addPresentation(org.openmrs.messagesource.PresentationMessage)
 	 */
-	@Override
 	public void addPresentation(PresentationMessage message) {
 		Resource propertyFile = findPropertiesFileFor(message.getCode());
 		if (propertyFile != null) {
@@ -221,7 +216,6 @@ public class MutableResourceBundleMessageSource extends ReloadableResourceBundle
 	/**
 	 * @see org.openmrs.messagesource.MutableMessageSource#removePresentation(org.openmrs.messagesource.PresentationMessage)
 	 */
-	@Override
 	public void removePresentation(PresentationMessage message) {
 		Resource propertyFile = findPropertiesFileFor(message.getCode());
 		if (propertyFile != null) {
@@ -274,43 +268,39 @@ public class MutableResourceBundleMessageSource extends ReloadableResourceBundle
 	 * @return an array of property file names
 	 */
 	private Resource[] findPropertiesFiles() {
-		Set<Resource> resourceSet = new HashSet<>();
+		Resource[] propertiesFiles = new Resource[]{};
 		try {
 			String pattern = "classpath*:messages*.properties";
 			ResourcePatternResolver resourceResolver = new PathMatchingResourcePatternResolver(OpenmrsClassLoader.getInstance());
-			Resource[] propertiesFiles = resourceResolver.getResources(pattern);
-			Collections.addAll(resourceSet, propertiesFiles);
-			
-			for (ModuleClassLoader moduleClassLoader : ModuleFactory.getModuleClassLoaders()) {
-				resourceResolver = new PathMatchingResourcePatternResolver(moduleClassLoader);
-				propertiesFiles = resourceResolver.getResources(pattern);
-				Collections.addAll(resourceSet, propertiesFiles);
-			}
+			propertiesFiles = resourceResolver.getResources(pattern);
 		}
 		catch (IOException e) {
 			log.error("Error generated", e);
 		}
-		if (log.isWarnEnabled() && (resourceSet.isEmpty())) {
+		if (log.isWarnEnabled() && (propertiesFiles.length == 0)) {
 			log.warn("No properties files found.");
 		}
-		return resourceSet.toArray(new Resource[resourceSet.size()]);
+		return propertiesFiles;
 	}
 	
 	/**
 	 * @see org.openmrs.messagesource.MutableMessageSource#merge(MutableMessageSource, boolean)
 	 */
-	@Override
 	public void merge(MutableMessageSource fromSource, boolean overwrite) {
 		
 		// collect all existing properties
 		Resource[] propertiesFiles = findPropertiesFiles();
-		Map<Locale, List<Resource>> localeToFilesMap = new HashMap<>();
-		Map<Resource, Properties> fileToPropertiesMap = new HashMap<>();
+		Map<Locale, List<Resource>> localeToFilesMap = new HashMap<Locale, List<Resource>>();
+		Map<Resource, Properties> fileToPropertiesMap = new HashMap<Resource, Properties>();
 		
 		for (Resource propertiesFile : propertiesFiles) {
 			Properties props = new Properties();
 			Locale propsLocale = parseLocaleFrom(propertiesFile.getFilename());
-			List<Resource> propList = localeToFilesMap.computeIfAbsent(propsLocale, k -> new ArrayList<>());
+			List<Resource> propList = localeToFilesMap.get(propsLocale);
+			if (propList == null) {
+				propList = new ArrayList<Resource>();
+				localeToFilesMap.put(propsLocale, propList);
+			}
 			propList.add(propertiesFile);
 			
 			try {
@@ -342,10 +332,12 @@ public class MutableResourceBundleMessageSource extends ReloadableResourceBundle
 						propertyDestination = possibleDestination;
 					}
 				}
-				if (!propExists || overwrite) {
+				if ((propExists && overwrite) || !propExists) {
 					propertyDestination.put(message.getCode(), message.getMessage());
 				}
 				
+			} else {
+				// no properties files for this locale
 			}
 			
 			message.getCode();
@@ -356,7 +348,6 @@ public class MutableResourceBundleMessageSource extends ReloadableResourceBundle
 	 * @see org.openmrs.messagesource.MutableMessageSource#getPresentation(java.lang.String,
 	 *      java.util.Locale)
 	 */
-	@Override
 	public PresentationMessage getPresentation(String key, Locale forLocale) {
 		// TODO Auto-generated method stub
 		return null;
@@ -365,7 +356,6 @@ public class MutableResourceBundleMessageSource extends ReloadableResourceBundle
 	/**
 	 * @see org.openmrs.messagesource.MutableMessageSource#getPresentationsInLocale(java.util.Locale)
 	 */
-	@Override
 	public Collection<PresentationMessage> getPresentationsInLocale(Locale locale) {
 		// TODO Auto-generated method stub
 		return null;

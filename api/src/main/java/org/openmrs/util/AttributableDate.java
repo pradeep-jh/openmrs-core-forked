@@ -14,7 +14,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.openmrs.Attributable;
 import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
@@ -32,7 +32,7 @@ public class AttributableDate extends Date implements Attributable<AttributableD
 	
 	private static final long serialVersionUID = 4280303636131451746L;
 	
-	private static final String DATE_FORMAT = "yyyy-MM-dd";
+	private static final String dateFormat = "yyyy-MM-dd";
 	
 	/**
 	 * Default empty constructor
@@ -56,8 +56,6 @@ public class AttributableDate extends Date implements Attributable<AttributableD
 	/**
 	 * @see org.openmrs.Attributable#findPossibleValues(java.lang.String)
 	 */
-	@Override
-	@Deprecated
 	public List<AttributableDate> findPossibleValues(String searchText) {
 		// TODO Auto-generated method stub
 		return null;
@@ -66,16 +64,13 @@ public class AttributableDate extends Date implements Attributable<AttributableD
 	/**
 	 * @see org.openmrs.Attributable#getDisplayString()
 	 */
-	@Override
 	public String getDisplayString() {
-		return new SimpleDateFormat(DATE_FORMAT).format(this);
+		return new SimpleDateFormat(dateFormat).format(this);
 	}
 	
 	/**
 	 * @see org.openmrs.Attributable#getPossibleValues()
 	 */
-	@Override
-	@Deprecated
 	public List<AttributableDate> getPossibleValues() {
 		// TODO Auto-generated method stub
 		return null;
@@ -84,7 +79,6 @@ public class AttributableDate extends Date implements Attributable<AttributableD
 	/**
 	 * @see org.openmrs.Attributable#hydrate(java.lang.String)
 	 */
-	@Override
 	public AttributableDate hydrate(String s) {
 		// don't do anything to empty dates
 		if (StringUtils.isEmpty(s)) {
@@ -97,12 +91,15 @@ public class AttributableDate extends Date implements Attributable<AttributableD
 		}
 		catch (ParseException e) {
 			try {
-				return new AttributableDate(((Date) new SimpleDateFormat(DATE_FORMAT).parseObject(s)).getTime());
+				return new AttributableDate(((Date) new SimpleDateFormat(dateFormat).parseObject(s)).getTime());
 			}
 			catch (ParseException e2) {
 				// if we can't parse it as the normalized string or as the current
 				// user's date format, bail out
 				throw new APIException("unable.parse.string.as.date", new Object[] { s });
+				
+				// returning null causes the field to be blanked out
+				//return null;
 			}
 		}
 	}
@@ -110,9 +107,8 @@ public class AttributableDate extends Date implements Attributable<AttributableD
 	/**
 	 * @see org.openmrs.Attributable#serialize()
 	 */
-	@Override
 	public String serialize() {
-		return new SimpleDateFormat(DATE_FORMAT).format(this);
+		return new SimpleDateFormat(dateFormat).format(this);
 	}
 	
 }

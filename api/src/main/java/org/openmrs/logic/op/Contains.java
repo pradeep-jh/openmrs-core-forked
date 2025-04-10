@@ -21,7 +21,6 @@ package org.openmrs.logic.op;
  */
 public class Contains implements ComparisonOperator {
 	
-	@Override
 	public String toString() {
 		return "CONTAINS";
 	}

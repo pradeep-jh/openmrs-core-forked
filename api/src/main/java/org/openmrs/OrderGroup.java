@@ -9,12 +9,10 @@
  */
 package org.openmrs;
 
+import org.openmrs.api.APIException;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-
-import org.hibernate.envers.Audited;
-import org.openmrs.api.APIException;
 
 /**
  * Contains a group of {@link org.openmrs.Order}s that are ordered together within a single encounter,often driven by an {@link org.openmrs.OrderSet}. 
@@ -23,8 +21,7 @@ import org.openmrs.api.APIException;
  * 
  * @since 1.12
  */
-@Audited
-public class OrderGroup extends BaseCustomizableData<OrderGroupAttribute> {
+public class OrderGroup extends BaseOpenmrsData {
 	
 	public static final long serialVersionUID = 72232L;
 	
@@ -38,14 +35,6 @@ public class OrderGroup extends BaseCustomizableData<OrderGroupAttribute> {
 	
 	private OrderSet orderSet;
 	
-	private OrderGroup parentOrderGroup;
-
-	private Concept orderGroupReason;
-
-	private OrderGroup previousOrderGroup;
-	
-	private Set<OrderGroup> nestedOrderGroups;
-
 	/**
 	 * Gets the orderGroupId
 	 *
@@ -107,7 +96,7 @@ public class OrderGroup extends BaseCustomizableData<OrderGroupAttribute> {
 	 */
 	public List<Order> getOrders() {
 		if (orders == null) {
-			orders = new ArrayList<>();
+			orders = new ArrayList<Order>();
 		}
 		return orders;
 	}
@@ -118,7 +107,9 @@ public class OrderGroup extends BaseCustomizableData<OrderGroupAttribute> {
 	 * @param orders the orders to set
 	 */
 	public void setOrders(List<Order> orders) {
-		this.orders = orders;
+		for (Order order : orders) {
+			addOrder(order);
+		}
 	}
 	
 	/**
@@ -128,18 +119,6 @@ public class OrderGroup extends BaseCustomizableData<OrderGroupAttribute> {
 	 */
 	public void addOrder(Order order) {
 		this.addOrder(order, null);
-	}
-	
-	/**
-	 * Adds {@link Order}s to existing Order list
-	 * 
-	 * @param orders
-	 * @since 2.2
-	 */
-	public void addOrders(List<Order> orders) {
-		for (Order order : orders) {
-			addOrder(order);
-		}
 	}
 	
 	/**
@@ -153,9 +132,6 @@ public class OrderGroup extends BaseCustomizableData<OrderGroupAttribute> {
 		if (order == null || getOrders().contains(order)) {
 			return;
 		}
-                
-                order.setOrderGroup(this);  
-                 
 		Integer listIndex = findListIndexForGivenPosition(position);
 		getOrders().add(listIndex, order);
 		if (order.getSortWeight() == null) {
@@ -209,99 +185,12 @@ public class OrderGroup extends BaseCustomizableData<OrderGroupAttribute> {
 		this.orderSet = orderSet;
 	}
 	
-	@Override
 	public Integer getId() {
 		return getOrderGroupId();
 	}
 	
-	@Override
 	public void setId(Integer id) {
 		setOrderGroupId(id);
 	}
 	
-	/**
-	 * Gets the parent order group to maintain linkages between groups and support group nesting
-	 * 
-	 * @return the parent order group
-	 * @since 2.4.0
-	 */
-	public OrderGroup getParentOrderGroup() {
-		return parentOrderGroup;
-	}
-	
-	/**
-	 * Sets the parent order group to maintain linkages between groups and support group nesting
-	 * 
-	 * @param parentOrderGroup the parent order group to set.
-	 * @since 2.4.0
-	 */
-	public void setParentOrderGroup(OrderGroup parentOrderGroup) {
-		this.parentOrderGroup = parentOrderGroup;
-	}
-
-	/**
-	 * Gets the order group reason which denotes the reason why the group was
-	 * ordered
-	 * 
-	 * @return the order group reason
-	 * @since 2.4.0
-	 */
-	public Concept getOrderGroupReason() {
-		return orderGroupReason;
-	}
-
-	/**
-	 * Sets the order group reason which denotes the reason why the group was
-	 * ordered
-	 * 
-	 * @param orderGroupReason, the order group reason to set
-	 * @since 2.4.0
-	 */
-	public void setOrderGroupReason(Concept orderGroupReason) {
-		this.orderGroupReason = orderGroupReason;
-	}
-	
-	/**
-	 * Gets the previous order group to other order groups, to maintain linkages
-	 * between groups and support group nesting
-	 * 
-	 * @param returns the previous order group
-	 * @since 2.4.0
-	 */
-	public OrderGroup getPreviousOrderGroup() {
-		return previousOrderGroup;
-	}
-
-	/**
-	 * Sets the previous order group to other order groups, to maintain linkages
-	 * between groups and support group nesting
-	 * 
-	 * @param previousOrderGroup The previous order group to set
-	 * @since 2.4.0
-	 */
-	public void setPreviousOrderGroup(OrderGroup previousOrderGroup) {
-		this.previousOrderGroup = previousOrderGroup;
-	}
-	
-	/**
-	 * Gets the nested order groups to other order groups, to maintain linkages
-	 * between groups and support group nesting
-	 * 
-	 * @param returns the nested order groups
-	 * @since 2.4.0
-	 */
-	public Set<OrderGroup> getNestedOrderGroups() {
-		return this.nestedOrderGroups;
-	}
-	
-	/**
-	 * Sets the nested order groups to other order groups, to maintain linkages
-	 * between groups and support group nesting.
-	 * 
-	 * @param nestedOrderGroup The nested order groups to set
-	 * @since 2.4.0
-	 */
-	public void setNestedOrderGroups(Set<OrderGroup> nestedOrderGroups) {
-		this.nestedOrderGroups = nestedOrderGroups;
-	}
 }

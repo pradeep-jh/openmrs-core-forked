@@ -9,19 +9,17 @@
  */
 package org.openmrs.api.db.hibernate;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.hibernate.SessionFactory;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.openmrs.test.BaseContextSensitiveTest;
 
 public class PersonAttributeHelperTest extends BaseContextSensitiveTest {
 	
-	private static final Logger log = LoggerFactory.getLogger(PersonAttributeHelperTest.class);
+	private final static Log log = LogFactory.getLog(PersonAttributeHelperTest.class);
 	
 	private final static String PEOPLE_FROM_THE_SHIRE_XML = "org/openmrs/api/db/hibernate/include/HibernatePersonDAOTest-people.xml";
 	
@@ -29,76 +27,81 @@ public class PersonAttributeHelperTest extends BaseContextSensitiveTest {
 	
 	private PersonAttributeHelper helper = null;
 	
-	@BeforeEach
-	public void getPersonDAO() {
+	@Before
+	public void getPersonDAO() throws Exception {
 		executeDataSet(PEOPLE_FROM_THE_SHIRE_XML);
 		sessionFactory = (SessionFactory) applicationContext.getBean("sessionFactory");
 		helper = new PersonAttributeHelper(sessionFactory);
 	}
 	
 	/**
+	 * @verifies return true if a person attribute exists
 	 * @see PersonAttributeHelper#personAttributeExists(String)
 	 */
 	@Test
-	public void personAttributeExists_shouldReturnTrueIfAPersonAttributeExists() {
-		assertTrue(helper.personAttributeExists("Master thief"));
-		assertTrue(helper.personAttributeExists("Senior ring bearer"));
-		assertTrue(helper.personAttributeExists("Story teller"));
-		assertTrue(helper.personAttributeExists("Porridge with honey"));
-		assertTrue(helper.personAttributeExists("Mushroom pie"));
+	public void personAttributeExists_shouldReturnTrueIfAPersonAttributeExists() throws Exception {
+		Assert.assertTrue(helper.personAttributeExists("Master thief"));
+		Assert.assertTrue(helper.personAttributeExists("Senior ring bearer"));
+		Assert.assertTrue(helper.personAttributeExists("Story teller"));
+		Assert.assertTrue(helper.personAttributeExists("Porridge with honey"));
+		Assert.assertTrue(helper.personAttributeExists("Mushroom pie"));
 		
-		assertFalse(helper.personAttributeExists("Unexpected attribute value"));
+		Assert.assertFalse(helper.personAttributeExists("Unexpected attribute value"));
 	}
 	
 	/**
+	 * @verifies return true if a voided person attribute exists
 	 * @see PersonAttributeHelper#voidedPersonAttributeExists(String)
 	 */
 	@Test
-	public void voidedPersonAttributeExists_shouldReturnTrueIfAVoidedPersonAttributeExists() {
-		assertTrue(helper.voidedPersonAttributeExists("Master thief"));
-		assertTrue(helper.voidedPersonAttributeExists("Mushroom pie"));
+	public void voidedPersonAttributeExists_shouldReturnTrueIfAVoidedPersonAttributeExists() throws Exception {
+		Assert.assertTrue(helper.voidedPersonAttributeExists("Master thief"));
+		Assert.assertTrue(helper.voidedPersonAttributeExists("Mushroom pie"));
 		
-		assertFalse(helper.voidedPersonAttributeExists("Unexpected attribute value"));
+		Assert.assertFalse(helper.voidedPersonAttributeExists("Unexpected attribute value"));
 	}
 	
 	/**
+	 * @verifies return true if a non-voided person attribute exists
 	 * @see PersonAttributeHelper#nonVoidedPersonAttributeExists(String)
 	 */
 	@Test
-	public void nonVoidedPersonAttributeExists_shouldReturnTrueIfANonvoidedPersonAttributeExists() {
-		assertTrue(helper.nonVoidedPersonAttributeExists("Story teller"));
-		assertTrue(helper.nonVoidedPersonAttributeExists("Porridge with honey"));
+	public void nonVoidedPersonAttributeExists_shouldReturnTrueIfANonvoidedPersonAttributeExists() throws Exception {
+		Assert.assertTrue(helper.nonVoidedPersonAttributeExists("Story teller"));
+		Assert.assertTrue(helper.nonVoidedPersonAttributeExists("Porridge with honey"));
 		
-		assertFalse(helper.nonVoidedPersonAttributeExists("Unexpected attribute value"));
+		Assert.assertFalse(helper.nonVoidedPersonAttributeExists("Unexpected attribute value"));
 	}
 	
 	/**
+	 * @verifies return true if a non-searchable person attribute exists
 	 * @see PersonAttributeHelper#nonSearchablePersonAttributeExists(String)
 	 */
 	@Test
-	public void nonSearchablePersonAttributeExists_shouldReturnTrueIfANonsearchablePersonAttributeExists() {
-		assertFalse(helper.nonSearchablePersonAttributeExists("Master thief"));
-		assertFalse(helper.nonSearchablePersonAttributeExists("Senior ring bearer"));
-		assertFalse(helper.nonSearchablePersonAttributeExists("Story teller"));
+	public void nonSearchablePersonAttributeExists_shouldReturnTrueIfANonsearchablePersonAttributeExists() throws Exception {
+		Assert.assertFalse(helper.nonSearchablePersonAttributeExists("Master thief"));
+		Assert.assertFalse(helper.nonSearchablePersonAttributeExists("Senior ring bearer"));
+		Assert.assertFalse(helper.nonSearchablePersonAttributeExists("Story teller"));
 		
-		assertTrue(helper.nonSearchablePersonAttributeExists("Porridge with honey"));
-		assertTrue(helper.nonSearchablePersonAttributeExists("Mushroom pie"));
+		Assert.assertTrue(helper.nonSearchablePersonAttributeExists("Porridge with honey"));
+		Assert.assertTrue(helper.nonSearchablePersonAttributeExists("Mushroom pie"));
 		
-		assertFalse(helper.nonSearchablePersonAttributeExists("Unexpected attribute value"));
+		Assert.assertFalse(helper.nonSearchablePersonAttributeExists("Unexpected attribute value"));
 	}
 	
 	/**
+	 * @verifies return true if a searchable person attribute exists
 	 * @see PersonAttributeHelper#searchablePersonAttributeExists(String)
 	 */
 	@Test
-	public void searchablePersonAttributeExists_shouldReturnTrueIfASearchablePersonAttributeExists() {
-		assertTrue(helper.searchablePersonAttributeExists("Master thief"));
-		assertTrue(helper.searchablePersonAttributeExists("Senior ring bearer"));
-		assertTrue(helper.searchablePersonAttributeExists("Story teller"));
+	public void searchablePersonAttributeExists_shouldReturnTrueIfASearchablePersonAttributeExists() throws Exception {
+		Assert.assertTrue(helper.searchablePersonAttributeExists("Master thief"));
+		Assert.assertTrue(helper.searchablePersonAttributeExists("Senior ring bearer"));
+		Assert.assertTrue(helper.searchablePersonAttributeExists("Story teller"));
 		
-		assertFalse(helper.searchablePersonAttributeExists("Porridge with honey"));
-		assertFalse(helper.searchablePersonAttributeExists("Mushroom pie"));
+		Assert.assertFalse(helper.searchablePersonAttributeExists("Porridge with honey"));
+		Assert.assertFalse(helper.searchablePersonAttributeExists("Mushroom pie"));
 		
-		assertFalse(helper.nonSearchablePersonAttributeExists("Unexpected attribute value"));
+		Assert.assertFalse(helper.nonSearchablePersonAttributeExists("Unexpected attribute value"));
 	}
 }

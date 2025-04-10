@@ -1,4 +1,4 @@
-#parse($HEADER_TEMPLATE)
+#parse($headerTemplate)
 
 <b>The following error occurred at startup:</b>
 <div>
@@ -12,4 +12,4 @@ ${stacktrace}
 
 See the server log for full output.			
 
-#parse($FOOTER_TEMPLATE)
+#parse($footerTemplate)

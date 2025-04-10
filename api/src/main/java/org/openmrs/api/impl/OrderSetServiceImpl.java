@@ -9,21 +9,18 @@
  */
 package org.openmrs.api.impl;
 
-import java.util.Date;
-import java.util.List;
-
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.openmrs.OrderSet;
-import org.openmrs.OrderSetAttribute;
-import org.openmrs.OrderSetAttributeType;
 import org.openmrs.OrderSetMember;
 import org.openmrs.api.APIException;
 import org.openmrs.api.OrderSetService;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.db.OrderSetDAO;
-import org.openmrs.customdatatype.CustomDatatypeUtil;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import java.util.Date;
+import java.util.List;
 
 public class OrderSetServiceImpl extends BaseOpenmrsService implements OrderSetService {
 	
@@ -32,7 +29,6 @@ public class OrderSetServiceImpl extends BaseOpenmrsService implements OrderSetS
 	/**
 	 * @see org.openmrs.api.OrderSetService#setOrderSetDAO(org.openmrs.api.db.OrderSetDAO)
 	 */
-	@Override
 	public void setOrderSetDAO(OrderSetDAO dao) {
 		this.dao = dao;
 	}
@@ -49,7 +45,7 @@ public class OrderSetServiceImpl extends BaseOpenmrsService implements OrderSetS
 	@Override
 	@Transactional(readOnly = false)
 	public OrderSet retireOrderSet(OrderSet orderSet, String retireReason) throws APIException {
-		if (StringUtils.isBlank(retireReason)) {
+		if (!StringUtils.hasLength(retireReason)) {
 			throw new IllegalArgumentException("retire reason cannot be empty or null");
 		}
 		for (OrderSetMember orderSetMember : orderSet.getOrderSetMembers()) {
@@ -72,8 +68,6 @@ public class OrderSetServiceImpl extends BaseOpenmrsService implements OrderSetS
 	 */
 	private synchronized OrderSet saveOrderSetInternal(OrderSet orderSet) throws APIException {
 		if (CollectionUtils.isEmpty(orderSet.getOrderSetMembers())) {
-			// Why do we have to do this?
-			CustomDatatypeUtil.saveAttributesIfNecessary(orderSet);
 			return dao.save(orderSet);
 		}
 		for (OrderSetMember orderSetMember : orderSet.getOrderSetMembers()) {
@@ -82,14 +76,12 @@ public class OrderSetServiceImpl extends BaseOpenmrsService implements OrderSetS
 			}
 		}
 		for (OrderSetMember orderSetMember : orderSet.getOrderSetMembers()) {
-			if (orderSetMember.getRetired()) {
+			if (orderSetMember.isRetired()) {
 				orderSetMember.setRetiredBy(Context.getAuthenticatedUser());
 				orderSetMember.setDateRetired(new Date());
 			}
 		}
 		
-		// Why do we have to do this?
-		CustomDatatypeUtil.saveAttributesIfNecessary(orderSet);
 		return dao.save(orderSet);
 	}
 	
@@ -99,7 +91,8 @@ public class OrderSetServiceImpl extends BaseOpenmrsService implements OrderSetS
 	@Override
 	@Transactional(readOnly = true)
 	public List<OrderSet> getOrderSets(boolean includeRetired) throws APIException {
-		return dao.getOrderSets(includeRetired);
+		List<OrderSet> orderSets = dao.getOrderSets(includeRetired);
+		return orderSets;
 	}
 	
 	/**
@@ -127,88 +120,5 @@ public class OrderSetServiceImpl extends BaseOpenmrsService implements OrderSetS
 	@Transactional(readOnly = true)
 	public OrderSetMember getOrderSetMemberByUuid(String uuid) {
 		return dao.getOrderSetMemberByUuid(uuid);
-	}
-
-	/**
-	 * @see org.openmrs.api.OrderSetService#getAllOrderSetAttributeTypes()
-	 */
-	@Override
-	@Transactional(readOnly = true)
-	public List<OrderSetAttributeType> getAllOrderSetAttributeTypes() {
-		return dao.getAllOrderSetAttributeTypes();
-	}
-
-	/**
-	 * @see org.openmrs.api.OrderSetService#getOrderSetAttributeType(java.lang.Integer)
-	 */
-	@Override
-	@Transactional(readOnly = true)
-	public OrderSetAttributeType getOrderSetAttributeType(Integer id) {
-		return dao.getOrderSetAttributeType(id);
-	}
-
-	/**
-	 * @see org.openmrs.api.OrderSetService#getOrderSetAttributeTypeByUuid(java.lang.String)
-	 */
-	@Override
-	@Transactional(readOnly = true)
-	public OrderSetAttributeType getOrderSetAttributeTypeByUuid(String uuid) {
-		return dao.getOrderSetAttributeTypeByUuid(uuid);
-	}
-
-	/**
-	 * @see org.openmrs.api.OrderSetService#saveOrderSetAttributeType(org.openmrs.OrderSetAttributeType)
-	 */
-	@Override
-	@Transactional(readOnly = false)
-	public OrderSetAttributeType saveOrderSetAttributeType(OrderSetAttributeType orderSetAttributeType) {
-		return dao.saveOrderSetAttributeType(orderSetAttributeType);
-	}
-
-	/**
-	 * @see org.openmrs.api.OrderSetService#retireOrderSetAttributeType(org.openmrs.OrderSetAttributeType,
-	 *      java.lang.String)
-	 */
-	@Override
-	@Transactional(readOnly = false)
-	public OrderSetAttributeType retireOrderSetAttributeType(OrderSetAttributeType orderSetAttributeType,
-			String reason) {
-		return dao.saveOrderSetAttributeType(orderSetAttributeType);
-	}
-
-	/**
-	 * @see org.openmrs.api.OrderSetService#unretireOrderSetAttributeType(org.openmrs.OrderSetAttributeType)
-	 */
-	@Override
-	@Transactional(readOnly = false)
-	public OrderSetAttributeType unretireOrderSetAttributeType(OrderSetAttributeType orderSetAttributeType) {
-		return Context.getOrderSetService().saveOrderSetAttributeType(orderSetAttributeType);
-	}
-
-	/**
-	 * @see org.openmrs.api.OrderSetService#purgeOrderSetAttributeType(org.openmrs.OrderSetAttributeType)
-	 */
-	@Override
-	@Transactional(readOnly = false)
-	public void purgeOrderSetAttributeType(OrderSetAttributeType orderSetAttributeType) {
-		dao.deleteOrderSetAttributeType(orderSetAttributeType);
-	}
-
-	/**
-	 * @see org.openmrs.api.OrderSetService#getOrderSetAttributeTypeByName(java.lang.String)
-	 */
-	@Override
-	@Transactional(readOnly = true)
-	public OrderSetAttributeType getOrderSetAttributeTypeByName(String name) {
-		return dao.getOrderSetAttributeTypeByName(name);
-	}
-
-	/**
-	 * @see org.openmrs.api.OrderSetService#getOrderSetAttributeByUuid(java.lang.String)
-	 */
-	@Override
-	@Transactional(readOnly = true)
-	public OrderSetAttribute getOrderSetAttributeByUuid(String uuid) {
-		return dao.getOrderSetAttributeByUuid(uuid);
-	}
+	};
 }

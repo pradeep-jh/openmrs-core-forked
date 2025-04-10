@@ -10,6 +10,9 @@
 package org.openmrs.module;
 
 import java.util.List;
+import java.util.Properties;
+
+import org.openmrs.util.OpenmrsUtil;
 
 /**
  * This error is thrown when OpenMRS is started but a module marked as 'mandatory' but was unable to
@@ -17,7 +20,7 @@ import java.util.List;
  * <br>
  * This error is also thrown when trying to stop a module that is marked as mandatory.
  * 
- * @see org.openmrs.api.context.Context#startup(java.util.Properties)
+ * @see org.openmrs.api.context.Context#startup(Properties)
  * @see ModuleUtil#getMandatoryModules()
  */
 public class MandatoryModuleException extends ModuleMustStartException {
@@ -52,8 +55,8 @@ public class MandatoryModuleException extends ModuleMustStartException {
 	 */
 	public MandatoryModuleException(List<String> moduleIds) {
 		super("The following modules are marked as 'mandatory' but were unable to start: "
-		        + String.join(",", moduleIds));
-		this.moduleId = String.join(",", moduleIds);
+		        + OpenmrsUtil.join(moduleIds, ","));
+		this.moduleId = OpenmrsUtil.join(moduleIds, ",");
 	}
 	
 	/**

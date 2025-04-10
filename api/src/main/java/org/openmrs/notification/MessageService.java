@@ -35,7 +35,7 @@ public interface MessageService {
 	 * 
 	 * @param message
 	 * @throws MessageException
-	 * <strong>Should</strong> send message
+	 * @should send message
 	 */
 	public void sendMessage(Message message) throws MessageException;
 	
@@ -70,21 +70,24 @@ public interface MessageService {
 	 * @param message
 	 * @return Message the message that was created
 	 * @throws MessageException
-	 * <strong>Should</strong> create message
+	 * @should create message
 	 */
 	public Message createMessage(String recipients, String sender, String subject, String message) throws MessageException;
 	
 	public Message createMessage(String recipients, String sender, String subject, String message, String attachment,
 	        String attachmentContentType, String attachmentFileName) throws MessageException;
 	
+	@SuppressWarnings("unchecked")
 	public Message prepareMessage(String templateName, Map data) throws MessageException;
 	
 	public Message prepareMessage(Template template) throws MessageException;
 	
 	// Template methods
+	@SuppressWarnings("unchecked")
 	public List getAllTemplates() throws MessageException;
 	
 	public Template getTemplate(Integer id) throws MessageException;
 	
+	@SuppressWarnings("unchecked")
 	public List getTemplatesByName(String name) throws MessageException;
 }

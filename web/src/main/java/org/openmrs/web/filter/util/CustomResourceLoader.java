@@ -11,7 +11,6 @@ package org.openmrs.web.filter.util;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
@@ -22,9 +21,9 @@ import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.util.LocaleUtility;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
@@ -33,16 +32,16 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
  */
 public class CustomResourceLoader {
 	
-	private static final Logger log = LoggerFactory.getLogger(CustomResourceLoader.class);
+	private static final Log log = LogFactory.getLog(CustomResourceLoader.class);
 	
 	/** */
 	public static final String PREFIX = "messages";
 	
 	/** the map that contains resource bundles for each locale */
-	private Map<Locale, ResourceBundle> resources;
+	private Map<Locale, ResourceBundle> resources = null;
 	
 	/** the set of languages, which is currently supported */
-	private Set<Locale> availablelocales;
+	private Set<Locale> availablelocales = null;
 	
 	private static CustomResourceLoader instance = null;
 	
@@ -50,15 +49,15 @@ public class CustomResourceLoader {
 	 * default constructor that initializes inner map of resources
 	 */
 	private CustomResourceLoader(HttpServletRequest httpRequest) {
-		this.resources = new HashMap<>();
-		this.availablelocales = new HashSet<>();
+		this.resources = new HashMap<Locale, ResourceBundle>();
+		this.availablelocales = new HashSet<Locale>();
 		
 		try {
 			PathMatchingResourcePatternResolver patternResolver = new PathMatchingResourcePatternResolver();
 			Resource[] localResources = patternResolver.getResources("classpath*:messages*.properties");
 			for (Resource localeResource : localResources) {
 				Locale locale = parseLocaleFrom(localeResource.getFilename(), PREFIX);
-				ResourceBundle rb = new PropertyResourceBundle(new InputStreamReader(localeResource.getInputStream(), StandardCharsets.UTF_8));
+				ResourceBundle rb = new PropertyResourceBundle(new InputStreamReader(localeResource.getInputStream(), "UTF-8"));
 				getResource().put(locale, rb);
 				getAvailablelocales().add(locale);
 			}
@@ -90,14 +89,13 @@ public class CustomResourceLoader {
 	 * @return Locale derived from the given string
 	 */
 	private Locale parseLocaleFrom(String filename, String basename) {
-		Locale result;
-		String tempFilename = filename;
+		Locale result = null;
 		
 		if (filename.startsWith(basename)) {
-			tempFilename = filename.substring(basename.length());
+			filename = filename.substring(basename.length());
 		}
 		
-		String localespec = tempFilename.substring(0, tempFilename.indexOf('.'));
+		String localespec = filename.substring(0, filename.indexOf('.'));
 		
 		if ("".equals(localespec)) {
 			result = Locale.ENGLISH;

@@ -13,19 +13,16 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.hibernate.envers.Audited;
-import org.hibernate.envers.NotAudited;
-import org.openmrs.BaseChangeableOpenmrsMetadata;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.openmrs.BaseOpenmrsMetadata;
 
 /**
  * Represents the metadata for a task that can be scheduled.
  */
-@Audited
-public class TaskDefinition extends BaseChangeableOpenmrsMetadata {
+public class TaskDefinition extends BaseOpenmrsMetadata {
 	
-	private static final Logger log = LoggerFactory.getLogger(TaskDefinition.class);
+	private Log log = LogFactory.getLog(this.getClass());
 	
 	// Task metadata
 	private Integer id;
@@ -52,7 +49,6 @@ public class TaskDefinition extends BaseChangeableOpenmrsMetadata {
 	private Boolean started;
 	
 	// Relationships
-	@NotAudited
 	private Map<String, String> properties;
 	
 	/**
@@ -62,7 +58,7 @@ public class TaskDefinition extends BaseChangeableOpenmrsMetadata {
 		this.started = Boolean.FALSE; // default
 		this.startTime = new Date(); // makes it easier during task creation
 		// as we have a default date populated
-		this.properties = new HashMap<>();
+		this.properties = new HashMap<String, String>();
 	}
 	
 	/**
@@ -82,7 +78,6 @@ public class TaskDefinition extends BaseChangeableOpenmrsMetadata {
 	 * 
 	 * @return <code>Integer</code> identifier of the task
 	 */
-	@Override
 	public Integer getId() {
 		return this.id;
 	}
@@ -92,7 +87,6 @@ public class TaskDefinition extends BaseChangeableOpenmrsMetadata {
 	 * 
 	 * @param id
 	 */
-	@Override
 	public void setId(Integer id) {
 		this.id = id;
 	}
@@ -102,7 +96,6 @@ public class TaskDefinition extends BaseChangeableOpenmrsMetadata {
 	 * 
 	 * @return the data map
 	 */
-	@NotAudited
 	public Map<String, String> getProperties() {
 		return this.properties;
 	}

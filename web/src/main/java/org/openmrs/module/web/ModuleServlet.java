@@ -10,9 +10,7 @@
 package org.openmrs.module.web;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Enumeration;
-import java.util.Map;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
@@ -21,16 +19,16 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.module.Module;
 import org.openmrs.module.ModuleFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ModuleServlet extends HttpServlet {
 	
 	private static final long serialVersionUID = 1239820102030303L;
 	
-	private static final Logger log = LoggerFactory.getLogger(ModuleServlet.class);
+	private Log log = LogFactory.getLog(this.getClass());
 	
 	@Override
 	protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -45,9 +43,8 @@ public class ModuleServlet extends HttpServlet {
 		
 		log.debug("ModuleId: " + moduleId);
 		Module mod = ModuleFactory.getModuleById(moduleId);
-		 
-		// where in the path to start trimming
-		int start = 1;
+		
+		int start = 1; // where in the path to start trimming
 		if (mod != null) {
 			log.debug("Module with id " + moduleId + " found.  Looking for servlet name after " + moduleId + " in url path");
 			start = moduleId.length() + 2;
@@ -72,7 +69,7 @@ public class ModuleServlet extends HttpServlet {
 		
 		servlet.service(request, response);
 	}
-
+	
 	/**
 	 * Internal implementation of the ServletConfig interface, to be passed to module servlets when
 	 * they are first loaded
@@ -82,34 +79,29 @@ public class ModuleServlet extends HttpServlet {
 		private String name;
 		
 		private ServletContext servletContext;
-
-		private final Map<String, String> initParameters;
-
-		public SimpleServletConfig(String name, ServletContext servletContext, Map<String, String> initParameters) {
+		
+		public SimpleServletConfig(String name, ServletContext servletContext) {
 			this.name = name;
 			this.servletContext = servletContext;
-			this.initParameters = initParameters;
 		}
 		
-		@Override
 		public String getServletName() {
 			return name;
 		}
 		
-		@Override
 		public ServletContext getServletContext() {
 			return servletContext;
 		}
 		
 		// not implemented in a module's config.xml yet
-		@Override
 		public String getInitParameter(String paramName) {
-			return initParameters.get(paramName);
+			return null;
 		}
-
-		@Override
-		public Enumeration<String> getInitParameterNames() {
-			return Collections.enumeration(initParameters.keySet());
+		
+		// not implemented in a module's config.xml yet
+		@SuppressWarnings("unchecked")
+		public Enumeration getInitParameterNames() {
+			return null;
 		}
 	}
 }

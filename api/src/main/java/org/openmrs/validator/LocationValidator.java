@@ -9,6 +9,8 @@
  */
 package org.openmrs.validator;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.Location;
 import org.openmrs.annotation.Handler;
 import org.openmrs.api.context.Context;
@@ -26,6 +28,9 @@ import org.springframework.validation.Validator;
 @Handler(supports = { Location.class }, order = 50)
 public class LocationValidator extends BaseCustomizableValidator implements Validator {
 	
+	/** Log for this class and subclasses */
+	protected final Log log = LogFactory.getLog(getClass());
+	
 	/**
 	 * Determines if the command object being submitted is a valid type
 	 * 
@@ -41,15 +46,15 @@ public class LocationValidator extends BaseCustomizableValidator implements Vali
 	 * 
 	 * @see org.springframework.validation.Validator#validate(java.lang.Object,
 	 *      org.springframework.validation.Errors)
-	 * <strong>Should</strong> fail validation if name is null or empty
-	 * <strong>Should</strong> fail validation if retired and retireReason is null or empty
-	 * <strong>Should</strong> set retired to false if retireReason is null or empty
-	 * <strong>Should</strong> pass validation if all fields are correct
-	 * <strong>Should</strong> pass validation if retired location is given retired reason
-	 * <strong>Should</strong> fail validation if parent location creates a loop
-	 * <strong>Should</strong> fail validation if name is exist in non retired locations
-	 * <strong>Should</strong> pass validation if field lengths are correct
-	 * <strong>Should</strong> fail validation if field lengths are not correct
+	 * @should fail validation if name is null or empty
+	 * @should fail validation if retired and retireReason is null or empty
+	 * @should set retired to false if retireReason is null or empty
+	 * @should pass validation if all fields are correct
+	 * @should pass validation if retired location is given retired reason
+	 * @should fail validation if parent location creates a loop
+	 * @should fail validation if name is exist in non retired locations
+	 * @should pass validation if field lengths are correct
+	 * @should fail validation if field lengths are not correct
 	 */
 	@Override
 	public void validate(Object obj, Errors errors) {

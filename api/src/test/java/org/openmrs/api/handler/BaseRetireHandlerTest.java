@@ -9,16 +9,14 @@
  */
 package org.openmrs.api.handler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.Date;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.Location;
 import org.openmrs.Retireable;
 import org.openmrs.User;
+import org.openmrs.test.Verifies;
 
 /**
  * Tests for the {@link BaseRetireHandler} class.
@@ -29,66 +27,72 @@ public class BaseRetireHandlerTest {
 	 * @see BaseRetireHandler#handle(Retireable,User,Date,String)
 	 */
 	@Test
-	public void handle_shouldSetTheRetiredBit() {
+	@Verifies(value = "should set the retired bit", method = "handle(Retireable,User,Date,String)")
+	public void handle_shouldSetTheRetiredBit() throws Exception {
 		RetireHandler<Retireable> handler = new BaseRetireHandler();
 		Retireable retireable = new Location();
 		retireable.setRetired(false); // make sure isRetired is false
 		handler.handle(retireable, null, null, " ");
-		assertTrue(retireable.getRetired());
+		Assert.assertTrue(retireable.isRetired());
 	}
 	
 	/**
 	 * @see BaseRetireHandler#handle(Retireable,User,Date,String)
 	 */
 	@Test
-	public void handle_shouldSetTheRetireReason() {
+	@Verifies(value = "should set the retireReason", method = "handle(Retireable,User,Date,String)")
+	public void handle_shouldSetTheRetireReason() throws Exception {
 		RetireHandler<Retireable> handler = new BaseRetireHandler();
 		Retireable retireable = new Location();
 		handler.handle(retireable, null, null, "THE REASON");
-		assertEquals("THE REASON", retireable.getRetireReason());
+		Assert.assertEquals("THE REASON", retireable.getRetireReason());
 	}
 	
 	/**
 	 * @see BaseRetireHandler#handle(Retireable,User,Date,String)
 	 */
 	@Test
-	public void handle_shouldSetRetiredBy() {
+	@Verifies(value = "should set retired by", method = "handle(Retireable,User,Date,String)")
+	public void handle_shouldSetRetiredBy() throws Exception {
 		RetireHandler<Retireable> handler = new BaseRetireHandler();
 		Retireable retireable = new Location();
 		handler.handle(retireable, new User(2), null, " ");
-		assertEquals(2, retireable.getRetiredBy().getId().intValue());
+		Assert.assertEquals(2, retireable.getRetiredBy().getId().intValue());
 	}
 	
 	/**
 	 * @see BaseRetireHandler#handle(Retireable,User,Date,String)
 	 */
 	@Test
-	public void handle_shouldNotSetRetiredByIfNonNull() {
+	@Verifies(value = "should not set retired by if non null", method = "handle(Retireable,User,Date,String)")
+	public void handle_shouldNotSetRetiredByIfNonNull() throws Exception {
 		RetireHandler<Retireable> handler = new BaseRetireHandler();
 		Retireable retireable = new Location();
 		retireable.setRetiredBy(new User(3));
 		handler.handle(retireable, new User(2), null, " ");
-		assertEquals(3, retireable.getRetiredBy().getId().intValue());
+		Assert.assertEquals(3, retireable.getRetiredBy().getId().intValue());
 	}
 	
 	/**
 	 * @see BaseRetireHandler#handle(Retireable,User,Date,String)
 	 */
 	@Test
-	public void handle_shouldSetDateRetired() {
+	@Verifies(value = "should set dateRetired", method = "handle(Retireable,User,Date,String)")
+	public void handle_shouldSetDateRetired() throws Exception {
 		Date d = new Date();
 		
 		RetireHandler<Retireable> handler = new BaseRetireHandler();
 		Retireable retireable = new Location();
 		handler.handle(retireable, null, d, " ");
-		assertEquals(d, retireable.getDateRetired());
+		Assert.assertEquals(d, retireable.getDateRetired());
 	}
 	
 	/**
 	 * @see BaseRetireHandler#handle(Retireable,User,Date,String)
 	 */
 	@Test
-	public void handle_shouldNotSetDateRetiredIfNonNull() {
+	@Verifies(value = "should not set dateRetired if non null", method = "handle(Retireable,User,Date,String)")
+	public void handle_shouldNotSetDateRetiredIfNonNull() throws Exception {
 		Date d = new Date(new Date().getTime() - 1000); // a time that is not "now"
 		
 		RetireHandler<Retireable> handler = new BaseRetireHandler();
@@ -96,32 +100,34 @@ public class BaseRetireHandlerTest {
 		retireable.setDateRetired(d); // make dateRetired non null
 		
 		handler.handle(retireable, null, new Date(), " ");
-		assertEquals(d, retireable.getDateRetired());
+		Assert.assertEquals(d, retireable.getDateRetired());
 	}
 	
 	/**
 	 * @see BaseRetireHandler#handle(Retireable,User,Date,String)
 	 */
 	@Test
-	public void handle_shouldNotSetTheRetireReasonIfAlreadyVoided() {
+	@Verifies(value = "should not set the retireReason if already voided", method = "handle(Retireable,User,Date,String)")
+	public void handle_shouldNotSetTheRetireReasonIfAlreadyVoided() throws Exception {
 		RetireHandler<Retireable> handler = new BaseRetireHandler();
 		Retireable retireable = new Location();
 		retireable.setRetired(true);
 		retireable.setRetiredBy(new User());
 		handler.handle(retireable, null, null, "THE REASON");
-		assertNull(retireable.getRetireReason());
+		Assert.assertNull(retireable.getRetireReason());
 	}
 	
 	/**
 	 * @see BaseRetireHandler#handle(Retireable,User,Date,String)
 	 */
 	@Test
-	public void handle_shouldSetRetiredByEvenIfRetiredBitIsSetButRetiredByIsNull() {
+	@Verifies(value = "should set retiredBy even if retired bit is set but retiredBy is null", method = "handle(Retireable,User,Date,String)")
+	public void handle_shouldSetRetiredByEvenIfRetiredBitIsSetButRetiredByIsNull() throws Exception {
 		RetireHandler<Retireable> handler = new BaseRetireHandler();
 		Retireable retireable = new Location();
 		retireable.setRetired(true);
 		handler.handle(retireable, null, null, "THE REASON");
-		assertEquals("THE REASON", retireable.getRetireReason());
+		Assert.assertEquals("THE REASON", retireable.getRetireReason());
 	}
 	
 }

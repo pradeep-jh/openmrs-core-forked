@@ -11,15 +11,15 @@ package org.openmrs.api;
 
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * Holds all OpenMRS event listeners
  */
 public class EventListeners {
 	
-	private static final Logger log = LoggerFactory.getLogger(EventListeners.class);
+	private static Log log = LogFactory.getLog(EventListeners.class);
 	
 	private static List<GlobalPropertyListener> globalPropertyListeners = null;
 	
@@ -37,10 +37,6 @@ public class EventListeners {
 	 * @param globalPropertyListeners
 	 */
 	public void setGlobalPropertyListeners(List<GlobalPropertyListener> globalPropertyListeners) {
-		if (globalPropertyListeners == null) {
-			return;
-		}
-		
 		if (log.isDebugEnabled()) {
 			StringBuilder sb = new StringBuilder();
 			for (GlobalPropertyListener gpl : globalPropertyListeners) {
@@ -49,7 +45,8 @@ public class EventListeners {
 				}
 				sb.append(gpl.getClass().getName());
 			}
-			log.debug("GlobalPropertyListeners set to: " + sb);
+			log.debug("GlobalPropertyListeners set to: " + sb.toString());
+			
 		}
 		
 		if (EventListeners.globalPropertyListeners == null) {
@@ -75,7 +72,7 @@ public class EventListeners {
 	 */
 	public void setGlobalPropertyListenersToEmpty(boolean nullList) {
 		if (nullList) {
-			EventListeners.globalPropertyListeners = null;
+			setGlobalPropertyListeners(null);
 		} else if (EventListeners.globalPropertyListeners != null) {
 			EventListeners.globalPropertyListeners.clear();
 		}

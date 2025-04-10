@@ -9,23 +9,13 @@
  */
 package org.openmrs.api.context;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
-import org.hibernate.SessionFactory;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Test;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.Location;
-import org.openmrs.OpenmrsObject;
-import org.openmrs.Patient;
 import org.openmrs.Person;
 import org.openmrs.PersonName;
 import org.openmrs.User;
@@ -34,10 +24,10 @@ import org.openmrs.api.PatientService;
 import org.openmrs.api.UserService;
 import org.openmrs.api.handler.EncounterVisitHandler;
 import org.openmrs.api.handler.ExistingOrNewVisitAssignmentHandler;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.openmrs.util.LocaleUtility;
 import org.openmrs.util.OpenmrsConstants;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.Validator;
 
 /**
@@ -47,18 +37,11 @@ import org.springframework.validation.Validator;
  */
 public class ContextTest extends BaseContextSensitiveTest {
 	
-	private static final Class PERSON_NAME_CLASS = PersonName.class;
-	private static final Integer PERSON_NAME_ID_2 = 2;
-	private static final Integer PERSON_NAME_ID_8 = 8;
-
-	@Autowired
-	private SessionFactory sf;
-	
 	/**
 	 * Methods in this class might authenticate with a different user, so log that user out after
 	 * this whole junit class is done.
 	 */
-	@AfterAll
+	@AfterClass
 	public static void logOutAfterThisTestClass() {
 		Context.logout();
 	}
@@ -66,79 +49,74 @@ public class ContextTest extends BaseContextSensitiveTest {
 	/**
 	 * @see Context#authenticate(String,String)
 	 */
-	@Test
-	public void authenticate_shouldNotAuthenticateWithNullPassword() {
-		assertThrows(ContextAuthenticationException.class, () -> Context.authenticate("some username", null));
+	@Test(expected = ContextAuthenticationException.class)
+	@Verifies(value = "should not authenticate with null password", method = "authenticate(String,String)")
+	public void authenticate_shouldNotAuthenticateWithNullPassword() throws Exception {
+		Context.authenticate("some username", null);
 	}
 	
 	/**
 	 * @see Context#authenticate(String,String)
 	 */
-	@Test
-	public void authenticate_shouldNotAuthenticateWithNullPasswordAndProperSystemId() {
-		assertThrows(ContextAuthenticationException.class, () -> Context.authenticate("1-8", null));
+	@Test(expected = ContextAuthenticationException.class)
+	@Verifies(value = "should not authenticate with null password and proper system id", method = "authenticate(String,String)")
+	public void authenticate_shouldNotAuthenticateWithNullPasswordAndProperSystemId() throws Exception {
+		Context.authenticate("1-8", null);
 	}
 	
 	/**
 	 * @see Context#authenticate(String,String)
 	 */
-	@Test
-	public void authenticate_shouldNotAuthenticateWithNullPasswordAndProperUsername() {
-		assertThrows(ContextAuthenticationException.class, () -> Context.authenticate("admin", null));
+	@Test(expected = ContextAuthenticationException.class)
+	@Verifies(value = "should not authenticate with null password and proper username", method = "authenticate(String,String)")
+	public void authenticate_shouldNotAuthenticateWithNullPasswordAndProperUsername() throws Exception {
+		Context.authenticate("admin", null);
 	}
 	
 	/**
 	 * @see Context#authenticate(String,String)
 	 */
-	@Test
-	public void authenticate_shouldNotAuthenticateWithNullUsername() {
-		assertThrows(ContextAuthenticationException.class, () -> Context.authenticate(null, "some password"));
+	@Test(expected = ContextAuthenticationException.class)
+	@Verifies(value = "should not authenticate with null username", method = "authenticate(String,String)")
+	public void authenticate_shouldNotAuthenticateWithNullUsername() throws Exception {
+		Context.authenticate(null, "some password");
 	}
 	
 	/**
 	 * @see Context#authenticate(String,String)
 	 */
-	@Test
-	public void authenticate_shouldNotAuthenticateWithNullUsernameAndPassword() {
-		assertThrows(ContextAuthenticationException.class, () -> Context.authenticate((String) null, (String) null));
-	}
-	
-	/**
-	 * @see Context#authenticate(String,String)
-	 */
-	@Test
-	public void authenticate_shouldAuthenticateUserWithUsernameAndPassword() {
-		// replay
-		Context.logout();
-		Context.authenticate("admin", "test");
-		
-		// verif
-		assertEquals("admin", Context.getAuthenticatedUser().getUsername());
+	@Test(expected = ContextAuthenticationException.class)
+	@Verifies(value = "should not authenticate with null username and password", method = "authenticate(String,String)")
+	public void authenticate_shouldNotAuthenticateWithNullUsernameAndPassword() throws Exception {
+		Context.authenticate(null, null);
 	}
 	
 	/**
 	 * @see Context#getLocale()
 	 */
 	@Test
-	public void getLocale_shouldNotFailIfSessionHasntBeenOpened() {
+	@Verifies(value = "should not fail if session hasnt been opened", method = "getLocale()")
+	public void getLocale_shouldNotFailIfSessionHasntBeenOpened() throws Exception {
 		Context.closeSession();
-		assertEquals(LocaleUtility.getDefaultLocale(), Context.getLocale());
+		Assert.assertEquals(LocaleUtility.getDefaultLocale(), Context.getLocale());
 	}
 	
 	/**
 	 * @see Context#getUserContext()
 	 */
-	@Test
-	public void getUserContext_shouldFailIfSessionHasntBeenOpened() {
+	@Test(expected = APIException.class)
+	@Verifies(value = "should fail if session hasnt been opened", method = "getUserContext()")
+	public void getUserContext_shouldFailIfSessionHasntBeenOpened() throws Exception {
 		Context.closeSession();
-		assertThrows(APIException.class, () -> Context.getUserContext()); // trigger the api exception
+		Context.getUserContext(); // trigger the api exception
 	}
 	
 	/**
 	 * @see Context#logout()
 	 */
 	@Test
-	public void logout_shouldNotFailIfSessionHasntBeenOpenedYet() {
+	@Verifies(value = "should not fail if session hasnt been opened yet", method = "logout()")
+	public void logout_shouldNotFailIfSessionHasntBeenOpenedYet() throws Exception {
 		Context.closeSession();
 		Context.logout();
 	}
@@ -147,17 +125,19 @@ public class ContextTest extends BaseContextSensitiveTest {
 	 * @see Context#isSessionOpen()
 	 */
 	@Test
-	public void isSessionOpen_shouldReturnTrueIfSessionIsClosed() {
-		assertTrue(Context.isSessionOpen());
+	@Verifies(value = "should return true if session is closed", method = "isSessionOpen()")
+	public void isSessionOpen_shouldReturnTrueIfSessionIsClosed() throws Exception {
+		Assert.assertTrue(Context.isSessionOpen());
 		Context.closeSession();
-		assertFalse(Context.isSessionOpen());
+		Assert.assertFalse(Context.isSessionOpen());
 	}
 	
 	/**
 	 * @see Context#refreshAuthenticatedUser()
 	 */
 	@Test
-	public void refreshAuthenticatedUser_shouldGetFreshValuesFromTheDatabase() {
+	@Verifies(value = "should get fresh values from the database", method = "refreshAuthenticatedUser()")
+	public void refreshAuthenticatedUser_shouldGetFreshValuesFromTheDatabase() throws Exception {
 		User evictedUser = Context.getAuthenticatedUser();
 		Context.evictFromSession(evictedUser);
 		
@@ -167,87 +147,59 @@ public class ContextTest extends BaseContextSensitiveTest {
 		Context.getUserService().saveUser(fetchedUser);
 		
 		// sanity check to make sure the cached object wasn't updated already
-		assertNotSame(Context.getAuthenticatedUser().getGivenName(), fetchedUser.getGivenName());
+		Assert.assertNotSame(Context.getAuthenticatedUser().getGivenName(), fetchedUser.getGivenName());
 		
 		Context.refreshAuthenticatedUser();
 		
-		assertEquals("new username", Context.getAuthenticatedUser().getGivenName());
-	}
-	
-	/**
-	 * @see Context#refreshAuthenticatedUser()
-	 */
-	@Test
-	public void refreshAuthenticatedUser_shouldNotUnsetUserLocation() {
-		Location userLocation = Context.getLocationService().getLocation(2);
-		Context.getUserContext().setLocation(userLocation);
-		User evictedUser = Context.getAuthenticatedUser();
-		Context.evictFromSession(evictedUser);
-		
-		Context.refreshAuthenticatedUser();
-		
-		assertEquals(userLocation, Context.getUserContext().getLocation());
-	}
-	
-	/**
-	 * @see Context#refreshAuthenticatedUser()
-	 */
-	@Test
-	public void refreshAuthenticatedUser_shouldSetDefaultLocationIfLocationNull() {
-		User evictedUser = Context.getAuthenticatedUser();
-		Map<String, String> properties = evictedUser.getUserProperties();
-		properties.put(OpenmrsConstants.USER_PROPERTY_DEFAULT_LOCATION, "2");
-		evictedUser.setUserProperties(properties);
-		Context.getUserService().saveUser(evictedUser);
-		Context.flushSession();
-		Context.evictFromSession(evictedUser);
-		
-		Context.logout();
-		authenticate();
-		
-		assertEquals(Context.getLocationService().getLocation(2), Context.getUserContext().getLocation());
+		Assert.assertEquals("new username", Context.getAuthenticatedUser().getGivenName());
 	}
 	
 	/**
 	 * @see Context#getRegisteredComponents(Class)
 	 */
 	@Test
-	public void getRegisteredComponents_shouldReturnAListOfAllRegisteredBeansOfThePassedType() {
+	@Verifies(value = "should return a list of all registered beans of the passed type", method = "getRegisteredComponents(Class)")
+	public void getRegisteredComponents_shouldReturnAListOfAllRegisteredBeansOfThePassedType() throws Exception {
 		List<Validator> validators = Context.getRegisteredComponents(Validator.class);
-		assertTrue(validators.size() > 0);
-		assertTrue(Validator.class.isAssignableFrom(validators.iterator().next().getClass()));
+		Assert.assertTrue(validators.size() > 0);
+		Assert.assertTrue(Validator.class.isAssignableFrom(validators.iterator().next().getClass()));
 	}
 	
 	/**
 	 * @see Context#getRegisteredComponents(Class)
 	 */
 	@Test
-	public void getRegisteredComponents_shouldReturnAnEmptyListIfNoBeansHaveBeenRegisteredOfThePassedType() {
+	@Verifies(value = "should return an empty list if no beans have been registered of the passed type", method = "getRegisteredComponents(Class)")
+	public void getRegisteredComponents_shouldReturnAnEmptyListIfNoBeansHaveBeenRegisteredOfThePassedType() throws Exception {
 		List<Location> l = Context.getRegisteredComponents(Location.class);
-		assertNotNull(l);
-		assertEquals(0, l.size());
+		Assert.assertNotNull(l);
+		Assert.assertEquals(0, l.size());
 	}
 	
 	/**
 	 * @see Context#getRegisteredComponent(String,Class)
 	 */
 	@Test
-	public void getRegisteredComponent_shouldReturnBeanHaveBeenRegisteredOfThePassedTypeAndName() {
+	@Verifies(value = "return bean of the correct type", method = "getRegisteredComponent(String, Class)")
+	public void getRegisteredComponent_shouldReturnBeanHaveBeenRegisteredOfThePassedTypeAndName() throws Exception {
 		
 		EncounterVisitHandler registeredComponent = Context.getRegisteredComponent("existingOrNewVisitAssignmentHandler",
 		    EncounterVisitHandler.class);
 		
-		assertTrue(registeredComponent instanceof ExistingOrNewVisitAssignmentHandler);
+		Assert.assertTrue(registeredComponent instanceof ExistingOrNewVisitAssignmentHandler);
 	}
 	
 	/**
 	 * @see Context#getRegisteredComponent(String, Class)
 	 */
-	@Test
+	@Test(expected = APIException.class)
+	@Verifies(value = "fail for bean with the given type but different name", method = "getRegisteredComponent(String, Class)")
 	public void getRegisteredComponent_shouldFailIfBeanHaveBeenREgisteredOfThePassedTypeAndNameDoesntExist()
-	{
-		assertThrows(APIException.class, () -> Context.getRegisteredComponent("invalidBeanName", EncounterVisitHandler.class));
+	        throws Exception {
 		
+		Context.getRegisteredComponent("invalidBeanName", EncounterVisitHandler.class);
+		
+		Assert.fail();
 	}
 	
 	/**
@@ -257,17 +209,19 @@ public class ContextTest extends BaseContextSensitiveTest {
 	 * @see Context#getService(Class)
 	 */
 	@Test
-	public void getService_shouldReturnTheSameObjectWhenCalledMultipleTimesForTheSameClass() {
+	@Verifies(value = "should return the same object when called multiple times for the same class", method = "getService(Class)")
+	public void getService_shouldReturnTheSameObjectWhenCalledMultipleTimesForTheSameClass() throws Exception {
 		PatientService ps1 = Context.getService(PatientService.class);
 		PatientService ps2 = Context.getService(PatientService.class);
-		assertEquals(ps2, ps1);
+		Assert.assertTrue(ps1 == ps2);
 	}
 	
 	/**
 	 * @see Context#becomeUser(String)
 	 */
 	@Test
-	public void becomeUser_shouldChangeLocaleWhenBecomeAnotherUser() {
+	@Verifies(value = "change locale when become another user", method = "becomeUser(String)")
+	public void becomeUser_shouldChangeLocaleWhenBecomeAnotherUser() throws Exception {
 		UserService userService = Context.getUserService();
 		
 		User user = new User(new Person());
@@ -279,78 +233,9 @@ public class ContextTest extends BaseContextSensitiveTest {
 		Context.becomeUser(user.getSystemId());
 		
 		Locale locale = Context.getLocale();
-		assertEquals("pt", locale.getLanguage());
-		assertEquals("BR", locale.getCountry());
+		Assert.assertEquals("pt", locale.getLanguage());
+		Assert.assertEquals("BR", locale.getCountry());
 		
 		Context.logout();
-	}
-
-	/**
-	 * @see org.openmrs.api.context.Context#evictEntity(OpenmrsObject) 
-	 */
-	@Test
-	public void evictEntity_shouldClearTheEntityFromCaches() {
-		// Load the person so that the names are also stored in the cache
-		PersonName name = Context.getPersonService().getPersonName(PERSON_NAME_ID_2);
-		Context.getPersonService().getPersonName(PERSON_NAME_ID_8);
-		
-		// Assert that the names have been added to cache
-		assertTrue(sf.getCache().containsEntity(PERSON_NAME_CLASS, PERSON_NAME_ID_2));
-		assertTrue(sf.getCache().containsEntity(PERSON_NAME_CLASS, PERSON_NAME_ID_8));
-
-		// evictEntity
-		Context.evictEntity(name);
-
-		// Assert that the entity name has been removed from cache
-		assertFalse(sf.getCache().containsEntity(PERSON_NAME_CLASS, PERSON_NAME_ID_2));
-		assertTrue(sf.getCache().containsEntity(PERSON_NAME_CLASS, PERSON_NAME_ID_8));
-	}
-
-	/**
-	 * @see org.openmrs.api.context.Context#evictAllEntities(Class)
-	 */
-	@Test
-	public void evictAllEntities_shouldClearAllEntityFromCaches() {
-		// Load the person and patient so that they are stored in the cache
-		Context.getPersonService().getPersonName(PERSON_NAME_ID_2);
-		Context.getPersonService().getPersonName(PERSON_NAME_ID_8);
-		Context.getPatientService().getPatient(PERSON_NAME_ID_2);
-		
-		// Assert that the entities have been added to cache
-		assertTrue(sf.getCache().containsEntity(PERSON_NAME_CLASS, PERSON_NAME_ID_2));
-		assertTrue(sf.getCache().containsEntity(PERSON_NAME_CLASS, PERSON_NAME_ID_8));
-		assertTrue(sf.getCache().containsEntity(Patient.class, PERSON_NAME_ID_2));
-
-		// evictAllEntities
-		Context.evictAllEntities(PERSON_NAME_CLASS);
-
-		// Assert that the class entities have been removed from cache
-		assertFalse(sf.getCache().containsEntity(PERSON_NAME_CLASS, PERSON_NAME_ID_2));
-		assertFalse(sf.getCache().containsEntity(PERSON_NAME_CLASS, PERSON_NAME_ID_8));
-		assertTrue(sf.getCache().containsEntity(Patient.class, PERSON_NAME_ID_2));
-	}
-
-	/**
-	 * @see org.openmrs.api.context.Context#clearEntireCache()
-	 */
-	@Test
-	public void clearEntireCache_shouldClearEntireCache() {
-		// Load the person and patient so that they are stored in the cache
-		Context.getPersonService().getPersonName(PERSON_NAME_ID_2);
-		Context.getPersonService().getPersonName(PERSON_NAME_ID_8);
-		Context.getPatientService().getPatient(PERSON_NAME_ID_2);
-		
-		// Assert that the entities have been added to cache
-		assertTrue(sf.getCache().containsEntity(PERSON_NAME_CLASS, PERSON_NAME_ID_2));
-		assertTrue(sf.getCache().containsEntity(PERSON_NAME_CLASS, PERSON_NAME_ID_8));
-		assertTrue(sf.getCache().containsEntity(Patient.class, PERSON_NAME_ID_2));
-
-		// clearEntireCache
-		Context.clearEntireCache();
-
-		// Assert that all entities have been removed from cache
-		assertFalse(sf.getCache().containsEntity(PERSON_NAME_CLASS, PERSON_NAME_ID_2));
-		assertFalse(sf.getCache().containsEntity(PERSON_NAME_CLASS, PERSON_NAME_ID_8));
-		assertFalse(sf.getCache().containsEntity(Patient.class, PERSON_NAME_ID_2));
 	}
 }

@@ -9,16 +9,16 @@
  */
 package org.openmrs.util;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.velocity.app.event.MethodExceptionEventHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Class to safely catch velocity exceptions
  */
 public class VelocityExceptionHandler implements MethodExceptionEventHandler {
 	
-	private static final Logger log = LoggerFactory.getLogger(VelocityExceptionHandler.class);
+	private Log log = LogFactory.getLog(this.getClass());
 	
 	/**
 	 * When a user-supplied method throws an exception, the MethodExceptionEventHandler is invoked
@@ -29,7 +29,7 @@ public class VelocityExceptionHandler implements MethodExceptionEventHandler {
 	 * @see org.apache.velocity.app.event.MethodExceptionEventHandler#methodException(java.lang.Class,
 	 *      java.lang.String, java.lang.Exception)
 	 */
-	@Override
+	@SuppressWarnings("unchecked")
 	public Object methodException(Class claz, String method, Exception e) throws Exception {
 		
 		log.debug("Claz: " + claz.getName() + " method: " + method, e);

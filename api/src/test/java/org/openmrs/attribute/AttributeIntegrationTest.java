@@ -9,25 +9,19 @@
  */
 package org.openmrs.attribute;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
-
-import java.sql.Date;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
+import junit.framework.Assert;
+
+import org.junit.Before;
+import org.junit.Test;
 import org.openmrs.Visit;
 import org.openmrs.VisitAttribute;
 import org.openmrs.VisitAttributeType;
 import org.openmrs.api.APIException;
 import org.openmrs.api.VisitService;
 import org.openmrs.api.context.Context;
-import org.openmrs.customdatatype.InvalidCustomValueException;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
 
 /**
  * Integration tests for using {@link BaseAttribute}, {@link BaseAttributeType}, and {@link AttributeHandler}
@@ -37,34 +31,40 @@ public class AttributeIntegrationTest extends BaseContextSensitiveTest {
 	
 	VisitService service;
 	
-	@BeforeEach
+	@Before
 	public void before() {
 		service = Context.getVisitService();
 	}
 	
 	@Test
-	public void shouldTestAddingAnAttributeToSomethingAndSavingIt() throws InvalidCustomValueException, ParseException {
+	public void shouldTestAddingAnAttributeToSomethingAndSavingIt() throws Exception {
 		Visit visit = service.getVisit(1);
 		VisitAttributeType auditDate = service.getVisitAttributeType(1);
 		
 		VisitAttribute legalDate = new VisitAttribute();
 		legalDate.setAttributeType(auditDate);
 		// try using a subclass of java.util.Date, to make sure the handler can take subclasses.
-		legalDate.setValue(new Date(new SimpleDateFormat("yyyy-MM-dd").parse("2011-04-15").getTime()));
+		legalDate.setValue(new java.sql.Date(new SimpleDateFormat("yyyy-MM-dd").parse("2011-04-15").getTime()));
 		visit.addAttribute(legalDate);
 		
 		service.saveVisit(visit);
 		
 		// saving the visit should have caused the date to be validated and saved
-		assertNotNull(legalDate.getValueReference());
-		assertEquals("2011-04-15", legalDate.getValueReference());
+		Assert.assertNotNull(legalDate.getValueReference());
+		Assert.assertEquals("2011-04-15", legalDate.getValueReference());
 		
 		VisitAttribute badDate = new VisitAttribute();
 		badDate.setAttributeType(auditDate);
 		// no value
 		visit.addAttribute(badDate);
 		
-		assertThrows(APIException.class, () -> service.saveVisit(visit));
+		try {
+			service.saveVisit(visit);
+			Assert.fail("Should have failed because of bad date attribute");
+		}
+		catch (APIException ex) {
+			// expected this
+		}
 	}
 	
 }

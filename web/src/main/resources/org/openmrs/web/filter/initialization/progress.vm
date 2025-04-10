@@ -1,4 +1,4 @@
-#parse($HEADER_TEMPLATE)
+#parse($headerTemplate)
 <script type="text/javascript" src="initfilter/scripts/jquery-ui/js/jquery-ui.custom.min.js"></script>
 <link href="initfilter/scripts/jquery-ui/css/orange/jquery-ui.custom.css" rel="stylesheet" type="text/css"/>
 	<script>		
@@ -210,4 +210,4 @@
 	   		<div id="logLines"></div>
 	    </div>
     </div>
-#parse($FOOTER_TEMPLATE)
+#parse($footerTemplate)

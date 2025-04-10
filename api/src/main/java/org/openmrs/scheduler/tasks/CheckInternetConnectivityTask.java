@@ -15,12 +15,12 @@ import java.net.URLConnection;
 import java.util.Collection;
 import java.util.Date;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.Role;
 import org.openmrs.User;
 import org.openmrs.api.context.Context;
 import org.openmrs.notification.Alert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Simple implementation to check if we have a connection to the internet.
@@ -30,12 +30,11 @@ public class CheckInternetConnectivityTask extends AbstractTask {
 	/**
 	 * Logger
 	 */
-	private static final Logger log = LoggerFactory.getLogger(CheckInternetConnectivityTask.class);
+	private Log log = LogFactory.getLog(getClass());
 	
 	/**
 	 * @see org.openmrs.scheduler.tasks.AbstractTask#execute()
 	 */
-	@Override
 	public void execute() {
 		
 		// TODO url should be provided as a property to taskconfig
@@ -55,7 +54,7 @@ public class CheckInternetConnectivityTask extends AbstractTask {
 			}
 			catch (Exception e) {
 				// Uh oh, just log it.
-				log.error("Failed to check internet connectivity", e);
+				log.error(e);
 			}
 		}
 	}

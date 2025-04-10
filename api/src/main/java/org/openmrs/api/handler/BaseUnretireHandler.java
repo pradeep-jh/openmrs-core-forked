@@ -20,9 +20,8 @@ import org.openmrs.aop.RequiredDataAdvice;
  * This is the super interface for all unretire* actions that take place on all services. The
  * {@link RequiredDataAdvice} class uses AOP around each method in every service to check to see if
  * its a unretire* method. If it is a unretire* method, this class is called to handle setting the
- * {@link Retireable#getRetired()}, {@link Retireable#setRetireReason(String)},
- * {@link Retireable#setRetiredBy(User)}, and {@link Retireable#setDateRetired(Date)} all to null.
- * <br>
+ * {@link Retireable#isRetired()}, {@link Retireable#setRetireReason(String)},
+ * {@link Retireable#setRetiredBy(User)}, and {@link Retireable#setDateRetired(Date)} all to null. <br>
  * <br>
  * Child collections on this {@link Retireable} that are themselves a {@link Retireable} are looped
  * over and also unretired by the {@link RequiredDataAdvice} class. <br>
@@ -41,18 +40,17 @@ public class BaseUnretireHandler implements UnretireHandler<Retireable> {
 	 * 
 	 * @see org.openmrs.api.handler.RequiredDataHandler#handle(org.openmrs.OpenmrsObject,
 	 *      org.openmrs.User, java.util.Date, java.lang.String)
-	 * <strong>Should</strong> unset the retired bit
-	 * <strong>Should</strong> unset the retirer
-	 * <strong>Should</strong> unset the date retired
-	 * <strong>Should</strong> unset the retire reason
-	 * <strong>Should</strong> not act on already unretired objects
-	 * <strong>Should</strong> not act on retired objects with a different dateRetired
+	 * @should unset the retired bit
+	 * @should unset the retirer
+	 * @should unset the date retired
+	 * @should unset the retire reason
+	 * @should not act on already unretired objects
+	 * @should not act on retired objects with a different dateRetired
 	 */
-	@Override
 	public void handle(Retireable retireableObject, User retiringUser, Date origParentRetiredDate, String unused) {
 		
 		// only act on retired objects
-		if (retireableObject.getRetired()
+		if (retireableObject.isRetired()
 		        && (origParentRetiredDate == null || origParentRetiredDate.equals(retireableObject.getDateRetired()))) {
 			// only act on retired objects that match the same date retired as the parent
 			retireableObject.setRetired(false);

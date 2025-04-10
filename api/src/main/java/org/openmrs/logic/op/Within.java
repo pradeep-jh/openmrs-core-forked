@@ -19,7 +19,6 @@ package org.openmrs.logic.op;
  */
 public class Within implements ComparisonOperator {
 	
-	@Override
 	public String toString() {
 		return "WITHIN";
 	}

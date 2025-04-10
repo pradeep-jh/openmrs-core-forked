@@ -9,21 +9,6 @@
  */
 package org.openmrs.hl7.handler;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.List;
-
 import ca.uhn.hl7v2.HL7Exception;
 import ca.uhn.hl7v2.app.ApplicationException;
 import ca.uhn.hl7v2.app.MessageTypeRouter;
@@ -34,8 +19,10 @@ import ca.uhn.hl7v2.model.v25.segment.OBR;
 import ca.uhn.hl7v2.model.v25.segment.OBX;
 import ca.uhn.hl7v2.model.v26.segment.MSH;
 import ca.uhn.hl7v2.parser.GenericParser;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.openmrs.Concept;
 import org.openmrs.ConceptName;
 import org.openmrs.ConceptProposal;
@@ -58,8 +45,19 @@ import org.openmrs.api.ProviderService;
 import org.openmrs.api.context.Context;
 import org.openmrs.hl7.HL7Constants;
 import org.openmrs.obs.ComplexObsHandler;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.openmrs.util.OpenmrsConstants;
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.List;
+import java.util.Vector;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * TODO finish testing all methods ORUR01Handler
@@ -83,7 +81,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 	 * 
 	 * @throws Exception
 	 */
-	@BeforeEach
+	@Before
 	public void runBeforeEachTest() throws Exception {
 		executeDataSet(ORU_INITIAL_DATA_XML);
 	}
@@ -92,6 +90,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
 	@Test
+	@Verifies(value = "should create encounter and obs from hl7 message", method = "processMessage(Message)")
 	public void processMessage_shouldCreateEncounterAndObsFromHl7Message() throws Exception {
 		ObsService obsService = Context.getObsService();
 		
@@ -110,12 +109,12 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		// check for an encounter
 		List<Encounter> encForPatient3 = Context.getEncounterService().getEncountersByPatient(patient);
 		assertNotNull(encForPatient3);
-		assertTrue(encForPatient3.size() == 1, "There should be an encounter created");
+		assertTrue("There should be an encounter created", encForPatient3.size() == 1);
 		
 		// check for any obs
 		List<Obs> obsForPatient3 = obsService.getObservationsByPerson(patient);
 		assertNotNull(obsForPatient3);
-		assertTrue(obsForPatient3.size() > 0, "There should be some obs created for #3");
+		assertTrue("There should be some obs created for #3", obsForPatient3.size() > 0);
 		
 		// check for the return visit date obs
 		Concept returnVisitDateConcept = new Concept(5096);
@@ -124,12 +123,12 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		Date returnVisitDate = cal.getTime();
 		List<Obs> returnVisitDateObsForPatient3 = obsService.getObservationsByPersonAndConcept(patient,
 		    returnVisitDateConcept);
-		assertEquals(1, returnVisitDateObsForPatient3.size(), "There should be a return visit date");
+		assertEquals("There should be a return visit date", 1, returnVisitDateObsForPatient3.size());
 		
 		Obs firstObs = (Obs) returnVisitDateObsForPatient3.toArray()[0];
 		cal.setTime(firstObs.getValueDatetime());
 		Date firstObsValueDatetime = cal.getTime();
-		assertEquals(returnVisitDate.toString(), firstObsValueDatetime.toString(), "The date should be the 29th");
+		assertEquals("The date should be the 29th", returnVisitDate.toString(), firstObsValueDatetime.toString());
 		
 	}
 	
@@ -139,6 +138,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
 	@Test
+	@Verifies(value = "should create obs group for OBRs", method = "processMessage(Message)")
 	public void processMessage_shouldCreateObsGroupForOBRs() throws Exception {
 		ObsService obsService = Context.getObsService();
 		
@@ -157,10 +157,12 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		
 		Patient patient = new Patient(3);
 		
+		Context.clearSession();
+		
 		// check for any obs
 		List<Obs> obsForPatient2 = obsService.getObservationsByPerson(patient);
 		assertNotNull(obsForPatient2);
-		assertTrue(obsForPatient2.size() > 0, "There should be some obs created for #3");
+		assertTrue("There should be some obs created for #3", obsForPatient2.size() > 0);
 		
 		// check for the missed return visit date obs
 		Concept returnVisitDateConcept = new Concept(1592);
@@ -169,7 +171,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		Date returnVisitDate = cal.getTime();
 		List<Obs> returnVisitDateObsForPatient2 = obsService.getObservationsByPersonAndConcept(patient,
 		    returnVisitDateConcept);
-		assertEquals(1, returnVisitDateObsForPatient2.size(), "There should be a return visit date");
+		assertEquals("There should be a return visit date", 1, returnVisitDateObsForPatient2.size());
 		Obs firstObs = (Obs) returnVisitDateObsForPatient2.toArray()[0];
 		
 		cal.setTime(firstObs.getValueDatetime());
@@ -177,23 +179,23 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		cal.clear(Calendar.MINUTE);
 		cal.clear(Calendar.SECOND);
 		cal.clear(Calendar.MILLISECOND);
-		assertEquals(returnVisitDate.toString(), cal.getTime().toString(), "The date should be the 1st");
+		assertEquals("The date should be the 1st", returnVisitDate.toString(), cal.getTime().toString());
 		
 		// check for the grouped obs
 		Concept contactMethod = new Concept(1558);
 		Concept phoneContact = Context.getConceptService().getConcept(1555);
 		List<Obs> contactMethodObsForPatient2 = obsService.getObservationsByPersonAndConcept(patient, contactMethod);
-		assertEquals(1, contactMethodObsForPatient2.size(), "There should be a contact method");
+		assertEquals("There should be a contact method", 1, contactMethodObsForPatient2.size());
 		Obs firstContactMethodObs = (Obs) contactMethodObsForPatient2.toArray()[0];
-		assertEquals(phoneContact, firstContactMethodObs.getValueCoded(), "The contact method should be phone");
+		assertEquals("The contact method should be phone", phoneContact, firstContactMethodObs.getValueCoded());
 		
 		// check that there is a group id
 		Obs obsGroup = firstContactMethodObs.getObsGroup();
-		assertNotNull(obsGroup, "Their should be a grouping obs");
-		assertNotNull(firstContactMethodObs.getEncounter(), "Their should be an associated encounter");
+		assertNotNull("Their should be a grouping obs", obsGroup);
+		assertNotNull("Their should be an associated encounter", firstContactMethodObs.getEncounter());
 		
 		// check that the obs that are grouped have the same group id
-		List<Integer> groupedConceptIds = new ArrayList<>();
+		List<Integer> groupedConceptIds = new Vector<Integer>();
 		groupedConceptIds.add(1558);
 		groupedConceptIds.add(1553);
 		groupedConceptIds.add(1554);
@@ -205,7 +207,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		for (Obs obs : obsForPatient2) {
 			if (groupedConceptIds.contains(obs.getConcept().getConceptId())) {
 				groupedObsCount += 1;
-				assertEquals(obsGroup, obs.getObsGroup(), "All of the parent groups should match");
+				assertEquals("All of the parent groups should match", obsGroup, obs.getObsGroup());
 			}
 		}
 		
@@ -221,6 +223,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
 	@Test
+	@Verifies(value = "should append to an existing encounter", method = "processMessage(Message)")
 	public void processMessage_shouldAppendToAnExistingEncounter() throws Exception {
 		
 		// there should be an encounter with encounter_id == 3 for this test
@@ -254,6 +257,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
 	@Test
+	@Verifies(value = "should create basic concept proposal", method = "processMessage(Message)")
 	public void processMessage_shouldCreateBasicConceptProposal() throws Exception {
 		
 		// remember initial occurrence of proposal's text in the model
@@ -271,7 +275,8 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		router.processMessage(hl7message);
 		
 		//make sure that the proposal was added
-		assertEquals(initialOccurrences + 1, Context.getConceptService().getConceptProposals("PELVIC MASS").size(), "Processing of the HL7 message did not result in the new proposal being added to the model");
+		Assert.assertEquals("Processing of the HL7 message did not result in the new proposal being added to the model",
+		    initialOccurrences + 1, Context.getConceptService().getConceptProposals("PELVIC MASS").size());
 		
 	}
 
@@ -281,6 +286,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
 	@Test
+	@Verifies(value = "should create concept proposal and with obs alongside", method = "processMessage(Message)")
 	public void processMessage_shouldCreateConceptProposalAndWithObsAlongside() throws Exception {
 		
 		// remember initial occurrence of proposal's text in the model
@@ -298,7 +304,8 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		router.processMessage(hl7message);
 		
 		//make sure that the proposal was added
-		assertEquals(initialOccurrences + 1, Context.getConceptService().getConceptProposals("ASDFASDFASDF").size(), "Processing of the HL7 message did not result in the new proposal being added to the model");
+		Assert.assertEquals("Processing of the HL7 message did not result in the new proposal being added to the model",
+		    initialOccurrences + 1, Context.getConceptService().getConceptProposals("ASDFASDFASDF").size());
 		
 	}
 	
@@ -308,6 +315,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
 	@Test
+	@Verifies(value = "should not create problem list observation with concept proposals", method = "processMessage(Message)")
 	public void processMessage_shouldNotCreateProblemListObservationWithConceptProposals() throws Exception {
 		ObsService obsService = Context.getObsService();
 		ConceptService conceptService = Context.getConceptService();
@@ -326,14 +334,14 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		Patient patient = new Patient(3);
 		
 		// check for any obs
-		assertEquals(0, obsService.getObservationsByPerson(patient).size(), "There should not be any obs created for #3");
+		assertEquals("There should not be any obs created for #3", 0, obsService.getObservationsByPerson(patient).size());
 		
 		// check for a new encounter
-		assertEquals(1, encService.getEncountersByPatient(patient).size(), "There should be 1 new encounter created for #3");
+		assertEquals("There should be 1 new encounter created for #3", 1, encService.getEncountersByPatient(patient).size());
 		
 		// check for the proposed concept
 		List<ConceptProposal> proposedConcepts = conceptService.getConceptProposals("SEVERO DOLOR DE CABEZA");
-		assertEquals(1, proposedConcepts.size(), "There should be a proposed concept by this name");
+		assertEquals("There should be a proposed concept by this name", 1, proposedConcepts.size());
 		assertEquals(encService.getEncountersByPatient(patient).get(0), proposedConcepts.get(0).getEncounter());
 	}
 	
@@ -341,6 +349,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
 	@Test
+	@Verifies(value = "should create obs valueCodedName", method = "processMessage(Message)")
 	public void processMessage_shouldCreateObsValueCodedName() throws Exception {
 		ObsService obsService = Context.getObsService();
 		Patient patient = new Patient(3); // the patient that is the focus of
@@ -349,7 +358,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		// "Food assistance for entire family?"
 		
 		// sanity check to make sure this obs doesn't exist already
-		assertEquals(0, obsService.getObservationsByPersonAndConcept(patient, concept).size());
+		Assert.assertEquals(0, obsService.getObservationsByPersonAndConcept(patient, concept).size());
 		
 		String hl7String = "MSH|^~\\&|FORMENTRY|AMRS.ELD|HL7LISTENER|AMRS.ELD|20090728170332||ORU^R01|gu99yBh4loLX2mh9cHaV|P|2.5|1||||||||4^AMRS.ELD.FORMID\r"
 		        + "PID|||3^^^^||Beren^John^Bondo||\r"
@@ -365,39 +374,43 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		List<Obs> obss = obsService.getObservationsByPersonAndConcept(patient, concept);
 		
 		ConceptName name = obss.get(0).getValueCodedName();
-		assertNotNull(name);
-		assertEquals(2471, name.getId().intValue(), "The valueCodedName should be 2471");
+		Assert.assertNotNull(name);
+		Assert.assertEquals("The valueCodedName should be 2471", 2471, name.getId().intValue());
 	}
 	
 	/**
 	 * @see ORUR01Handler#getConcept(String,String)
 	 */
 	@Test
+	@Verifies(value = "should return a Concept if given local coding system", method = "getConcept(String,String)")
 	public void getConcept_shouldReturnAConceptIfGivenLocalCodingSystem() throws Exception {
-		assertEquals(5089, new ORUR01Handler().getConcept("5089", "99DCT", "xj39bnj4k34nmf").getId().intValue());
+		Assert.assertEquals(5089, new ORUR01Handler().getConcept("5089", "99DCT", "xj39bnj4k34nmf").getId().intValue());
 	}
 	
 	/**
 	 * @see ORUR01Handler#getConcept(String,String)
 	 */
 	@Test
+	@Verifies(value = "should return a mapped Concept if given a valid mapping", method = "getConcept(String,String)")
 	public void getConcept_shouldReturnAMappedConceptIfGivenAValidMapping() throws Exception {
-		assertEquals(5089, new ORUR01Handler().getConcept("WGT234", "SSTRM", "23498343sdnm3").getId().intValue());
+		Assert.assertEquals(5089, new ORUR01Handler().getConcept("WGT234", "SSTRM", "23498343sdnm3").getId().intValue());
 	}
 	
 	/**
 	 * @see ORUR01Handler#getConcept(String,String)
 	 */
 	@Test
+	@Verifies(value = "should return null if codingSystem not found", method = "getConcept(String,String)")
 	public void getConcept_shouldReturnNullIfCodingSystemNotFound() throws Exception {
-		assertNull(new ORUR01Handler().getConcept("123", "a nonexistent coding system", "n3jn2345g89n4"));
-		assertNull(new ORUR01Handler().getConcept("93939434834", "SSTRM", "xcjk23h89gn34k234"));
+		Assert.assertNull(new ORUR01Handler().getConcept("123", "a nonexistent coding system", "n3jn2345g89n4"));
+		Assert.assertNull(new ORUR01Handler().getConcept("93939434834", "SSTRM", "xcjk23h89gn34k234"));
 	}
 	
 	/**
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
-	@Test
+	@Test(expected = ApplicationException.class)
+	@Verifies(value = "should fail on empty concept answers", method = "processMessage(Message)")
 	public void processMessage_shouldFailOnEmptyConceptAnswers() throws Exception {
 		String hl7string = "MSH|^~\\&|FORMENTRY|AMRS.ELD|HL7LISTENER|AMRS.ELD|20080630094800||ORU^R01|kgWdFt0SVwwClOfJm3pe|P|2.5|1||||||||15^AMRS.ELD.FORMID\r"
 		        + "PID|||3^^^^~d3811480^^^^||John3^Doe^||\r"
@@ -406,13 +419,14 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		        + "OBR|1|||1238^MEDICAL RECORD OBSERVATIONS^99DCT\r"
 		        + "OBX|1|CWE|5497^CD4, BY FACS^99DCT||^^99DCT|||||||||20080208";
 		Message hl7message = parser.parse(hl7string);
-		assertThrows(ApplicationException.class, () -> router.processMessage(hl7message));
+		router.processMessage(hl7message);
 	}
 	
 	/**
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
-	@Test
+	@Test(expected = ApplicationException.class)
+	@Verifies(value = "should fail on empty concept proposals", method = "processMessage(Message)")
 	public void processMessage_shouldFailOnEmptyConceptProposals() throws Exception {
 		String hl7string = "MSH|^~\\&|FORMENTRY|AMRS.ELD|HL7LISTENER|AMRS.ELD|20080630094800||ORU^R01|kgWdFt0SVwwClOfJm3pe|P|2.5|1||||||||15^AMRS.ELD.FORMID\r"
 		        + "PID|||3^^^^~d3811480^^^^||John3^Doe^||\r"
@@ -422,13 +436,14 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		        + "OBR|1|||1284^PROBLEM LIST^99DCT\r"
 		        + "OBX|1|CWE|6042^PROBLEM ADDED^99DCT||PROPOSED^^99DCT|||||||||20080208";
 		Message hl7message = parser.parse(hl7string);
-		assertThrows(ApplicationException.class, () -> router.processMessage(hl7message));
+		router.processMessage(hl7message);
 	}
 	
 	/**
 	 * @see ORUR01Handler#processNK1(Patient,NK1)
 	 */
 	@Test
+	@Verifies(value = "should create a relationship from a NK1 segment", method = "processNK1(Patient,NK1)")
 	public void processNK1_shouldCreateARelationshipFromANK1Segment() throws Exception {
 		PersonService personService = Context.getPersonService();
 		Patient patient = new Patient(3); // the patient that is the focus of
@@ -457,13 +472,14 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		
 		// verify relationship was created
 		List<Relationship> rels = personService.getRelationships(relative, patient, new RelationshipType(3));
-		assertTrue(!rels.isEmpty() && rels.size() == 1, "new relationship was not created");
+		Assert.assertTrue("new relationship was not created", !rels.isEmpty() && rels.size() == 1);
 	}
 	
 	/**
 	 * @see ORUR01Handler#processNK1(Patient,NK1)
 	 */
-	@Test
+	@Test(expected = HL7Exception.class)
+	@Verifies(value = "should fail if the coding system is not 99REL", method = "processNK1(Patient,NK1)")
 	public void processNK1_shouldFailIfTheCodingSystemIsNot99REL() throws Exception {
 		// process a message with an invalid coding system
 		Patient patient = new Patient(3); // the patient that is the focus of
@@ -482,13 +498,14 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		ORU_R01 oru = (ORU_R01) hl7message;
 		List<NK1> nk1List = oruHandler.getNK1List(oru);
 		for (NK1 nk1 : nk1List)
-			assertThrows(HL7Exception.class, () -> oruHandler.processNK1(patient, nk1));
+			oruHandler.processNK1(patient, nk1);
 	}
 	
 	/**
 	 * @see ORUR01Handler#processNK1(Patient,NK1)
 	 */
-	@Test
+	@Test(expected = HL7Exception.class)
+	@Verifies(value = "should fail if the relationship identifier is formatted improperly", method = "processNK1(Patient,NK1)")
 	public void processNK1_shouldFailIfTheRelationshipIdentifierIsFormattedImproperly() throws Exception {
 		// process a message with an invalid relationship identifier format
 		Patient patient = new Patient(3); // the patient that is the focus of
@@ -507,13 +524,14 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		ORU_R01 oru = (ORU_R01) hl7message;
 		List<NK1> nk1List = oruHandler.getNK1List(oru);
 		for (NK1 nk1 : nk1List)
-			assertThrows(HL7Exception.class, () -> oruHandler.processNK1(patient, nk1));
+			oruHandler.processNK1(patient, nk1);
 	}
 	
 	/**
 	 * @see ORUR01Handler#processNK1(Patient,NK1)
 	 */
-	@Test
+	@Test(expected = HL7Exception.class)
+	@Verifies(value = "should fail if the relationship type is not found", method = "processNK1(Patient,NK1)")
 	public void processNK1_shouldFailIfTheRelationshipTypeIsNotFound() throws Exception {
 		// process a message with a non-existent relationship type
 		Patient patient = new Patient(3); // the patient that is the focus of
@@ -532,13 +550,14 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		ORU_R01 oru = (ORU_R01) hl7message;
 		List<NK1> nk1List = oruHandler.getNK1List(oru);
 		for (NK1 nk1 : nk1List)
-			assertThrows(HL7Exception.class, () -> oruHandler.processNK1(patient, nk1));
+			oruHandler.processNK1(patient, nk1);
 	}
 	
 	/**
 	 * @see ORUR01Handler#processNK1(Patient,NK1)
 	 */
 	@Test
+	@Verifies(value = "should not create a relationship if one exists", method = "processNK1(Patient,NK1)")
 	public void processNK1_shouldNotCreateARelationshipIfOneExists() throws Exception {
 		PersonService personService = Context.getPersonService();
 		Patient patient = new Patient(3); // the patient that is the focus of
@@ -554,7 +573,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		personService.saveRelationship(rel);
 		
 		// verify relationship exists
-		assertEquals(1, personService.getRelationships(relative, patient, new RelationshipType(3)).size());
+		Assert.assertEquals(1, personService.getRelationships(relative, patient, new RelationshipType(3)).size());
 		
 		// process a message with a single NK1 segment
 		// defines relative as patient's Parent
@@ -577,13 +596,14 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		
 		// verify existing relationship
 		List<Relationship> rels = personService.getRelationships(relative, patient, new RelationshipType(3));
-		assertTrue(!rels.isEmpty() && rels.size() == 1, "existing relationship was not retained");
+		Assert.assertTrue("existing relationship was not retained", !rels.isEmpty() && rels.size() == 1);
 	}
 	
 	/**
 	 * @see ORUR01Handler#processORU_R01(ORU_R01)
 	 */
 	@Test
+	@Verifies(value = "should process multiple NK1 segments", method = "processORU_R01(ORU_R01)")
 	public void processORU_R01_shouldProcessMultipleNK1Segments() throws Exception {
 		PersonService personService = Context.getPersonService();
 		Patient patient = new Patient(3); // the patient that is the focus of
@@ -599,7 +619,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		personService.saveRelationship(newRel);
 		
 		// verify relationship exists
-		assertEquals(1, personService.getRelationships(relative, patient, new RelationshipType(3)).size());
+		Assert.assertEquals(1, personService.getRelationships(relative, patient, new RelationshipType(3)).size());
 		
 		// process a new message with multiple NK1 segments
 		// this one defines patientB as patientA's Sibling and Patient
@@ -619,21 +639,22 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		
 		// verify existing relationship
 		List<Relationship> rels = personService.getRelationships(relative, patient, new RelationshipType(3));
-		assertTrue(!rels.isEmpty() && rels.size() == 1, "existing relationship was not retained");
+		Assert.assertTrue("existing relationship was not retained", !rels.isEmpty() && rels.size() == 1);
 		
 		// verify first new relationship
 		rels = personService.getRelationships(patient, relative, new RelationshipType(2));
-		assertTrue(!rels.isEmpty() && rels.size() == 1, "first new relationship was not created");
+		Assert.assertTrue("first new relationship was not created", !rels.isEmpty() && rels.size() == 1);
 		
 		// verify second new relationship
 		rels = personService.getRelationships(patient, relative, new RelationshipType(1));
-		assertTrue(!rels.isEmpty() && rels.size() == 1, "second new relationship was not created");
+		Assert.assertTrue("second new relationship was not created", !rels.isEmpty() && rels.size() == 1);
 	}
 	
 	/**
 	 * @see ORUR01Handler#processNK1(Patient,NK1)
 	 */
 	@Test
+	@Verifies(value = "should create a person if the relative is not found", method = "processNK1(Patient,NK1)")
 	public void processNK1_shouldCreateAPersonIfTheRelativeIsNotFound() throws Exception {
 		// process a message with an invalid relative identifier
 		PersonService personService = Context.getPersonService();
@@ -658,17 +679,18 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		
 		// find the relative in the database
 		Person relative = personService.getPersonByUuid("2178037d-f86b-4f12-8d8b-be3ebc220029");
-		assertNotNull(relative, "a new person was not created");
+		Assert.assertNotNull("a new person was not created", relative);
 		
 		// see if the relative made it into the relationship properly
 		List<Relationship> rels = personService.getRelationships(relative, patient, new RelationshipType(3));
-		assertTrue(!rels.isEmpty() && rels.size() == 1, "new relationship was not created");
+		Assert.assertTrue("new relationship was not created", !rels.isEmpty() && rels.size() == 1);
 	}
 	
 	/**
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
-	@Test
+	@Test(expected = ApplicationException.class)
+	@Verifies(value = "should fail if question datatype is coded and a boolean is not a valid answer", method = "processMessage(Message)")
 	public void processMessage_shouldFailIfQuestionDatatypeIsCodedAndABooleanIsNotAValidAnswer() throws Exception {
 		GlobalProperty trueConceptGlobalProperty = new GlobalProperty(OpenmrsConstants.GLOBAL_PROPERTY_TRUE_CONCEPT, "7",
 		        "Concept id of the concept defining the TRUE boolean concept");
@@ -682,15 +704,16 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		        + "ORC|RE||||||||20080226102537|1^Super User\r"
 		        + "OBR|1|||1238^MEDICAL RECORD OBSERVATIONS^99DCT\r"
 		        + "OBX|2|NM|4^CIVIL STATUS^99DCT||1|||||||||20080206";
-		assertEquals("Coded", Context.getConceptService().getConcept(4).getDatatype().getName());
+		Assert.assertEquals("Coded", Context.getConceptService().getConcept(4).getDatatype().getName());
 		Message hl7message = parser.parse(hl7string);
-		assertThrows(ApplicationException.class, () -> router.processMessage(hl7message));
+		router.processMessage(hl7message);
 	}
 	
 	/**
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
-	@Test
+	@Test(expected = ApplicationException.class)
+	@Verifies(value = "should fail if question datatype is neither Boolean nor numeric nor coded", method = "processMessage(Message)")
 	public void processMessage_shouldFailIfQuestionDatatypeIsNeitherBooleanNorNumericNorCoded() throws Exception {
 		String hl7string = "MSH|^~\\&|FORMENTRY|AMRS.ELD|HL7LISTENER|AMRS.ELD|20080226102656||ORU^R01|JqnfhKKtouEz8kzTk6Zo|P|2.5|1||||||||16^AMRS.ELD.FORMID\r"
 		        + "PID|||7^^^^||Collet^Test^Chebaskwony||\r"
@@ -698,15 +721,16 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		        + "ORC|RE||||||||20080226102537|1^Super User\r"
 		        + "OBR|1|||1238^MEDICAL RECORD OBSERVATIONS^99DCT\r"
 		        + "OBX|2|NM|19^FAVORITE FOOD, NON-CODED^99DCT||1|||||||||20080206";
-		assertEquals("Text", Context.getConceptService().getConcept(19).getDatatype().getName());
+		Assert.assertEquals("Text", Context.getConceptService().getConcept(19).getDatatype().getName());
 		Message hl7message = parser.parse(hl7string);
-		assertThrows(ApplicationException.class, () -> router.processMessage(hl7message));
+		router.processMessage(hl7message);
 	}
 	
 	/**
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
 	@Test
+	@Verifies(value = "should set value as boolean for obs if the answer is 0 or 1 and Question datatype is Boolean", method = "processMessage(Message)")
 	public void processMessage_shouldSetValueAsBooleanForObsIfTheAnswerIs0Or1AndQuestionDatatypeIsBoolean() throws Exception {
 		GlobalProperty trueConceptGlobalProperty = new GlobalProperty(OpenmrsConstants.GLOBAL_PROPERTY_TRUE_CONCEPT, "7",
 		        "Concept id of the concept defining the TRUE boolean concept");
@@ -715,7 +739,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		Context.getAdministrationService().saveGlobalProperty(trueConceptGlobalProperty);
 		Context.getAdministrationService().saveGlobalProperty(falseConceptGlobalProperty);
 		ObsService os = Context.getObsService();
-		assertNull(os.getObs(17));
+		Assert.assertNull(os.getObs(17));
 		String hl7string = "MSH|^~\\&|FORMENTRY|AMRS.ELD|HL7LISTENER|AMRS.ELD|20080226102656||ORU^R01|JqnfhKKtouEz8kzTk6Zo|P|2.5|1||||||||16^AMRS.ELD.FORMID\r"
 		        + "PID|||7^^^^||Collet^Test^Chebaskwony||\r"
 		        + "PV1||O|1^Unknown Location||||1^Super User (1-8)|||||||||||||||||||||||||||||||||||||20080212|||||||V\r"
@@ -724,7 +748,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		        + "OBX|1|NM|18^FOOD ASSISTANCE^99DCT||0|||||||||20080206";
 		// the expected question for the obs in the hl7 message has to be
 		// Boolean
-		assertEquals("Boolean", Context.getConceptService().getConcept(18).getDatatype().getName());
+		Assert.assertEquals("Boolean", Context.getConceptService().getConcept(18).getDatatype().getName());
 		List<Obs> oldList = os.getObservationsByPersonAndConcept(new Person(7), new Concept(18));
 		Message hl7message = parser.parse(hl7string);
 		router.processMessage(hl7message);
@@ -735,13 +759,14 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 				newObservation = newObs;
 			}
 		}
-		assertFalse(newObservation.getValueBoolean());
+		Assert.assertEquals(false, newObservation.getValueBoolean());
 	}
 	
 	/**
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
 	@Test
+	@Verifies(value = "should set value_Coded matching a boolean concept for obs if the answer is 0 or 1 and Question datatype is coded", method = "processMessage(Message)")
 	public void processMessage_shouldSetValue_CodedMatchingABooleanConceptForObsIfTheAnswerIs0Or1AndQuestionDatatypeIsCoded()
 	        throws Exception {
 		ObsService os = Context.getObsService();
@@ -752,7 +777,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		        + "OBR|1|||1238^MEDICAL RECORD OBSERVATIONS^99DCT\r"
 		        + "OBX|2|NM|21^CIVIL STATUS^99DCT||1|||||||||20080206";
 		// the expected question for the obs in the hl7 message has to be coded
-		assertEquals("Coded", Context.getConceptService().getConcept(21).getDatatype().getName());
+		Assert.assertEquals("Coded", Context.getConceptService().getConcept(21).getDatatype().getName());
 		List<Obs> oldList = os.getObservationsByPersonAndConcept(new Person(7), new Concept(21));
 		Message hl7message = parser.parse(hl7string);
 		router.processMessage(hl7message);
@@ -764,13 +789,14 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 				newObservation = newObs;
 			}
 		}
-		assertEquals(Context.getConceptService().getTrueConcept(), newObservation.getValueCoded());
+		Assert.assertEquals(Context.getConceptService().getTrueConcept(), newObservation.getValueCoded());
 	}
 	
 	/**
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
 	@Test
+	@Verifies(value = "should set value_Numeric for obs if Question datatype is Numeric", method = "processMessage(Message)")
 	public void processMessage_shouldSetValue_NumericForObsIfQuestionDatatypeIsNumeric() throws Exception {
 		ObsService os = Context.getObsService();
 		String hl7string = "MSH|^~\\&|FORMENTRY|AMRS.ELD|HL7LISTENER|AMRS.ELD|20080226102656||ORU^R01|JqnfhKKtouEz8kzTk6Zo|P|2.5|1||||||||16^AMRS.ELD.FORMID\r"
@@ -781,7 +807,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		        + "OBX|1|NM|5497^CD4, BY FACS^99DCT||450|||||||||20080206";
 		// the expected question for the obs in the hl7 message has to be
 		// numeric
-		assertEquals("Numeric", Context.getConceptService().getConcept(5497).getDatatype().getName());
+		Assert.assertEquals("Numeric", Context.getConceptService().getConcept(5497).getDatatype().getName());
 		List<Obs> oldList = os.getObservationsByPersonAndConcept(new Person(7), new Concept(5497));
 		Message hl7message = parser.parse(hl7string);
 		router.processMessage(hl7message);
@@ -792,13 +818,14 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 				newObservation = newObs;
 			}
 		}
-		assertEquals(450, newObservation.getValueNumeric().intValue());
+		Assert.assertEquals(450, newObservation.getValueNumeric().intValue());
 	}
 	
 	/**
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
 	@Test
+	@Verifies(value = "should set value_Numeric for obs if Question datatype is Numeric and the answer is either 0 or 1", method = "processMessage(Message)")
 	public void processMessage_shouldSetValue_NumericForObsIfQuestionDatatypeIsNumericAndTheAnswerIsEither0Or1()
 	        throws Exception {
 		ObsService os = Context.getObsService();
@@ -810,7 +837,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		        + "OBX|1|NM|5497^CD4, BY FACS^99DCT||1|||||||||20080206";
 		// the expected question for the obs in the hl7 message has to be
 		// numeric
-		assertEquals("Numeric", Context.getConceptService().getConcept(5497).getDatatype().getName());
+		Assert.assertEquals("Numeric", Context.getConceptService().getConcept(5497).getDatatype().getName());
 		List<Obs> oldList = os.getObservationsByPersonAndConcept(new Person(7), new Concept(5497));
 		Message hl7message = parser.parse(hl7string);
 		router.processMessage(hl7message);
@@ -821,13 +848,14 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 				newObservation = newObs;
 			}
 		}
-		assertEquals(1, newObservation.getValueNumeric().intValue());
+		Assert.assertEquals(1, newObservation.getValueNumeric().intValue());
 	}
 	
 	/**
 	 * @see ORUR01Handler#parseObs(Encounter,OBX,OBR,String)
 	 */
 	@Test
+	@Verifies(value = "should add comments to an observation from NTE segments", method = "parseObs(Encounter,OBX,OBR,String)")
 	public void parseObs_shouldAddCommentsToAnObservationFromNTESegments() throws Exception {
 		ObsService os = Context.getObsService();
 		String hl7string = "MSH|^~\\&|FORMENTRY|AMRS.ELD|HL7LISTENER|AMRS.ELD|20080226102656||ORU^R01|JqnfhKKtouEz8kzTk6Zo|P|2.5|1||||||||16^AMRS.ELD.FORMID\r"
@@ -838,7 +866,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		        + "OBX|1|NM|5497^CD4, BY FACS^99DCT||1|||||||||20080206\r" + "NTE|1|L|This is a comment";
 		// the expected question for the obs in the hl7 message has to be
 		// numeric
-		assertEquals("Numeric", Context.getConceptService().getConcept(5497).getDatatype().getName());
+		Assert.assertEquals("Numeric", Context.getConceptService().getConcept(5497).getDatatype().getName());
 		List<Obs> oldList = os.getObservationsByPersonAndConcept(new Person(7), new Concept(5497));
 		Message hl7message = parser.parse(hl7string);
 		router.processMessage(hl7message);
@@ -849,13 +877,14 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 				newObservation = newObs;
 			}
 		}
-		assertEquals("This is a comment", newObservation.getComment());
+		Assert.assertEquals("This is a comment", newObservation.getComment());
 	}
 	
 	/**
 	 * @see ORUR01Handler#parseObs(Encounter,OBX,OBR,String)
 	 */
 	@Test
+	@Verifies(value = "should add multiple comments for an observation as one comment", method = "parseObs(Encounter,OBX,OBR,String)")
 	public void parseObs_shouldAddMultipleCommentsForAnObservationAsOneComment() throws Exception {
 		ObsService os = Context.getObsService();
 		String hl7string = "MSH|^~\\&|FORMENTRY|AMRS.ELD|HL7LISTENER|AMRS.ELD|20080226102656||ORU^R01|JqnfhKKtouEz8kzTk6Zo|P|2.5|1||||||||16^AMRS.ELD.FORMID\r"
@@ -868,7 +897,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		        + "NTE|2|L|that spans two lines\r" + "OBX|2|NM|5497^CD4, BY FACS^99DCT||2|||||||||20080206";
 		// the expected question for the obs in the hl7 message has to be
 		// numeric
-		assertEquals("Numeric", Context.getConceptService().getConcept(5497).getDatatype().getName());
+		Assert.assertEquals("Numeric", Context.getConceptService().getConcept(5497).getDatatype().getName());
 		List<Obs> oldList = os.getObservationsByPersonAndConcept(new Person(7), new Concept(5497));
 		Message hl7message = parser.parse(hl7string);
 		router.processMessage(hl7message);
@@ -883,13 +912,14 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 			if (!oldList.contains(newObs) && !newObs.isObsGrouping() && newObs.getComment() != null)
 				newObservation = newObs;
 		}
-		assertEquals("This is a comment that spans two lines", newObservation.getComment());
+		Assert.assertEquals("This is a comment that spans two lines", newObservation.getComment());
 	}
 	
 	/**
 	 * @see ORUR01Handler#parseObs(Encounter,OBX,OBR,String)
 	 */
 	@Test
+	@Verifies(value = "should add comments to an observation group", method = "parseObs(Encounter,OBX,OBR,String)")
 	public void parseObs_shouldAddCommentsToAnObservationGroup() throws Exception {
 		ObsService os = Context.getObsService();
 		String hl7string = "MSH|^~\\&|FORMENTRY|AMRS.ELD|HL7LISTENER|AMRS.ELD|20080226102656||ORU^R01|JqnfhKKtouEz8kzTk6Zo|P|2.5|1||||||||16^AMRS.ELD.FORMID\r"
@@ -910,13 +940,14 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 				newObservation = newObs;
 			}
 		}
-		assertEquals("This is a comment", newObservation.getComment());
+		Assert.assertEquals("This is a comment", newObservation.getComment());
 	}
 	
 	/**
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
 	@Test
+	@Verifies(value = "should create an encounter and find the provider by identifier", method = "processMessage(Message)")
 	public void processMessage_shouldCreateAnEncounterAndFindTheProviderByIdentifier() throws Exception {
 		executeDataSet("org/openmrs/api/include/ProviderServiceTest-initial.xml");
 		int patientId = 2;
@@ -937,18 +968,19 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		// check for the new encounter
 		List<Encounter> encForPatient2 = Context.getEncounterService().getEncountersByPatient(patient);
 		encForPatient2.removeAll(encForPatient1);//retain only the new encounter
-		assertThat(encForPatient2, hasSize(1));
+		Assert.assertTrue(encForPatient2.size() == 1);
 		
 		Provider newProvider = encForPatient2.get(0).getProvidersByRole(
 		    Context.getEncounterService().getEncounterRoleByUuid(EncounterRole.UNKNOWN_ENCOUNTER_ROLE_UUID)).iterator()
 		        .next();
-		assertEquals("a2c3868a-6b90-11e0-93c3-18a905e044dc", newProvider.getUuid());
+		Assert.assertEquals("a2c3868a-6b90-11e0-93c3-18a905e044dc", newProvider.getUuid());
 	}
 	
 	/**
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
 	@Test
+	@Verifies(value = "should create an encounter and find the provider by personId", method = "processMessage(Message)")
 	public void processMessage_shouldCreateAnEncounterAndFindTheProviderByPersonId() throws Exception {
 		int patientId = 2;
 		Patient patient = new Patient(patientId);
@@ -964,21 +996,22 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		router.processMessage(hl7message);
 		
 		List<Encounter> encForPatient2 = Context.getEncounterService().getEncountersByPatient(patient);
-		assertTrue((encForPatient1.size() + 1) == encForPatient2.size(), "An encounter should have been created");
+		assertTrue("An encounter should have been created", (encForPatient1.size() + 1) == encForPatient2.size());
 		
 		encForPatient2.removeAll(encForPatient1);
-		assertThat(encForPatient2, hasSize(1));
+		Assert.assertTrue(encForPatient2.size() == 1);
 		
 		Provider newProvider = encForPatient2.get(0).getProvidersByRole(
 		    Context.getEncounterService().getEncounterRoleByUuid(EncounterRole.UNKNOWN_ENCOUNTER_ROLE_UUID)).iterator()
 		        .next();
-		assertEquals("c2299800-cca9-11e0-9572-0800200c9a66", newProvider.getUuid());
+		Assert.assertEquals("c2299800-cca9-11e0-9572-0800200c9a66", newProvider.getUuid());
 	}
 	
 	/**
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
 	@Test
+	@Verifies(value = "should create an encounter and find the provider by providerId", method = "processMessage(Message)")
 	public void processMessage_shouldCreateAnEncounterAndFindTheProviderByProviderId() throws Exception {
 		executeDataSet("org/openmrs/api/include/ProviderServiceTest-initial.xml");
 		int patientId = 2;
@@ -999,18 +1032,19 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		// check for the new encounter
 		List<Encounter> encForPatient2 = Context.getEncounterService().getEncountersByPatient(patient);
 		encForPatient2.removeAll(encForPatient1);
-		assertThat(encForPatient2, hasSize(1));
+		Assert.assertTrue(encForPatient2.size() == 1);
 		
 		Provider newProvider = encForPatient2.get(0).getProvidersByRole(
 		    Context.getEncounterService().getEncounterRoleByUuid(EncounterRole.UNKNOWN_ENCOUNTER_ROLE_UUID)).iterator()
 		        .next();
-		assertEquals("1f9e8336-6b95-11e0-93c3-18a905e044dc", newProvider.getUuid());
+		Assert.assertEquals("1f9e8336-6b95-11e0-93c3-18a905e044dc", newProvider.getUuid());
 	}
 	
 	/**
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
 	@Test
+	@Verifies(value = "should create an encounter and find the provider by uuid", method = "processMessage(Message)")
 	public void processMessage_shouldCreateAnEncounterAndFindTheProviderByUuid() throws Exception {
 		executeDataSet("org/openmrs/api/include/ProviderServiceTest-initial.xml");
 		int patientId = 2;
@@ -1033,18 +1067,19 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		// check for the new encounter
 		List<Encounter> encForPatient2 = Context.getEncounterService().getEncountersByPatient(patient);
 		encForPatient2.removeAll(encForPatient1);
-		assertThat(encForPatient2, hasSize(1));
+		Assert.assertTrue(encForPatient2.size() == 1);
 		
 		Provider newProvider = encForPatient2.get(0).getProvidersByRole(
 		    Context.getEncounterService().getEncounterRoleByUuid(EncounterRole.UNKNOWN_ENCOUNTER_ROLE_UUID)).iterator()
 		        .next();
-		assertEquals(4, newProvider.getId().intValue());
+		Assert.assertEquals(4, newProvider.getId().intValue());
 	}
 	
 	/**
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
-	@Test
+	@Test(expected = ApplicationException.class)
+	@Verifies(value = "should fail if the provider name type code is not specified and is not a personId", method = "processMessage(Message)")
 	public void processMessage_shouldFailIfTheProviderNameTypeCodeIsNotSpecifiedAndIsNotAPersonId() throws Exception {
 		int patientId = 2;
 		String hl7string = "MSH|^~\\&|FORMENTRY|AMRS.ELD|HL7LISTENER|AMRS.ELD|20080226102656||ORU^R01|JqnfhKKtouEz8kzTk6Zo|P|2.5|1||||||||16^AMRS.ELD.FORMID\r"
@@ -1056,13 +1091,14 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		        + "&^|||||||||||||||||||||||||||||||||||||20080212|||||||V\r"
 		        + "ORC|RE||||||||20080226102537|1^Super User\r" + "OBR|1|||1238^MEDICAL RECORD OBSERVATIONS^99DCT";
 		Message hl7message = parser.parse(hl7string);
-		assertThrows(ApplicationException.class, () -> router.processMessage(hl7message));
+		router.processMessage(hl7message);
 	}
 	
 	/**
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
 	@Test
+	@Verifies(value = "should understand form uuid if present", method = "processMessage(Message)")
 	public void processMessage_shouldUnderstandFormUuidIfPresent() throws Exception {
 		
 		// save original encounter count
@@ -1082,20 +1118,21 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		
 		// make sure an encounter was added
 		encounters = Context.getEncounterService().getEncountersByPatient(new Patient(3));
-		assertEquals(originalEncounters + 1, encounters.size());
+		Assert.assertEquals(originalEncounters + 1, encounters.size());
 		
 		// get last encounter
 		Encounter enc = encounters.get(encounters.size() - 1);
 		
 		// check the form uuid
 		Form form = enc.getForm();
-		assertEquals("d9218f76-6c39-45f4-8efa-4c5c6c199f50", form.getUuid());
+		Assert.assertEquals("d9218f76-6c39-45f4-8efa-4c5c6c199f50", form.getUuid());
 	}
 	
 	/**
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
 	@Test
+	@Verifies(value = "should prefer form uuid over id if both are present", method = "processMessage(Message)")
 	public void processMessage_shouldPreferFormUuidOverIdIfBothArePresent() throws Exception {
 		
 		// save original encounter count
@@ -1115,20 +1152,21 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		
 		// make sure an encounter was added
 		encounters = Context.getEncounterService().getEncountersByPatient(new Patient(3));
-		assertEquals(originalEncounters + 1, encounters.size());
+		Assert.assertEquals(originalEncounters + 1, encounters.size());
 		
 		// get last encounter
 		Encounter enc = encounters.get(encounters.size() - 1);
 		
 		// check the form uuid
 		Form form = enc.getForm();
-		assertEquals("c156e1a8-6731-4ebd-89ff-d0d1c45eb004", form.getUuid());
+		Assert.assertEquals("c156e1a8-6731-4ebd-89ff-d0d1c45eb004", form.getUuid());
 	}
 	
 	/**
 	 * @see ORUR01Handler#processMessage(Message)
 	 */
 	@Test
+	@Verifies(value = "should prefer form id if uuid is not found", method = "processMessage(Message)")
 	public void processMessage_shouldPreferFormIdIfUuidIsNotFound() throws Exception {
 		
 		// save original encounter count
@@ -1148,14 +1186,14 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		
 		// make sure an encounter was added
 		encounters = Context.getEncounterService().getEncountersByPatient(new Patient(3));
-		assertEquals(originalEncounters + 1, encounters.size());
+		Assert.assertEquals(originalEncounters + 1, encounters.size());
 		
 		// get last encounter
 		Encounter enc = encounters.get(encounters.size() - 1);
 		
 		// check the form id
 		Form form = enc.getForm();
-		assertEquals(1, form.getId().intValue());
+		Assert.assertEquals(1, form.getId().intValue());
 	}
 	
 	/**
@@ -1163,6 +1201,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 	 * 
 	 */
 	@Test
+	@Verifies(value = "should set complex data for obs with complex concepts", method = "processMessage(Message)")
 	public void processMessage_shouldSetComplexDataForObsWithComplexConcepts() throws Exception {
 		ObsHandler handler = new ObsHandler();
 		final String handlerName = "NeigborHandler";
@@ -1181,7 +1220,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		finally {
 			Context.getObsService().removeHandler(handlerName);
 		}
-		assertEquals(data, handler.getCreatedObs().getComplexData().getData());
+		Assert.assertEquals(data, handler.getCreatedObs().getComplexData().getData());
 	}
 	
 	private class ObsHandler implements ComplexObsHandler {
@@ -1232,6 +1271,7 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 
 	/**
 	 * @see ORUR01Handler#getForm(MSH)
+	 * @verifies pass if return value is null when uuid and id is null
 	 */
 	@Test
 	public void getForm_shouldPassIfReturnValueIsNullWhenUuidAndIdIsNull() throws Exception {
@@ -1250,11 +1290,12 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		ORU_R01 oru = (ORU_R01) hl7message;
 		ca.uhn.hl7v2.model.v25.segment.MSH msh = oru.getMSH();
 		Form form = oruHandler.getForm(msh);
-		assertNull(form);
+		Assert.assertNull(form);
 	}
 
 	/**
 	 * @see ORUR01Handler#getForm(MSH)
+	 * @verifies pass if return value is not null when uuid or id is not null
 	 */
 	@Test
 	public void getForm_shouldPassIfReturnValueIsNotNullWhenUuidOrIdIsNotNull() throws Exception {
@@ -1273,6 +1314,6 @@ public class ORUR01HandlerTest extends BaseContextSensitiveTest {
 		ORU_R01 oru = (ORU_R01) hl7message;
 		ca.uhn.hl7v2.model.v25.segment.MSH msh = oru.getMSH();
 		Form form = oruHandler.getForm(msh);
-		assertNotNull(form);	
+		Assert.assertNotNull(form);	
 		}
 }

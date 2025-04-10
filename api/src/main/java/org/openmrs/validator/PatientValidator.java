@@ -11,11 +11,11 @@ package org.openmrs.validator;
 
 import java.util.Collection;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.Patient;
 import org.openmrs.PatientIdentifier;
 import org.openmrs.annotation.Handler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.Errors;
 import org.springframework.validation.ValidationUtils;
@@ -26,7 +26,7 @@ import org.springframework.validation.ValidationUtils;
 @Handler(supports = { Patient.class }, order = 25)
 public class PatientValidator extends PersonValidator {
 	
-	private static final Logger log = LoggerFactory.getLogger(PersonNameValidator.class);
+	private static Log log = LogFactory.getLog(PersonNameValidator.class);
 	
 	@Autowired
 	private PatientIdentifierValidator patientIdentifierValidator;
@@ -39,7 +39,9 @@ public class PatientValidator extends PersonValidator {
 	 */
 	@Override
 	public boolean supports(Class<?> c) {
-		log.debug("{}.supports: {}", this.getClass().getName(), c.getName());
+		if (log.isDebugEnabled()) {
+			log.debug(this.getClass().getName() + ".supports: " + c.getName());
+		}
 		return Patient.class.isAssignableFrom(c);
 	}
 	
@@ -51,20 +53,22 @@ public class PatientValidator extends PersonValidator {
 	 * @param errors Errors
 	 * @see org.springframework.validation.Validator#validate(java.lang.Object,
 	 *      org.springframework.validation.Errors)
-	 * <strong>Should</strong> fail validation if gender is blank
-	 * <strong>Should</strong> fail validation if birthdate makes patient older than 140 years old
-	 * <strong>Should</strong> fail validation if birthdate is a future date
-	 * <strong>Should</strong> fail validation if a preferred patient identifier is not chosen
-	 * <strong>Should</strong> fail validation if voidReason is blank when patient is voided
-	 * <strong>Should</strong> fail validation if causeOfDeath is blank when patient is dead
-	 * <strong>Should</strong> fail validation if a preferred patient identifier is not chosen for voided patients
-	 * <strong>Should</strong> not fail when patient has only one identifier and its not preferred
-	 * <strong>Should</strong> pass validation if field lengths are correct
-	 * <strong>Should</strong> fail validation if field lengths are not correct
+	 * @should fail validation if gender is blank
+	 * @should fail validation if birthdate makes patient older that 120 years old
+	 * @should fail validation if birthdate is a future date
+	 * @should fail validation if a preferred patient identifier is not chosen
+	 * @should fail validation if voidReason is blank when patient is voided
+	 * @should fail validation if causeOfDeath is blank when patient is dead
+	 * @should fail validation if a preferred patient identifier is not chosen for voided patients
+	 * @should not fail when patient has only one identifier and its not preferred
+	 * @should pass validation if field lengths are correct
+	 * @should fail validation if field lengths are not correct
 	 */
 	@Override
 	public void validate(Object obj, Errors errors) {
-		log.debug("{}.validate...", this.getClass().getName());
+		if (log.isDebugEnabled()) {
+			log.debug(this.getClass().getName() + ".validate...");
+		}
 		
 		if (obj == null) {
 			return;
@@ -91,13 +95,15 @@ public class PatientValidator extends PersonValidator {
 			errors.reject("error.preferredIdentifier");
 		}
 		int index = 0;
-		if (!errors.hasErrors() && patient.getIdentifiers() != null) {
+		if (!errors.hasErrors()) {
 			// Validate PatientIdentifers
-			for (PatientIdentifier identifier : patient.getIdentifiers()) {
-				errors.pushNestedPath("identifiers[" + index + "]");
-				patientIdentifierValidator.validate(identifier, errors);
-				errors.popNestedPath();
-				index++;
+			if (patient.getIdentifiers() != null) {
+				for (PatientIdentifier identifier : patient.getIdentifiers()) {
+					errors.pushNestedPath("identifiers[" + index + "]");
+					patientIdentifierValidator.validate(identifier, errors);
+					errors.popNestedPath();
+					index++;
+				}
 			}
 		}
 		ValidateUtil.validateFieldLengths(errors, obj.getClass(), "voidReason");

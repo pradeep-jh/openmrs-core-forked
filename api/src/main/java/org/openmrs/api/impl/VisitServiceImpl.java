@@ -16,8 +16,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.StringUtils;
 import org.openmrs.Concept;
 import org.openmrs.Location;
 import org.openmrs.Patient;
@@ -30,7 +30,6 @@ import org.openmrs.api.VisitService;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.db.VisitDAO;
 import org.openmrs.customdatatype.CustomDatatypeUtil;
-import org.openmrs.parameter.VisitSearchCriteria;
 import org.openmrs.util.OpenmrsConstants;
 import org.openmrs.util.PrivilegeConstants;
 import org.openmrs.validator.ValidateUtil;
@@ -63,7 +62,6 @@ public class VisitServiceImpl extends BaseOpenmrsService implements VisitService
 	/**
 	 * @see org.openmrs.api.VisitService#getAllVisitTypes()
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<VisitType> getAllVisitTypes() {
 		return getVisitDAO().getAllVisitTypes();
@@ -81,7 +79,6 @@ public class VisitServiceImpl extends BaseOpenmrsService implements VisitService
 	/**
 	 * @see org.openmrs.api.VisitService#getVisitType(java.lang.Integer)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public VisitType getVisitType(Integer visitTypeId) {
 		return getVisitDAO().getVisitType(visitTypeId);
@@ -90,7 +87,6 @@ public class VisitServiceImpl extends BaseOpenmrsService implements VisitService
 	/**
 	 * @see org.openmrs.api.VisitService#getVisitTypeByUuid(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public VisitType getVisitTypeByUuid(String uuid) {
 		return getVisitDAO().getVisitTypeByUuid(uuid);
@@ -99,7 +95,6 @@ public class VisitServiceImpl extends BaseOpenmrsService implements VisitService
 	/**
 	 * @see org.openmrs.api.VisitService#getVisitTypes(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<VisitType> getVisitTypes(String fuzzySearchPhrase) {
 		return getVisitDAO().getVisitTypes(fuzzySearchPhrase);
@@ -108,7 +103,6 @@ public class VisitServiceImpl extends BaseOpenmrsService implements VisitService
 	/**
 	 * @see org.openmrs.api.VisitService#saveVisitType(org.openmrs.VisitType)
 	 */
-	@Override
 	public VisitType saveVisitType(VisitType visitType) throws APIException {
 		ValidateUtil.validate(visitType);
 		return getVisitDAO().saveVisitType(visitType);
@@ -117,7 +111,6 @@ public class VisitServiceImpl extends BaseOpenmrsService implements VisitService
 	/**
 	 * @see org.openmrs.api.VisitService#retireVisitType(org.openmrs.VisitType, java.lang.String)
 	 */
-	@Override
 	public VisitType retireVisitType(VisitType visitType, String reason) {
 		return Context.getVisitService().saveVisitType(visitType);
 	}
@@ -125,7 +118,6 @@ public class VisitServiceImpl extends BaseOpenmrsService implements VisitService
 	/**
 	 * @see org.openmrs.api.VisitService#unretireVisitType(org.openmrs.VisitType)
 	 */
-	@Override
 	public VisitType unretireVisitType(VisitType visitType) {
 		return Context.getVisitService().saveVisitType(visitType);
 	}
@@ -133,7 +125,6 @@ public class VisitServiceImpl extends BaseOpenmrsService implements VisitService
 	/**
 	 * @see org.openmrs.api.VisitService#purgeVisitType(org.openmrs.VisitType)
 	 */
-	@Override
 	public void purgeVisitType(VisitType visitType) {
 		getVisitDAO().purgeVisitType(visitType);
 	}
@@ -207,7 +198,7 @@ public class VisitServiceImpl extends BaseOpenmrsService implements VisitService
 	 */
 	@Override
 	public Visit unvoidVisit(Visit visit) throws APIException {
-		return Context.getVisitService().saveVisit(visit);
+		return dao.saveVisit(visit);
 	}
 	
 	/**
@@ -240,16 +231,9 @@ public class VisitServiceImpl extends BaseOpenmrsService implements VisitService
 	}
 	
 	/**
-	 * @see org.openmrs.api.VisitService#getVisits(VisitSearchCriteria)
-	 */
-	@Override
-	public List<Visit> getVisits(VisitSearchCriteria visitSearchCriteria) throws APIException {
-		return dao.getVisits(visitSearchCriteria);
-	}
-	
-	/**
 	 * @see org.openmrs.api.VisitService#getVisitsByPatient(org.openmrs.Patient)
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	@Transactional(readOnly = true)
 	public List<Visit> getVisitsByPatient(Patient patient) throws APIException {
@@ -274,6 +258,7 @@ public class VisitServiceImpl extends BaseOpenmrsService implements VisitService
 	/**
 	 * @see org.openmrs.api.VisitService#getVisitsByPatient(org.openmrs.Patient, boolean, boolean)
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	@Transactional(readOnly = true)
 	public List<Visit> getVisitsByPatient(Patient patient, boolean includeInactive, boolean includeVoided)
@@ -335,7 +320,7 @@ public class VisitServiceImpl extends BaseOpenmrsService implements VisitService
 	 */
 	@Override
 	public VisitAttributeType unretireVisitAttributeType(VisitAttributeType visitAttributeType) {
-		return Context.getVisitService().saveVisitAttributeType(visitAttributeType);
+		return dao.saveVisitAttributeType(visitAttributeType);
 	}
 	
 	/**
@@ -360,61 +345,44 @@ public class VisitServiceImpl extends BaseOpenmrsService implements VisitService
 	 */
 	@Override
 	public void stopVisits(Date maximumStartDate) {
-		
-		final List<VisitType> visitTypesToStop = getVisitTypesToStop();
-		
-		if (maximumStartDate == null) {
-			maximumStartDate = new Date();
-		}
-			
-		if (visitTypesToStop.isEmpty()) {
-			return;
-		}
-		
-		int counter = 0;
-		Date stopDate = new Date();
-		Visit nextVisit = dao.getNextVisit(null, visitTypesToStop, maximumStartDate);
-		while (nextVisit != null) {
-			nextVisit.setStopDatetime(stopDate);
-			dao.saveVisit(nextVisit);
-			if (counter++ > 50) {
-				//ensure changes are persisted to DB before reclaiming memory
-				Context.flushSession();
-				Context.clearSession();
-				counter = 0;
-			}
-					
-		nextVisit = dao.getNextVisit(nextVisit, visitTypesToStop, maximumStartDate);
-		}
-	}
-	
-	private List<VisitType> getVisitTypesToStop() {
 		String gpValue = Context.getAdministrationService().getGlobalProperty(OpenmrsConstants.GP_VISIT_TYPES_TO_AUTO_CLOSE);
-		if (StringUtils.isBlank(gpValue)) {
-			return Collections.emptyList();
-		} else {
-			String[] visitTypeNames = getVisitTypeNamesFromGlobalPropertyValue(gpValue);
-			return getVisitTypesFromVisitTypeNames(visitTypeNames);
-		}
-	}
-	
-	private String[] getVisitTypeNamesFromGlobalPropertyValue(String commaSeparatedNames) {
-		String[] result = StringUtils.split(commaSeparatedNames.trim(), ",");
-		for (int i = 0; i < result.length; i++) {
-			String currName = result[i];
-			result[i] = currName.trim().toLowerCase();
-		}
-		return result;
-	}
-	
-	private List<VisitType> getVisitTypesFromVisitTypeNames(String[] visitTypeNames) {
-		List<VisitType> result = new ArrayList<>();
-		for (VisitType visitType : Context.getVisitService().getAllVisitTypes()) {
-			if (ArrayUtils.contains(visitTypeNames, visitType.getName().toLowerCase())) {
-				result.add(visitType);
+		VisitService vs = Context.getVisitService();
+		if (StringUtils.isNotBlank(gpValue)) {
+			if (maximumStartDate == null) {
+				maximumStartDate = new Date();
+			}
+			
+			List<VisitType> visitTypesToStop = new ArrayList<VisitType>();
+			String[] visitTypeNames = StringUtils.split(gpValue.trim(), ",");
+			for (int i = 0; i < visitTypeNames.length; i++) {
+				String currName = visitTypeNames[i];
+				visitTypeNames[i] = currName.trim().toLowerCase();
+			}
+			
+			List<VisitType> allVisitTypes = vs.getAllVisitTypes();
+			for (VisitType visitType : allVisitTypes) {
+				if (ArrayUtils.contains(visitTypeNames, visitType.getName().toLowerCase())) {
+					visitTypesToStop.add(visitType);
+				}
+			}
+			
+			if (!visitTypesToStop.isEmpty()) {
+				int counter = 0;
+				Date stopDate = new Date();
+				Visit nextVisit = dao.getNextVisit(null, visitTypesToStop, maximumStartDate);
+				while (nextVisit != null) {
+					nextVisit.setStopDatetime(stopDate);
+					dao.saveVisit(nextVisit);
+					if (counter++ > 50) {
+						//ensure changes are persisted to DB before reclaiming memory
+						Context.flushSession();
+						Context.clearSession();
+						counter = 0;
+					}
+					
+					nextVisit = dao.getNextVisit(nextVisit, visitTypesToStop, maximumStartDate);
+				}
 			}
 		}
-		return result;
 	}
-
 }

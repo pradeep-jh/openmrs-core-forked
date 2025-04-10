@@ -9,13 +9,11 @@
  */
 package org.openmrs.validator;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.scheduler.TaskDefinition;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 
@@ -28,7 +26,8 @@ public class SchedulerFormValidatorTest extends BaseContextSensitiveTest {
 	 * @see SchedulerFormValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfNameIsNullOrEmptyOrWhitespace() {
+	@Verifies(value = "should fail validation if name is null or empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfNameIsNullOrEmptyOrWhitespace() throws Exception {
 		TaskDefinition def = new TaskDefinition();
 		def.setName(null);
 		def.setRepeatInterval(3600000L);
@@ -36,24 +35,25 @@ public class SchedulerFormValidatorTest extends BaseContextSensitiveTest {
 		
 		Errors errors = new BindException(def, "def");
 		new SchedulerFormValidator().validate(def, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 		
 		def.setName("");
 		errors = new BindException(def, "def");
 		new SchedulerFormValidator().validate(def, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 		
 		def.setName(" ");
 		errors = new BindException(def, "def");
 		new SchedulerFormValidator().validate(def, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 	}
 	
 	/**
 	 * @see SchedulerFormValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfTaskClassIsEmptyOrWhitespace() {
+	@Verifies(value = "should fail validation if taskClass is empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfTaskClassIsEmptyOrWhitespace() throws Exception {
 		TaskDefinition def = new TaskDefinition();
 		def.setName("Chores");
 		def.setRepeatInterval(3600000L);
@@ -61,38 +61,40 @@ public class SchedulerFormValidatorTest extends BaseContextSensitiveTest {
 		
 		Errors errors = new BindException(def, "def");
 		new SchedulerFormValidator().validate(def, errors);
-		assertTrue(errors.hasFieldErrors("taskClass"));
+		Assert.assertTrue(errors.hasFieldErrors("taskClass"));
 		
 		def.setTaskClass(" ");
 		errors = new BindException(def, "def");
 		new SchedulerFormValidator().validate(def, errors);
-		assertTrue(errors.hasFieldErrors("taskClass"));
+		Assert.assertTrue(errors.hasFieldErrors("taskClass"));
 	}
 	
 	/**
 	 * @see SchedulerFormValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfRepeatIntervalIsNullOrEmptyOrWhitespace() {
+	@Verifies(value = "should fail validation if repeatInterval is null or empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfRepeatIntervalIsNullOrEmptyOrWhitespace() throws Exception {
 		TaskDefinition def = new TaskDefinition();
 		def.setName("Chores");
 		def.setTaskClass("org.openmrs.scheduler.tasks.HelloWorldTask");
 		
 		Errors errors = new BindException(def, "def");
 		new SchedulerFormValidator().validate(def, errors);
-		assertTrue(errors.hasFieldErrors("repeatInterval"));
+		Assert.assertTrue(errors.hasFieldErrors("repeatInterval"));
 		
 		def.setTaskClass(" ");
 		errors = new BindException(def, "def");
 		new SchedulerFormValidator().validate(def, errors);
-		assertTrue(errors.hasFieldErrors("repeatInterval"));
+		Assert.assertTrue(errors.hasFieldErrors("repeatInterval"));
 	}
 	
 	/**
 	 * @see SchedulerFormValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfClassIsNotInstanceOfTask() {
+	@Verifies(value = "should fail validation if class is not instance of Task", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfClassIsNotInstanceOfTask() throws Exception {
 		TaskDefinition def = new TaskDefinition();
 		def.setName("Chores");
 		def.setRepeatInterval(3600000L);
@@ -101,15 +103,16 @@ public class SchedulerFormValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(def, "def");
 		new SchedulerFormValidator().validate(def, errors);
 		
-		assertTrue(errors.hasFieldErrors("taskClass"));
-		assertEquals("Scheduler.taskForm.classDoesNotImplementTask", errors.getFieldError("taskClass").getCode());
+		Assert.assertTrue(errors.hasFieldErrors("taskClass"));
+		Assert.assertEquals("Scheduler.taskForm.classDoesNotImplementTask", errors.getFieldError("taskClass").getCode());
 	}
 	
 	/**
 	 * @see SchedulerFormValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfClassIsNotAccessible() {
+	@Verifies(value = "should fail validation if class is not accessible", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfClassIsNotAccessible() throws Exception {
 		TaskDefinition def = new TaskDefinition();
 		def.setName("Chores");
 		def.setRepeatInterval(3600000L);
@@ -118,15 +121,16 @@ public class SchedulerFormValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(def, "def");
 		new SchedulerFormValidator().validate(def, errors);
 		
-		assertTrue(errors.hasFieldErrors("taskClass"));
-		assertEquals("Scheduler.taskForm.classNotFoundException", errors.getFieldError("taskClass").getCode());
+		Assert.assertTrue(errors.hasFieldErrors("taskClass"));
+		Assert.assertEquals("Scheduler.taskForm.classNotFoundException", errors.getFieldError("taskClass").getCode());
 	}
 	
 	/**
 	 * @see SchedulerFormValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfClassCannotBeInstantiated() {
+	@Verifies(value = "should fail validation if class cannot be instantiated", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfClassCannotBeInstantiated() throws Exception {
 		TaskDefinition def = new TaskDefinition();
 		def.setName("Chores");
 		def.setRepeatInterval(3600000L);
@@ -135,15 +139,16 @@ public class SchedulerFormValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(def, "def");
 		new SchedulerFormValidator().validate(def, errors);
 		
-		assertTrue(errors.hasFieldErrors("taskClass"));
-		assertEquals("Scheduler.taskForm.instantiationException", errors.getFieldError("taskClass").getCode());
+		Assert.assertTrue(errors.hasFieldErrors("taskClass"));
+		Assert.assertEquals("Scheduler.taskForm.instantiationException", errors.getFieldError("taskClass").getCode());
 	}
 	
 	/**
 	 * @see SchedulerFormValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfClassNotFound() {
+	@Verifies(value = "sshould fail validation if class not found", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfClassNotFound() throws Exception {
 		TaskDefinition def = new TaskDefinition();
 		def.setName("Chores");
 		def.setRepeatInterval(3600000L);
@@ -152,15 +157,16 @@ public class SchedulerFormValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(def, "def");
 		new SchedulerFormValidator().validate(def, errors);
 		
-		assertTrue(errors.hasFieldErrors("taskClass"));
-		assertEquals("Scheduler.taskForm.classNotFoundException", errors.getFieldError("taskClass").getCode());
+		Assert.assertTrue(errors.hasFieldErrors("taskClass"));
+		Assert.assertEquals("Scheduler.taskForm.classNotFoundException", errors.getFieldError("taskClass").getCode());
 	}
 	
 	/**
 	 * @see SchedulerFormValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfAllRequiredFieldsHaveProperValues() {
+	@Verifies(value = "should pass validation if all required fields have proper values", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfAllRequiredFieldsHaveProperValues() throws Exception {
 		TaskDefinition def = new TaskDefinition();
 		def.setName("Chores");
 		def.setRepeatInterval(3600000L);
@@ -169,14 +175,15 @@ public class SchedulerFormValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(def, "def");
 		new SchedulerFormValidator().validate(def, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see SchedulerFormValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() {
+	@Verifies(value = "should pass validation if field lengths are correct", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() throws Exception {
 		TaskDefinition def = new TaskDefinition();
 		def.setName("Chores");
 		def.setRepeatInterval(3600000L);
@@ -187,14 +194,15 @@ public class SchedulerFormValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(def, "def");
 		new SchedulerFormValidator().validate(def, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see SchedulerFormValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() {
+	@Verifies(value = "should fail validation if field lengths are not correct", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() throws Exception {
 		TaskDefinition def = new TaskDefinition();
 		def
 		        .setName("too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text");
@@ -209,9 +217,9 @@ public class SchedulerFormValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(def, "def");
 		new SchedulerFormValidator().validate(def, errors);
 		
-		assertTrue(errors.hasFieldErrors("name"));
-		assertTrue(errors.hasFieldErrors("taskClass"));
-		assertTrue(errors.hasFieldErrors("description"));
-		assertTrue(errors.hasFieldErrors("startTimePattern"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("taskClass"));
+		Assert.assertTrue(errors.hasFieldErrors("description"));
+		Assert.assertTrue(errors.hasFieldErrors("startTimePattern"));
 	}
 }

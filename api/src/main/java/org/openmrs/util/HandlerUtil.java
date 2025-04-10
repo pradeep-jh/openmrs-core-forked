@@ -10,16 +10,17 @@
 package org.openmrs.util;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.annotation.Handler;
 import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
@@ -33,9 +34,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class HandlerUtil implements ApplicationListener<ContextRefreshedEvent> {
 	
-	private static final Logger log = LoggerFactory.getLogger(HandlerUtil.class);
+	private static final Log log = LogFactory.getLog(HandlerUtil.class);
 	
-	private static volatile Map<Key, List<?>> cachedHandlers = new WeakHashMap<>();
+	private static volatile Map<Key, List<?>> cachedHandlers = new WeakHashMap<HandlerUtil.Key, List<?>>();
 	
 	private static class Key {
 		
@@ -77,16 +78,19 @@ public class HandlerUtil implements ApplicationListener<ContextRefreshedEvent> {
 				return false;
 			}
 			if (type == null) {
-				return other.type == null;
-			} else {
-				return type.equals(other.type);
+				if (other.type != null) {
+					return false;
+				}
+			} else if (!type.equals(other.type)) {
+				return false;
 			}
+			return true;
 		}
 		
 	}
 	
 	public static void clearCachedHandlers() {
-		cachedHandlers = new WeakHashMap<>();
+		cachedHandlers = new WeakHashMap<HandlerUtil.Key, List<?>>();
 	}
 	
 	/**
@@ -102,9 +106,9 @@ public class HandlerUtil implements ApplicationListener<ContextRefreshedEvent> {
 	 * @param handlerType Indicates the type of class to return
 	 * @param type Indicates the type that the given handlerType must support (or null for any)
 	 * @return a List of all matching Handlers for the given parameters, ordered by Handler#order
-	 * <strong>Should</strong> return a list of all classes that can handle the passed type
-	 * <strong>Should</strong> return classes registered in a module
-	 * <strong>Should</strong> return an empty list if no classes can handle the passed type
+	 * @should return a list of all classes that can handle the passed type
+	 * @should return classes registered in a module
+	 * @should return an empty list if no classes can handle the passed type
 	 */
 	public static <H, T> List<H> getHandlersForType(Class<H> handlerType, Class<T> type) {
 		List<?> list = cachedHandlers.get(new Key(handlerType, type));
@@ -112,7 +116,7 @@ public class HandlerUtil implements ApplicationListener<ContextRefreshedEvent> {
 			return (List<H>) list;
 		}
 		
-		List<H> handlers = new ArrayList<>();
+		List<H> handlers = new ArrayList<H>();
 		
 		// First get all registered components of the passed class
 		log.debug("Getting handlers of type " + handlerType + (type == null ? "" : " for class " + type.getName()));
@@ -139,9 +143,14 @@ public class HandlerUtil implements ApplicationListener<ContextRefreshedEvent> {
 		}
 		
 		// Return the list of handlers based on the order specified in the Handler annotation
-		handlers.sort(Comparator.comparing(o -> getOrderOfHandler(o.getClass())));
+		Collections.sort(handlers, new Comparator<H>() {
+			
+			public int compare(H o1, H o2) {
+				return getOrderOfHandler(o1.getClass()).compareTo(getOrderOfHandler(o2.getClass()));
+			}
+		});
 		
-		Map<Key, List<?>> newCachedHandlers = new WeakHashMap<>(cachedHandlers);
+		Map<Key, List<?>> newCachedHandlers = new WeakHashMap<Key, List<?>>(cachedHandlers);
 		newCachedHandlers.put(new Key(handlerType, type), handlers);
 		cachedHandlers = newCachedHandlers;
 		
@@ -157,11 +166,11 @@ public class HandlerUtil implements ApplicationListener<ContextRefreshedEvent> {
 	 * @param handlerType the class that is an annotated {@link Handler} to retrieve
 	 * @param type the class that the annotated {@link Handler} must support
 	 * @return the class of the passed handlerType with the lowest configured order
-	 * <strong>Should</strong> return the preferred handler for the passed handlerType and type
-	 * <strong>Should</strong> throw a APIException if no handler is found
-	 * <strong>Should</strong> throw a APIException if multiple preferred handlers are found
-	 * <strong>Should</strong> should return patient validator for patient
-	 * <strong>Should</strong> should return person validator for person
+	 * @should return the preferred handler for the passed handlerType and type
+	 * @should throw a APIException if no handler is found
+	 * @should throw a APIException if multiple preferred handlers are found
+	 * @should should return patient validator for patient
+	 * @should should return person validator for person
 	 */
 	public static <H, T> H getPreferredHandler(Class<H> handlerType, Class<T> type) {
 		

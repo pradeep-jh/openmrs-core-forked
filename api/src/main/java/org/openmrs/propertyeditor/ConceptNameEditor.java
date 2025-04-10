@@ -9,29 +9,65 @@
  */
 package org.openmrs.propertyeditor;
 
+import java.beans.PropertyEditorSupport;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.ConceptName;
+import org.openmrs.api.ConceptService;
 import org.openmrs.api.context.Context;
+import org.springframework.util.StringUtils;
 
 /**
- * Allows for serializing/deserializing an object to a string so that Spring knows how to pass an
- * object back and forth through an html form or other medium. <br>
+ * Allows for serializing/deserializing an object to a string so that Spring knows how to pass
+ * an object back and forth through an html form or other medium. <br>
  * <br>
  * In version 1.9, added ability for this to also retrieve objects by uuid
  * 
  * @see ConceptName
  */
-public class ConceptNameEditor extends OpenmrsPropertyEditor<ConceptName> {
+public class ConceptNameEditor extends PropertyEditorSupport {
+	
+	private Log log = LogFactory.getLog(this.getClass());
 	
 	public ConceptNameEditor() {
 	}
 	
-	@Override
-	protected ConceptName getObjectById(Integer id) {
-		return Context.getConceptService().getConceptName(id);
+	/**
+	 * @should set using id
+	 * @should set using uuid
+	 * 
+	 * @see java.beans.PropertyEditorSupport#setAsText(java.lang.String)
+	 */
+	public void setAsText(String text) throws IllegalArgumentException {
+		ConceptService cs = Context.getConceptService();
+		if (StringUtils.hasText(text)) {
+			try {
+				setValue(cs.getConceptName(Integer.valueOf(text)));
+			}
+			catch (Exception ex) {
+				ConceptName conceptName = cs.getConceptNameByUuid(text);
+				setValue(conceptName);
+				if (conceptName == null) {
+					log.error("Error setting text" + text, ex);
+					throw new IllegalArgumentException("ConceptName not found: " + ex.getMessage());
+				}
+			}
+		} else {
+			setValue(null);
+		}
 	}
 	
-	@Override
-	protected ConceptName getObjectByUuid(String uuid) {
-		return Context.getConceptService().getConceptNameByUuid(uuid);
+	/**
+	 * @see java.beans.PropertyEditorSupport#getAsText()
+	 */
+	public String getAsText() {
+		ConceptName cn = (ConceptName) getValue();
+		if (cn == null) {
+			return "";
+		} else {
+			return cn.getConceptNameId().toString();
+		}
 	}
+	
 }

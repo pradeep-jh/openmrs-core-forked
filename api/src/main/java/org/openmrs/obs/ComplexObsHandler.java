@@ -11,6 +11,7 @@ package org.openmrs.obs;
 
 import org.openmrs.Obs;
 import org.openmrs.api.APIException;
+import org.openmrs.util.OpenmrsConstants;
 
 /**
  * Interface for handling complex obs. Implementing classes are responsible for the storage and

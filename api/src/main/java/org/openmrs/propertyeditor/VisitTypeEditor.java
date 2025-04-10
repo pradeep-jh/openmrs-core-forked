@@ -10,27 +10,56 @@
 package org.openmrs.propertyeditor;
 
 import java.beans.PropertyEditor;
+import java.beans.PropertyEditorSupport;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.VisitType;
+import org.openmrs.api.VisitService;
 import org.openmrs.api.context.Context;
+import org.springframework.util.StringUtils;
 
 /**
  * {@link PropertyEditor} for {@link VisitType}
  * 
  * @since 1.9
  */
-public class VisitTypeEditor extends OpenmrsPropertyEditor<VisitType> {
+public class VisitTypeEditor extends PropertyEditorSupport {
+	
+	private static final Log log = LogFactory.getLog(VisitTypeEditor.class);
 	
 	public VisitTypeEditor() {
 	}
 	
-	@Override
-	protected VisitType getObjectById(Integer id) {
-		return Context.getVisitService().getVisitType(id);
+	/**
+	 * @should set using id
+	 * @should set using uuid
+	 */
+	public void setAsText(String text) throws IllegalArgumentException {
+		VisitService vs = Context.getVisitService();
+		if (StringUtils.hasText(text)) {
+			try {
+				setValue(vs.getVisitType(Integer.valueOf(text)));
+			}
+			catch (Exception ex) {
+				VisitType v = vs.getVisitTypeByUuid(text);
+				setValue(v);
+				if (v == null) {
+					throw new IllegalArgumentException("Visit Type not found: " + ex.getMessage());
+				}
+			}
+		} else {
+			setValue(null);
+		}
 	}
 	
-	@Override
-	protected VisitType getObjectByUuid(String uuid) {
-		return Context.getVisitService().getVisitTypeByUuid(uuid);
+	public String getAsText() {
+		VisitType vt = (VisitType) getValue();
+		if (vt == null) {
+			return "";
+		} else {
+			return vt.getVisitTypeId().toString();
+		}
 	}
+	
 }

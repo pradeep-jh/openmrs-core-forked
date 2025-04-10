@@ -9,42 +9,40 @@
  */
 package org.openmrs.layout.name;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.commons.beanutils.BeanUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.openmrs.PersonName;
 import org.openmrs.api.APIException;
 import org.openmrs.layout.LayoutSupport;
 import org.openmrs.layout.LayoutTemplate;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @since 1.12
  */
 public class NameTemplate extends LayoutTemplate {
 	
-	@Override
 	public String getLayoutToken() {
 		return "IS_NAME_TOKEN";
 	}
 	
-	@Override
 	public String getNonLayoutToken() {
 		return "IS_NOT_NAME_TOKEN";
 	}
 	
 	public String format(PersonName personName) {
 		
-		List<String> personNameLines = new ArrayList<>();
+		List<String> personNameLines = new ArrayList<String>();
 		List<List<Map<String, String>>> lines = getLines();
 		String layoutToken = getLayoutToken();
 		
 		try {
 			for (List<Map<String, String>> line : lines) {
 				StringBuilder nameLine = new StringBuilder();
-				boolean hasToken = false;
+				Boolean hasToken = false;
 				for (Map<String, String> lineToken : line) {
 					if (lineToken.get("isToken").equals(layoutToken)) {
 						String tokenValue = BeanUtils.getProperty(personName, lineToken.get("codeName"));

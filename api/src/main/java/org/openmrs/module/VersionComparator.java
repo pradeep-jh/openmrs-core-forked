@@ -9,7 +9,6 @@
  */
 package org.openmrs.module;
 
-import java.io.Serializable;
 import java.util.Comparator;
 
 /**
@@ -18,15 +17,13 @@ import java.util.Comparator;
  * number 10 from coming before version number 9.
  *
  */
-public class VersionComparator implements Comparator<String>, Serializable {
-
-	private static final long serialVersionUID = 1L;
+public class VersionComparator implements Comparator<String> {
 	
 	String TOKEN = ".";
 	
 	/**
 	 * @see java.util.Comparator#compare(java.lang.Object, java.lang.Object)
-	 * <strong>Should</strong> compare via numeric value not string value
+	 * @should compare via numeric value not string value
 	 */
 	@Override
 	public int compare(String o1, String o2) {

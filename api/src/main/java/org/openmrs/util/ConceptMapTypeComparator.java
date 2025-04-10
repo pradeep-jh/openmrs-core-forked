@@ -9,10 +9,9 @@
  */
 package org.openmrs.util;
 
-import java.io.Serializable;
-import java.util.Comparator;
-
 import org.openmrs.ConceptMapType;
+
+import java.util.Comparator;
 
 /**
  * A utility class which sorts a collection of ConceptMapType objects in the following order:
@@ -23,9 +22,7 @@ import org.openmrs.ConceptMapType;
  * <li>Retired and Hidden</li>
  * </ol>
  */
-public class ConceptMapTypeComparator implements Comparator<ConceptMapType>, Serializable {
-
-	private static final long serialVersionUID = 1L;
+public class ConceptMapTypeComparator implements Comparator<ConceptMapType> {
 	
 	/**
 	 * @see java.util.Comparator#compare(java.lang.Object, java.lang.Object)
@@ -35,7 +32,7 @@ public class ConceptMapTypeComparator implements Comparator<ConceptMapType>, Ser
 		int firstWeight = getConceptMapTypeSortWeight(conceptMapType);
 		int secondWeight = getConceptMapTypeSortWeight(conceptMapType2);
 		
-		return Integer.compare(firstWeight, secondWeight);
+		return (firstWeight < secondWeight) ? -1 : (firstWeight == secondWeight) ? 0 : 1;
 	}
 	
 	/**
@@ -50,6 +47,6 @@ public class ConceptMapTypeComparator implements Comparator<ConceptMapType>, Ser
 	 * </ol>
 	 */
 	public static int getConceptMapTypeSortWeight(ConceptMapType conceptMapType) {
-		return ((conceptMapType.getRetired() ? 1 : 0) + (conceptMapType.getIsHidden() ? 2 : 0));
+		return ((conceptMapType.isRetired() ? 1 : 0) + (conceptMapType.isHidden() ? 2 : 0));
 	}
 }

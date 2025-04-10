@@ -9,7 +9,6 @@
  */
 package org.openmrs;
 
-import org.hibernate.envers.Audited;
 import org.hibernate.search.annotations.ContainedIn;
 import org.hibernate.search.annotations.DocumentId;
 import org.hibernate.search.annotations.IndexedEmbedded;
@@ -18,7 +17,6 @@ import org.hibernate.search.annotations.IndexedEmbedded;
  * The concept map object represents a mapping of Concept to ConceptSource. A concept can have 0 to
  * N mappings to any and all concept sources in the database.
  */
-@Audited
 public class ConceptMap extends BaseConceptMap {
 	
 	public static final long serialVersionUID = 754677L;
@@ -117,7 +115,6 @@ public class ConceptMap extends BaseConceptMap {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		return getConceptMapId();
 	}
@@ -126,7 +123,6 @@ public class ConceptMap extends BaseConceptMap {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setConceptMapId(id);
 	}

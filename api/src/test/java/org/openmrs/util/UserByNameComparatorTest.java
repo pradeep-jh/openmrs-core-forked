@@ -9,16 +9,17 @@
  */
 package org.openmrs.util;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.Person;
 import org.openmrs.PersonName;
 import org.openmrs.User;
+import org.openmrs.test.Verifies;
 
 /**
  * This test class (should) contain tests for all of the {@link UserByNameComparator} methods.
@@ -32,7 +33,8 @@ public class UserByNameComparatorTest {
 	 * @see UserByNameComparator#compare(User,User)
 	 */
 	@Test
-	public void compare_shouldSortUsersByPersonNames() {
+	@Verifies(value = "should sort users by personNames", method = "compare(User,User)")
+	public void compare_shouldSortUsersByPersonNames() throws Exception {
 		
 		Person person1 = new Person();
 		person1.addName(new PersonName("givenName", "middleName", "familyName"));
@@ -47,7 +49,7 @@ public class UserByNameComparatorTest {
 		person4.addName(new PersonName("givenName", "middleNamh", "familyName"));
 		User user4 = new User(person4);
 		
-		List<User> listToSort = new ArrayList<>();
+		List<User> listToSort = new ArrayList<User>();
 		// add the users randomly
 		listToSort.add(user3);
 		listToSort.add(user1);
@@ -55,13 +57,14 @@ public class UserByNameComparatorTest {
 		listToSort.add(user2);
 		
 		// sort the list with userByNameComparator
-		listToSort.sort(new UserByNameComparator());
+		Collections.sort(listToSort, new UserByNameComparator());
 		
 		// make sure that the users are sorted in the expected order
 		Iterator<User> it = listToSort.iterator();
-		assertTrue(user1.equals(it.next()), "Expected user1 to be the first in the sorted user list but wasn't");
-		assertTrue(user2.equals(it.next()), "Expected user2 to be the second in the sorted user list but wasn't");
-		assertTrue(user3.equals(it.next()), "Expected user3 to be the third in the sorted user list but wasn't");
-		assertTrue(user4.equals(it.next()), "Expected user4 to be the fourth in the sorted user list but wasn't");
+		Assert.assertTrue("Expected user1 to be the first in the sorted user list but wasn't", user1.equals(it.next()));
+		Assert.assertTrue("Expected user2 to be the second in the sorted user list but wasn't", user2.equals(it.next()));
+		Assert.assertTrue("Expected user3 to be the third in the sorted user list but wasn't", user3.equals(it.next()));
+		Assert.assertTrue("Expected user4 to be the fourth in the sorted user list but wasn't", user4.equals(it.next()));
+		;
 	}
 }

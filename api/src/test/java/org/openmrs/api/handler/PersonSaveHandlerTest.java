@@ -9,16 +9,16 @@
  */
 package org.openmrs.api.handler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.util.Date;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
+import org.openmrs.test.BaseContextSensitiveTest;
 import org.openmrs.Person;
 import org.openmrs.PersonAddress;
 import org.openmrs.PersonName;
 import org.openmrs.User;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
+
+import java.util.Date;
 
 /**
  * Tests the {@link PersonSaveHandler} class
@@ -29,7 +29,8 @@ public class PersonSaveHandlerTest extends BaseContextSensitiveTest {
      * @see PersonSaveHandler#handle(Person,User, Date,String)
      */
     @Test
-    public void handle_shouldIgnoreBlankAddresses() {
+    @Verifies(value = "should ignore blank addresses", method = "handle(Person,User,Date,String)")
+    public void handle_shouldIgnoreBlankAddresses() throws Exception {
         PersonSaveHandler handler = new PersonSaveHandler();
         Person person = new Person();
         PersonName personName = new PersonName("John","","Smith");
@@ -40,6 +41,6 @@ public class PersonSaveHandlerTest extends BaseContextSensitiveTest {
         person.addAddress(personAddress);
 
         handler.handle(person,null,null,null);
-        assertEquals(0,person.getAddresses().size());
+        Assert.assertEquals(0,person.getAddresses().size());
     }
 }

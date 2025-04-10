@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.Concept;
 import org.openmrs.ConceptAnswer;
 import org.openmrs.ConceptName;
@@ -40,11 +42,10 @@ import org.openmrs.User;
 import org.openmrs.api.context.Context;
 import org.openmrs.hl7.HL7Constants;
 import org.openmrs.hl7.HL7InQueueProcessor;
+import org.openmrs.hl7.HL7Service;
 import org.openmrs.obs.ComplexData;
 import org.openmrs.util.OpenmrsConstants;
 import org.openmrs.util.OpenmrsUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
 import ca.uhn.hl7v2.HL7Exception;
@@ -95,7 +96,7 @@ import ca.uhn.hl7v2.parser.PipeParser;
  */
 public class ORUR01Handler implements Application {
 	
-	private static final Logger log = LoggerFactory.getLogger(ORUR01Handler.class);
+	private Log log = LogFactory.getLog(ORUR01Handler.class);
 	
 	private static EncounterRole unknownRole = null;
 	
@@ -113,32 +114,32 @@ public class ORUR01Handler implements Application {
 	/**
 	 * Processes an ORU R01 event message
 	 *
-	 * <strong>Should</strong> create encounter and obs from hl7 message
-	 * <strong>Should</strong> create basic concept proposal
-	 * <strong>Should</strong> create concept proposal and with obs alongside
-	 * <strong>Should</strong> not create problem list observation with concept proposals
-	 * <strong>Should</strong> append to an existing encounter
-	 * <strong>Should</strong> create obs group for OBRs
-	 * <strong>Should</strong> create obs valueCodedName
-	 * <strong>Should</strong> fail on empty concept proposals
-	 * <strong>Should</strong> fail on empty concept answers
-	 * <strong>Should</strong> set value_Coded matching a boolean concept for obs if the answer is 0 or 1 and
+	 * @should create encounter and obs from hl7 message
+	 * @should create basic concept proposal
+	 * @should create concept proposal and with obs alongside
+	 * @should not create problem list observation with concept proposals
+	 * @should append to an existing encounter
+	 * @should create obs group for OBRs
+	 * @should create obs valueCodedName
+	 * @should fail on empty concept proposals
+	 * @should fail on empty concept answers
+	 * @should set value_Coded matching a boolean concept for obs if the answer is 0 or 1 and
 	 *         Question datatype is coded
-	 * <strong>Should</strong> set value as boolean for obs if the answer is 0 or 1 and Question datatype is Boolean
-	 * <strong>Should</strong> set value_Numeric for obs if Question datatype is Numeric and the answer is either 0
+	 * @should set value as boolean for obs if the answer is 0 or 1 and Question datatype is Boolean
+	 * @should set value_Numeric for obs if Question datatype is Numeric and the answer is either 0
 	 *         or 1
-	 * <strong>Should</strong> set value_Numeric for obs if Question datatype is Numeric
-	 * <strong>Should</strong> fail if question datatype is coded and a boolean is not a valid answer
-	 * <strong>Should</strong> fail if question datatype is neither Boolean nor numeric nor coded
-	 * <strong>Should</strong> create an encounter and find the provider by identifier
-	 * <strong>Should</strong> create an encounter and find the provider by personId
-	 * <strong>Should</strong> create an encounter and find the provider by uuid
-	 * <strong>Should</strong> create an encounter and find the provider by providerId
-	 * <strong>Should</strong> fail if the provider name type code is not specified and is not a personId
-	 * <strong>Should</strong> understand form uuid if present
-	 * <strong>Should</strong> prefer form uuid over id if both are present
-	 * <strong>Should</strong> prefer form id if uuid is not found
-	 * <strong>Should</strong> set complex data for obs with complex concepts
+	 * @should set value_Numeric for obs if Question datatype is Numeric
+	 * @should fail if question datatype is coded and a boolean is not a valid answer
+	 * @should fail if question datatype is neither Boolean nor numeric nor coded
+	 * @should create an encounter and find the provider by identifier
+	 * @should create an encounter and find the provider by personId
+	 * @should create an encounter and find the provider by uuid
+	 * @should create an encounter and find the provider by providerId
+	 * @should fail if the provider name type code is not specified and is not a personId
+	 * @should understand form uuid if present
+	 * @should prefer form uuid over id if both are present
+	 * @should prefer form id if uuid is not found
+	 * @should set complex data for obs with complex concepts
 	 */
 	@Override
 	public Message processMessage(Message message) throws ApplicationException {
@@ -175,12 +176,14 @@ public class ORUR01Handler implements Application {
 	 * @param oru the message to process
 	 * @return the processed message
 	 * @throws HL7Exception
-	 * <strong>Should</strong> process multiple NK1 segments
+	 * @should process multiple NK1 segments
 	 */
+	@SuppressWarnings("deprecation")
 	private Message processORU_R01(ORU_R01 oru) throws HL7Exception {
 		
 		// TODO: ideally, we would branch or alter our behavior based on the
 		// sending application.
+		// String sendingApplication = getSendingApplication(oru);
 		
 		// validate message
 		validate(oru);
@@ -196,10 +199,17 @@ public class ORUR01Handler implements Application {
 		// Obtain message control id (unique ID for message from sending
 		// application)
 		String messageControlId = msh.getMessageControlID().getValue();
-		log.debug("Found HL7 message in inbound queue with control id = {}", messageControlId);
+		if (log.isDebugEnabled()) {
+			log.debug("Found HL7 message in inbound queue with control id = " + messageControlId);
+		}
+		
+		HL7Service hl7Service = Context.getHL7Service();
+		
 		// create the encounter
 		Patient patient = getPatient(pid);
-		log.debug("Processing HL7 message for patient {}", patient.getPatientId());
+		if (log.isDebugEnabled()) {
+			log.debug("Processing HL7 message for patient " + patient.getPatientId());
+		}
 		Encounter encounter = createEncounter(msh, patient, pv1, orc);
 		
 		// do the discharge to location logic
@@ -218,13 +228,15 @@ public class ORUR01Handler implements Application {
 		// list of concepts proposed in the obs of this encounter.
 		// these proposals need to be created after the encounter
 		// has been created
-		List<ConceptProposal> conceptProposals = new ArrayList<>();
+		List<ConceptProposal> conceptProposals = new ArrayList<ConceptProposal>();
 		
 		// create observations
-		log.debug("Creating observations for message {}...", messageControlId);
+		if (log.isDebugEnabled()) {
+			log.debug("Creating observations for message " + messageControlId + "...");
+		}
 		// we ignore all MEDICAL_RECORD_OBSERVATIONS that are OBRs.  We do not
 		// create obs_groups for them
-		List<Integer> ignoredConceptIds = new ArrayList<>();
+		List<Integer> ignoredConceptIds = new ArrayList<Integer>();
 		
 		String obrConceptId = Context.getAdministrationService().getGlobalProperty(
 		    OpenmrsConstants.GLOBAL_PROPERTY_MEDICAL_RECORD_OBSERVATIONS, "1238");
@@ -242,7 +254,9 @@ public class ORUR01Handler implements Application {
 		ORU_R01_PATIENT_RESULT patientResult = oru.getPATIENT_RESULT();
 		int numObr = patientResult.getORDER_OBSERVATIONReps();
 		for (int i = 0; i < numObr; i++) {
-			log.debug("Processing OBR ({} of {})", i, numObr);
+			if (log.isDebugEnabled()) {
+				log.debug("Processing OBR (" + i + " of " + numObr + ")");
+			}
 			ORU_R01_ORDER_OBSERVATION orderObs = patientResult.getORDER_OBSERVATION(i);
 			
 			// the parent obr
@@ -299,7 +313,7 @@ public class ORUR01Handler implements Application {
 			HL7Exception errorInHL7Queue = null;
 			for (int j = 0; j < numObs; j++) {
 				if (log.isDebugEnabled()) {
-					log.debug("Processing OBS ({} of {})", j, numObs);
+					log.debug("Processing OBS (" + j + " of " + numObs + ")");
 				}
 				
 				OBX obx = orderObs.getOBSERVATION(j).getOBX();
@@ -361,7 +375,7 @@ public class ORUR01Handler implements Application {
 		
 		if (log.isDebugEnabled()) {
 			log.debug("Finished creating observations");
-			log.debug("Current thread: {}", Thread.currentThread());
+			log.debug("Current thread: " + Thread.currentThread());
 			log.debug("Creating the encounter object");
 		}
 		Context.getEncounterService().saveEncounter(encounter);
@@ -382,12 +396,12 @@ public class ORUR01Handler implements Application {
 	 * @param patient
 	 * @param nk1
 	 * @throws HL7Exception
-	 * <strong>Should</strong> create a relationship from a NK1 segment
-	 * <strong>Should</strong> not create a relationship if one exists
-	 * <strong>Should</strong> create a person if the relative is not found
-	 * <strong>Should</strong> fail if the coding system is not 99REL
-	 * <strong>Should</strong> fail if the relationship identifier is formatted improperly
-	 * <strong>Should</strong> fail if the relationship type is not found
+	 * @should create a relationship from a NK1 segment
+	 * @should not create a relationship if one exists
+	 * @should create a person if the relative is not found
+	 * @should fail if the coding system is not 99REL
+	 * @should fail if the relationship identifier is formatted improperly
+	 * @should fail if the relationship type is not found
 	 */
 	protected void processNK1(Patient patient, NK1 nk1) throws HL7Exception {
 		// guarantee we are working with our custom coding system
@@ -407,7 +421,7 @@ public class ORUR01Handler implements Application {
 		}
 		
 		// get the type ID
-		Integer relTypeId;
+		Integer relTypeId = 0;
 		try {
 			relTypeId = Integer.parseInt(relIdentifier.substring(0, relIdentifier.length() - 1));
 		}
@@ -432,7 +446,7 @@ public class ORUR01Handler implements Application {
 		boolean patientCanBeEitherPerson = relType.getbIsToA().equals(relType.getaIsToB());
 		
 		// look at existing relationships to determine if a new one is needed
-		Set<Relationship> rels = new HashSet<>();
+		Set<Relationship> rels = new HashSet<Relationship>();
 		if (relative != null) {
 			if (patientCanBeEitherPerson || patientIsPersonA) {
 				rels.addAll(Context.getPersonService().getRelationships(patient, relative, relType));
@@ -496,7 +510,7 @@ public class ORUR01Handler implements Application {
 	 * @throws HL7Exception
 	 */
 	public List<NK1> getNK1List(ORU_R01 oru) throws HL7Exception {
-		List<NK1> res = new ArrayList<>();
+		List<NK1> res = new ArrayList<NK1>();
 		// there will always be at least one NK1, even if the original message does not contain one
 		for (int i = 0; i < oru.getPATIENT_RESULT().getPATIENT().getNK1Reps(); i++) {
 			// if the setIDNK1 value is null, this NK1 is blank
@@ -530,7 +544,7 @@ public class ORUR01Handler implements Application {
 	private Encounter createEncounter(MSH msh, Patient patient, PV1 pv1, ORC orc) throws HL7Exception {
 		
 		// the encounter we will return
-		Encounter encounter;
+		Encounter encounter = null;
 		
 		// look for the encounter id in PV1-19
 		CX visitNumber = pv1.getVisitNumber();
@@ -587,9 +601,9 @@ public class ORUR01Handler implements Application {
 	 * @return Obs pojo with all values filled in
 	 * @throws HL7Exception if there is a parsing exception
 	 * @throws ProposingConceptException if the answer to this obs is a proposed concept
-	 * <strong>Should</strong> add comments to an observation from NTE segments
-	 * <strong>Should</strong> add multiple comments for an observation as one comment
-	 * <strong>Should</strong> add comments to an observation group
+	 * @should add comments to an observation from NTE segments
+	 * @should add multiple comments for an observation as one comment
+	 * @should add comments to an observation group
 	 */
 	private Obs parseObs(Encounter encounter, OBX obx, OBR obr, String uid) throws HL7Exception, ProposingConceptException {
 		if (log.isDebugEnabled()) {
@@ -943,9 +957,9 @@ public class ORUR01Handler implements Application {
 	 * @param codingSystem the coding system for this conceptid (e.g. 99DCT)
 	 * @param uid unique string for this message for any error reporting purposes
 	 * @return a Concept object or null if no conceptId with given coding system found
-	 * <strong>Should</strong> return null if codingSystem not found
-	 * <strong>Should</strong> return a Concept if given local coding system
-	 * <strong>Should</strong> return a mapped Concept if given a valid mapping
+	 * @should return null if codingSystem not found
+	 * @should return a Concept if given local coding system
+	 * @should return a mapped Concept if given a valid mapping
 	 */
 	protected Concept getConcept(String hl7ConceptId, String codingSystem, String uid) throws HL7Exception {
 		if (codingSystem == null || HL7Constants.HL7_LOCAL_CONCEPT.equals(codingSystem)) {
@@ -1026,7 +1040,7 @@ public class ORUR01Handler implements Application {
 		String id = hl7Provider.getIDNumber().getValue();
 		String assignAuth = hl7Provider.getAssigningAuthority().getUniversalID().getValue();
 		String type = hl7Provider.getAssigningAuthority().getUniversalIDType().getValue();
-		String errorMessage;
+		String errorMessage = "";
 		if (StringUtils.hasText(id)) {
 			String specificErrorMsg = "";
 			if (OpenmrsUtil.nullSafeEquals("L", type)) {
@@ -1111,8 +1125,8 @@ public class ORUR01Handler implements Application {
 	 *
 	 * @param msh
 	 * @return
-	 * <strong>Should</strong> pass if return value is null when uuid and id is null
-	 * <strong>Should</strong> pass if return value is not null when uuid or id is not null
+	 * @should pass if return value is null when uuid and id is null
+	 * @should pass if return value is not null when uuid or id is not null
 	 * @throws HL7Exception
 	 */
 	public Form getForm(MSH msh) throws HL7Exception {
@@ -1190,7 +1204,11 @@ public class ORUR01Handler implements Application {
 		int sec = (dtm.length() >= 14 ? Integer.parseInt(dtm.substring(12, 14)) : 0);
 		Calendar cal = Calendar.getInstance();
 		cal.set(year, month, day, hour, min, sec);
-		
+		// if (cal.getTimeZone().getRawOffset() != timeZoneOffsetMillis) {
+		// TimeZone tz = (TimeZone)TimeZone.getDefault().clone();
+		// tz.setRawOffset(timeZoneOffsetMillis);
+		// cal.setTimeZone(tz);
+		// }
 		return cal.getTime();
 	}
 	

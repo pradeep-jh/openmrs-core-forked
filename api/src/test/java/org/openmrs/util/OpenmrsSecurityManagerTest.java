@@ -9,10 +9,8 @@
  */
 package org.openmrs.util;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.api.APIException;
 
 /**
@@ -22,19 +20,22 @@ public class OpenmrsSecurityManagerTest {
 	
 	/**
 	 * @see OpenmrsSecurityManager#getCallerClass(int)
+	 * @verifies get the most recently called method
 	 */
 	@Test
-	public void getCallerClass_shouldGetTheMostRecentlyCalledMethod() {
+	public void getCallerClass_shouldGetTheMostRecentlyCalledMethod() throws Exception {
 		OpenmrsSecurityManager openmrsSecurityManager = new OpenmrsSecurityManager();
 		Class<?> callerClass = openmrsSecurityManager.getCallerClass(0);
-		assertTrue(callerClass.getPackage().getName().contains("junit"), "Oops, didn't get a junit type of class: " + callerClass);
+		Assert.assertTrue("Oops, didn't get a junit type of class: " + callerClass, callerClass.getPackage().getName()
+		        .contains("junit"));
 	}
 	
 	/**
 	 * @see OpenmrsSecurityManager#getCallerClass(int)
+	 * @verifies throw an error if given a subzero call stack level
 	 */
-	@Test
-	public void getCallerClass_shouldThrowAnErrorIfGivenASubzeroCallStackLevel() {
-		assertThrows(APIException.class, () -> new OpenmrsSecurityManager().getCallerClass(-1));
+	@Test(expected = APIException.class)
+	public void getCallerClass_shouldThrowAnErrorIfGivenASubzeroCallStackLevel() throws Exception {
+		new OpenmrsSecurityManager().getCallerClass(-1);
 	}
 }

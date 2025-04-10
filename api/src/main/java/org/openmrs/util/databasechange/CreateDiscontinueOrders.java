@@ -18,8 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import org.openmrs.Order;
-
 import liquibase.change.custom.CustomTaskChange;
 import liquibase.database.Database;
 import liquibase.database.jvm.JdbcConnection;
@@ -28,6 +26,8 @@ import liquibase.exception.DatabaseException;
 import liquibase.exception.SetupException;
 import liquibase.exception.ValidationErrors;
 import liquibase.resource.ResourceAccessor;
+
+import org.openmrs.Order;
 
 public class CreateDiscontinueOrders implements CustomTaskChange {
 	
@@ -38,7 +38,10 @@ public class CreateDiscontinueOrders implements CustomTaskChange {
 			List<DiscontinuedOrder> discontinuedOrders = getDiscontinuedOrders(connection);
 			createDiscontinueOrders(connection, discontinuedOrders);
 		}
-		catch (SQLException | DatabaseException e) {
+		catch (SQLException e) {
+			throw new CustomChangeException(e);
+		}
+		catch (DatabaseException e) {
 			throw new CustomChangeException(e);
 		}
 	}
@@ -83,7 +86,10 @@ public class CreateDiscontinueOrders implements CustomTaskChange {
 			insertStatement.executeBatch();
 			connection.commit();
 		}
-		catch (DatabaseException | SQLException e) {
+		catch (DatabaseException e) {
+			handleError(connection, e);
+		}
+		catch (SQLException e) {
 			handleError(connection, e);
 		}
 		finally {
@@ -111,7 +117,7 @@ public class CreateDiscontinueOrders implements CustomTaskChange {
 	
 	private List<DiscontinuedOrder> getDiscontinuedOrders(JdbcConnection connection) throws CustomChangeException,
 	        SQLException {
-		List<DiscontinuedOrder> dcOrders = new ArrayList<>();
+		List<DiscontinuedOrder> dcOrders = new ArrayList<DiscontinuedOrder>();
 		PreparedStatement statement = null;
 		try {
 			statement = connection.prepareStatement("select order_id, concept_id, patient_id, encounter_id, date_stopped, "
@@ -126,7 +132,10 @@ public class CreateDiscontinueOrders implements CustomTaskChange {
 				                .getInt("order_type_id")));
 			}
 		}
-		catch (SQLException | DatabaseException e) {
+		catch (SQLException e) {
+			throw new CustomChangeException(e);
+		}
+		catch (DatabaseException e) {
 			throw new CustomChangeException(e);
 		}
 		finally {

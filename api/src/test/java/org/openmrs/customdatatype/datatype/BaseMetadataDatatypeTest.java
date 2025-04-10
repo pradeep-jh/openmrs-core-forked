@@ -9,10 +9,8 @@
  */
 package org.openmrs.customdatatype.datatype;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.Location;
 import org.openmrs.OpenmrsMetadata;
 import org.openmrs.customdatatype.CustomDatatype;
@@ -20,16 +18,17 @@ import org.openmrs.customdatatype.CustomDatatype;
 public class BaseMetadataDatatypeTest {
 	
 	/**
+	 * @verifies use the name in summary instance
 	 * @see BaseMetadataDatatype#doGetTextSummary(org.openmrs.OpenmrsMetadata)
 	 */
 	@Test
-	public void doGetTextSummary_shouldUseTheNameInSummaryInstance() {
+	public void doGetTextSummary_shouldUseTheNameInSummaryInstance() throws Exception {
 		OpenmrsMetadata location = new Location();
 		String expectedSummary = "some summary";
 		location.setName(expectedSummary);
 		BaseMetadataDatatype datatype = new MockLocationDatatype();
 		CustomDatatype.Summary summary = datatype.doGetTextSummary(location);
-		assertEquals(expectedSummary, summary.getSummary());
-		assertTrue(summary.isComplete());
+		Assert.assertEquals(expectedSummary, summary.getSummary());
+		Assert.assertEquals(true, summary.isComplete());
 	}
 }

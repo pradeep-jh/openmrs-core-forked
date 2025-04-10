@@ -9,24 +9,19 @@
  */
 package org.openmrs.api.db.hibernate;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
-import java.sql.Statement;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Vector;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.hibernate.Criteria;
 import org.hibernate.FlushMode;
-import org.hibernate.MappingException;
-import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.boot.Metadata;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.criterion.MatchMode;
+import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Restrictions;
 import org.hibernate.engine.spi.SessionImplementor;
-import org.hibernate.jdbc.Work;
 import org.hibernate.mapping.Column;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.metadata.ClassMetadata;
@@ -41,8 +36,6 @@ import org.openmrs.api.db.DAOException;
 import org.openmrs.util.DatabaseUtil;
 import org.openmrs.util.HandlerUtil;
 import org.openmrs.util.OpenmrsConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -58,15 +51,16 @@ import org.springframework.validation.Validator;
  */
 public class HibernateAdministrationDAO implements AdministrationDAO, ApplicationContextAware {
 	
-	private static final Logger log = LoggerFactory.getLogger(HibernateAdministrationDAO.class);
-	private static final String PROPERTY = "property";
+	protected Log log = LogFactory.getLog(getClass());
 	
 	/**
 	 * Hibernate session factory
 	 */
 	private SessionFactory sessionFactory;
-
-	private Metadata metadata;
+	
+	private Configuration configuration;
+	
+	private ApplicationContext applicationContext;
 	
 	public HibernateAdministrationDAO() {
 	}
@@ -83,7 +77,6 @@ public class HibernateAdministrationDAO implements AdministrationDAO, Applicatio
 	/**
 	 * @see org.openmrs.api.db.AdministrationDAO#getGlobalProperty(java.lang.String)
 	 */
-	@Override
 	public String getGlobalProperty(String propertyName) throws DAOException {
 		GlobalProperty gp = getGlobalPropertyObject(propertyName);
 		
@@ -94,95 +87,58 @@ public class HibernateAdministrationDAO implements AdministrationDAO, Applicatio
 		
 		return gp.getPropertyValue();
 	}
-
+	
 	/**
 	 * @see org.openmrs.api.db.AdministrationDAO#getGlobalPropertyObject(java.lang.String)
 	 */
-	@Override
 	public GlobalProperty getGlobalPropertyObject(String propertyName) {
-		Session session = sessionFactory.getCurrentSession();
-
 		if (isDatabaseStringComparisonCaseSensitive()) {
-			CriteriaBuilder cb = session.getCriteriaBuilder();
-			CriteriaQuery<GlobalProperty> query = cb.createQuery(GlobalProperty.class);
-			Root<GlobalProperty> root = query.from(GlobalProperty.class);
-
-			Predicate condition = (propertyName != null)
-				? cb.equal(cb.lower(root.get(PROPERTY)), propertyName.toLowerCase())
-				: cb.isNull(root.get(PROPERTY));
-
-			query.where(condition);
-
-			return session.createQuery(query).uniqueResult();
+			Criteria criteria = sessionFactory.getCurrentSession().createCriteria(GlobalProperty.class);
+			GlobalProperty gp = (GlobalProperty) criteria.add(Restrictions.eq("property", propertyName).ignoreCase())
+			        .uniqueResult();
+			return gp;
 		} else {
-			return session.get(GlobalProperty.class, propertyName);
+			return (GlobalProperty) sessionFactory.getCurrentSession().get(GlobalProperty.class, propertyName);
 		}
 	}
-
-	@Override
+	
 	public GlobalProperty getGlobalPropertyByUuid(String uuid) throws DAOException {
-		return HibernateUtil.getUniqueEntityByUUID(sessionFactory, GlobalProperty.class, uuid);
+		GlobalProperty gp = (GlobalProperty) sessionFactory.getCurrentSession()
+		        .createQuery("from GlobalProperty t where t.uuid = :uuid").setString("uuid", uuid).uniqueResult();
+		
+		return gp;
 	}
-
+	
 	/**
 	 * @see org.openmrs.api.db.AdministrationDAO#getAllGlobalProperties()
 	 */
-	@Override
+	@SuppressWarnings("unchecked")
 	public List<GlobalProperty> getAllGlobalProperties() throws DAOException {
-		Session session = sessionFactory.getCurrentSession();
-		CriteriaBuilder cb = session.getCriteriaBuilder();
-		CriteriaQuery<GlobalProperty> query = cb.createQuery(GlobalProperty.class);
-		Root<GlobalProperty> root = query.from(GlobalProperty.class);
-
-		query.orderBy(cb.asc(root.get(PROPERTY)));
-
-		return session.createQuery(query).getResultList();
+		Criteria criteria = sessionFactory.getCurrentSession().createCriteria(GlobalProperty.class);
+		return criteria.addOrder(Order.asc("property")).list();
 	}
 	
 	/**
 	 * @see org.openmrs.api.db.AdministrationDAO#getGlobalPropertiesByPrefix(java.lang.String)
 	 */
-	@Override
+	@SuppressWarnings("unchecked")
 	public List<GlobalProperty> getGlobalPropertiesByPrefix(String prefix) {
-		if (prefix == null) {
-			log.warn("Attempted to get global properties with a null prefix");
-			return Collections.emptyList();
-		}
-
-		Session session = sessionFactory.getCurrentSession();
-		CriteriaBuilder cb = session.getCriteriaBuilder();
-		CriteriaQuery<GlobalProperty> query = cb.createQuery(GlobalProperty.class);
-		Root<GlobalProperty> root = query.from(GlobalProperty.class);
-
-		query.where(cb.like(cb.lower(root.get(PROPERTY)), MatchMode.START.toLowerCasePattern(prefix)));
-
-		return session.createQuery(query).getResultList();
+		return sessionFactory.getCurrentSession().createCriteria(GlobalProperty.class)
+		        .add(Restrictions.ilike("property", prefix, MatchMode.START)).list();
 	}
 	
 	/**
 	 * @see org.openmrs.api.db.AdministrationDAO#getGlobalPropertiesBySuffix(java.lang.String)
 	 */
-	@Override
+	@SuppressWarnings("unchecked")
 	public List<GlobalProperty> getGlobalPropertiesBySuffix(String suffix) {
-		if (suffix == null) {
-			log.warn("Attempted to get global properties with a null suffix");
-			return Collections.emptyList();
-		}
-
-		Session session = sessionFactory.getCurrentSession();
-		CriteriaBuilder cb = session.getCriteriaBuilder();
-		CriteriaQuery<GlobalProperty> query = cb.createQuery(GlobalProperty.class);
-		Root<GlobalProperty> root = query.from(GlobalProperty.class);
-
-		query.where(cb.like(cb.lower(root.get(PROPERTY)), MatchMode.END.toLowerCasePattern(suffix)));
-
-		return session.createQuery(query).getResultList();
+		return sessionFactory.getCurrentSession().createCriteria(GlobalProperty.class)
+		        .add(Restrictions.ilike("property", suffix, MatchMode.END)).list();
 	}
 	
 	/**
 	 * @see org.openmrs.api.db.AdministrationDAO#deleteGlobalProperty(GlobalProperty)
 	 */
-	@Override
 	public void deleteGlobalProperty(GlobalProperty property) throws DAOException {
 		sessionFactory.getCurrentSession().delete(property);
 	}
@@ -190,7 +146,6 @@ public class HibernateAdministrationDAO implements AdministrationDAO, Applicatio
 	/**
 	 * @see org.openmrs.api.db.AdministrationDAO#saveGlobalProperty(org.openmrs.GlobalProperty)
 	 */
-	@Override
 	public GlobalProperty saveGlobalProperty(GlobalProperty gp) throws DAOException {
 		GlobalProperty gpObject = getGlobalPropertyObject(gp.getProperty());
 		if (gpObject != null) {
@@ -207,7 +162,6 @@ public class HibernateAdministrationDAO implements AdministrationDAO, Applicatio
 	/**
 	 * @see org.openmrs.api.db.AdministrationDAO#executeSQL(java.lang.String, boolean)
 	 */
-	@Override
 	public List<List<Object>> executeSQL(String sql, boolean selectOnly) throws DAOException {
 		
 		// (solution for junit tests that usually use hsql
@@ -221,7 +175,13 @@ public class HibernateAdministrationDAO implements AdministrationDAO, Applicatio
 	
 	@Override
 	public int getMaximumPropertyLength(Class<? extends OpenmrsObject> aClass, String fieldName) {
-		PersistentClass persistentClass = metadata.getEntityBinding(aClass.getName().split("_")[0]);
+		if (configuration == null) {
+			HibernateSessionFactoryBean sessionFactoryBean = (HibernateSessionFactoryBean) applicationContext
+			        .getBean("&sessionFactory");
+			configuration = sessionFactoryBean.getConfiguration();
+		}
+		
+		PersistentClass persistentClass = configuration.getClassMapping(aClass.getName().split("_")[0]);
 		if (persistentClass == null) {
 			throw new APIException("Couldn't find a class in the hibernate configuration named: " + aClass.getName());
 		} else {
@@ -239,35 +199,27 @@ public class HibernateAdministrationDAO implements AdministrationDAO, Applicatio
 	
 	@Override
 	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-		HibernateSessionFactoryBean sessionFactoryBean = (HibernateSessionFactoryBean) applicationContext
-		        .getBean("&sessionFactory");
-		metadata = sessionFactoryBean.getMetadata();
+		this.applicationContext = applicationContext;
 	}
 	
 	/**
 	 * @see org.openmrs.api.db.AdministrationDAO#validate(java.lang.Object, Errors)
-	 * <strong>Should</strong> Pass validation if field lengths are correct
-	 * <strong>Should</strong> Fail validation if field lengths are not correct
-	 * <strong>Should</strong> Fail validation for location class if field lengths are not correct
-	 * <strong>Should</strong> Pass validation for location class if field lengths are correct
+	 * @should Pass validation if field lengths are correct
+	 * @should Fail validation if field lengths are not correct
+	 * @should Fail validation for location class if field lengths are not correct
+	 * @should Pass validation for location class if field lengths are correct
 	 */
 	
 	//@SuppressWarnings({ "deprecation", "unchecked", "rawtypes" })
 	@Override
 	public void validate(Object object, Errors errors) throws DAOException {
 		Class entityClass = object.getClass();
-		ClassMetadata metadata = null;
-		try {
-			metadata = sessionFactory.getClassMetadata(entityClass);
-		}
-		catch (MappingException ex) {
-			log.debug(entityClass + " is not a hibernate mapped entity", ex);
-		}
+		ClassMetadata metadata = sessionFactory.getClassMetadata(entityClass);
 		if (metadata != null) {
 			String[] propNames = metadata.getPropertyNames();
-			Object identifierType = metadata.getIdentifierType();
+			Object IdentifierTpye = metadata.getIdentifierType();
 			String identifierName = metadata.getIdentifierPropertyName();
-			if (identifierType instanceof StringType || identifierType instanceof TextType) {
+			if (IdentifierTpye instanceof StringType || IdentifierTpye instanceof TextType) {
 				int maxLength = getMaximumPropertyLength(entityClass, identifierName);
 				String identifierValue = (String) metadata.getIdentifier(object,
 				    (SessionImplementor) sessionFactory.getCurrentSession());
@@ -280,23 +232,23 @@ public class HibernateAdministrationDAO implements AdministrationDAO, Applicatio
 					}
 				}
 			}
-			for (String propName : propNames) {
-				Type propType = metadata.getPropertyType(propName);
+			for (int i = 0; i < propNames.length; i++) {
+				Type propType = metadata.getPropertyType(propNames[i]);
 				if (propType instanceof StringType || propType instanceof TextType) {
-					String propertyValue = (String) metadata.getPropertyValue(object, propName);
+					String propertyValue = (String) metadata.getPropertyValue(object, propNames[i]);
 					if (propertyValue != null) {
-						int maxLength = getMaximumPropertyLength(entityClass, propName);
+						int maxLength = getMaximumPropertyLength(entityClass, propNames[i]);
 						int propertyValueLength = propertyValue.length();
 						if (propertyValueLength > maxLength) {
-							errors.rejectValue(propName, "error.exceededMaxLengthOfField", new Object[] { maxLength },
-									null);
+							errors.rejectValue(propNames[i], "error.exceededMaxLengthOfField", new Object[] { maxLength },
+							    null);
 						}
 					}
 				}
 			}
 		}
-		FlushMode previousFlushMode = sessionFactory.getCurrentSession().getHibernateFlushMode();
-		sessionFactory.getCurrentSession().setHibernateFlushMode(FlushMode.MANUAL);
+		FlushMode previousFlushMode = sessionFactory.getCurrentSession().getFlushMode();
+		sessionFactory.getCurrentSession().setFlushMode(FlushMode.MANUAL);
 		try {
 			for (Validator validator : getValidators(object)) {
 				validator.validate(object, errors);
@@ -305,7 +257,7 @@ public class HibernateAdministrationDAO implements AdministrationDAO, Applicatio
 		}
 		
 		finally {
-			sessionFactory.getCurrentSession().setHibernateFlushMode(previousFlushMode);
+			sessionFactory.getCurrentSession().setFlushMode(previousFlushMode);
 		}
 		
 	}
@@ -317,8 +269,8 @@ public class HibernateAdministrationDAO implements AdministrationDAO, Applicatio
 	 * @return list of compatible validators
 	 */
 	protected List<Validator> getValidators(Object obj) {
-		List<Validator> matchingValidators = new ArrayList<>();
-
+		List<Validator> matchingValidators = new Vector<Validator>();
+		
 		List<Validator> validators = HandlerUtil.getHandlersForType(Validator.class, obj.getClass());
 		
 		for (Validator validator : validators) {
@@ -338,95 +290,6 @@ public class HibernateAdministrationDAO implements AdministrationDAO, Applicatio
 			return Boolean.valueOf(gp.getPropertyValue());
 		} else {
 			return true;
-		}
-	}
-	
-	/**
-	 * Updates PostgreSQL Sequences after core data insertion
-	 * 
-	 * @see org.openmrs.api.db.AdministrationDAO#updatePostgresSequence()
-	 */
-	@Override
-	public void updatePostgresSequence() throws DAOException {
-		
-		if (HibernateUtil.isPostgreSQLDialect(sessionFactory)) {
-			
-			// All the required PostgreSQL sequences that need to be updated
-			String postgresSequences = "SELECT setval('person_person_id_seq', (SELECT MAX(person_id) FROM person)+1);"
-			        + "SELECT setval('person_name_person_name_id_seq', (SELECT MAX(person_name_id) FROM person_name)+1);"
-			        + "SELECT setval('person_attribute_type_person_attribute_type_id_seq', (SELECT MAX(person_attribute_type_id) FROM person_attribute_type)+1);"
-			        + "SELECT setval('relationship_type_relationship_type_id_seq', (SELECT MAX(relationship_type_id) FROM relationship_type)+1);"
-			        + "SELECT setval('users_user_id_seq', (SELECT MAX(user_id) FROM users)+1);"
-			        + "SELECT setval('care_setting_care_setting_id_seq', (SELECT MAX(care_setting_id) FROM care_setting)+1);"
-			        + "SELECT setval('concept_datatype_concept_datatype_id_seq', (SELECT MAX(concept_datatype_id) FROM concept_datatype)+1);"
-			        + "SELECT setval('concept_map_type_concept_map_type_id_seq', (SELECT MAX(concept_map_type_id) FROM concept_map_type)+1);"
-			        + "SELECT setval('concept_stop_word_concept_stop_word_id_seq', (SELECT MAX(concept_stop_word_id) FROM concept_stop_word)+1);"
-			        + "SELECT setval('concept_concept_id_seq', (SELECT MAX(concept_id) FROM concept)+1);"
-			        + "SELECT setval('concept_name_concept_name_id_seq', (SELECT MAX(concept_name_id) FROM concept_name)+1);"
-			        + "SELECT setval('concept_class_concept_class_id_seq', (SELECT MAX(concept_class_id) FROM concept_class)+1);"
-			        + "SELECT setval('concept_reference_source_concept_source_id_seq', (SELECT MAX(concept_source_id) FROM concept_reference_source)+1);"
-			        + "SELECT setval('encounter_role_encounter_role_id_seq', (SELECT MAX(encounter_role_id) FROM encounter_role)+1);"
-			        + "SELECT setval('field_type_field_type_id_seq', (SELECT MAX(field_type_id) FROM field_type)+1);"
-			        + "SELECT setval('hl7_source_hl7_source_id_seq', (SELECT MAX(hl7_source_id) FROM hl7_source)+1);"
-			        + "SELECT setval('location_location_id_seq', (SELECT MAX(location_id) FROM location)+1);"
-			        + "SELECT setval('encounter_encounter_id_seq', (SELECT MAX(encounter_id) FROM encounter)+1);"
-			        + "SELECT setval('concept_description_concept_description_id_seq', (SELECT MAX(concept_description_id) FROM concept_description)+1);"
-			        + "SELECT setval('conditions_condition_id_seq', (SELECT MAX(condition_id) FROM conditions)+1);"
-			        + "SELECT setval('encounter_diagnosis_diagnosis_id_seq', (SELECT MAX(diagnosis_id) FROM encounter_diagnosis)+1);"
-			        + "SELECT setval('diagnosis_attribute_type_diagnosis_attribute_type_id_seq', (SELECT MAX(diagnosis_attribute_type_id) FROM diagnosis_attribute_type)+1);"
-			        + "SELECT setval('visit_visit_id_seq', (SELECT MAX(visit_id) FROM visit)+1);"
-			        + "SELECT setval('concept_reference_term_concept_reference_term_id_seq', (SELECT MAX(concept_reference_term_id) FROM concept_reference_term)+1);"
-			        + "SELECT setval('orders_order_id_seq', (SELECT MAX(order_id) FROM orders)+1);"
-			        + "SELECT setval('order_group_order_group_id_seq', (SELECT MAX(order_group_id) FROM order_group)+1);"
-			        + "SELECT setval('concept_reference_map_concept_map_id_seq', (SELECT MAX(concept_map_id) FROM concept_reference_map)+1);"
-			        + "SELECT setval('order_group_attribute_type_order_group_attribute_type_id_seq', (SELECT MAX(order_group_attribute_type_id) FROM order_group_attribute_type)+1);"
-			        + "SELECT setval('encounter_provider_encounter_provider_id_seq', (SELECT MAX(encounter_provider_id) FROM encounter_provider)+1);"
-			        + "SELECT setval('provider_attribute_type_provider_attribute_type_id_seq', (SELECT MAX(provider_attribute_type_id) FROM provider_attribute_type)+1);"
-			        + "SELECT setval('program_attribute_type_program_attribute_type_id_seq', (SELECT MAX(program_attribute_type_id) FROM program_attribute_type)+1);"
-			        + "SELECT setval('concept_state_conversion_concept_state_conversion_id_seq', (SELECT MAX(concept_state_conversion_id) FROM concept_state_conversion)+1);"
-			        + "SELECT setval('program_program_id_seq', (SELECT MAX(program_id) FROM program)+1);"
-			        + "SELECT setval('concept_attribute_type_concept_attribute_type_id_seq', (SELECT MAX(concept_attribute_type_id) FROM concept_attribute_type)+1);"
-			        + "SELECT setval('concept_name_tag_concept_name_tag_id_seq', (SELECT MAX(concept_name_tag_id) FROM concept_name_tag)+1);"
-			        + "SELECT setval('allergy_reaction_allergy_reaction_id_seq', (SELECT MAX(allergy_reaction_id) FROM allergy_reaction)+1);"
-			        + "SELECT setval('cohort_cohort_id_seq', (SELECT MAX(cohort_id) FROM cohort)+1);"
-			        + "SELECT setval('cohort_member_cohort_member_id_seq', (SELECT MAX(cohort_member_id) FROM cohort_member)+1);"
-			        + "SELECT setval('visit_type_visit_type_id_seq', (SELECT MAX(visit_type_id) FROM visit_type)+1);"
-			        + "SELECT setval('visit_attribute_type_visit_attribute_type_id_seq', (SELECT MAX(visit_attribute_type_id) FROM visit_attribute_type)+1);"
-			        + "SELECT setval('order_attribute_type_order_attribute_type_id_seq', (SELECT MAX(order_attribute_type_id) FROM order_attribute_type)+1);"
-			        + "SELECT setval('medication_dispense_medication_dispense_id_seq', (SELECT MAX(medication_dispense_id) FROM medication_dispense)+1);"
-			        + "SELECT setval('order_set_attribute_type_order_set_attribute_type_id_seq', (SELECT MAX(order_set_attribute_type_id) FROM order_set_attribute_type)+1);"
-			        + "SELECT setval('person_address_person_address_id_seq', (SELECT MAX(person_address_id) FROM person_address)+1);"
-			        + "SELECT setval('patient_identifier_patient_identifier_id_seq', (SELECT MAX(patient_identifier_id) FROM patient_identifier)+1);"
-			        + "SELECT setval('relationship_relationship_id_seq', (SELECT MAX(relationship_id) FROM relationship)+1);"
-			        + "SELECT setval('provider_provider_id_seq', (SELECT MAX(provider_id) FROM provider)+1);"
-			        + "SELECT setval('encounter_type_encounter_type_id_seq', (SELECT MAX(encounter_type_id) FROM encounter_type)+1);"
-			        + "SELECT setval('person_attribute_person_attribute_id_seq', (SELECT MAX(person_attribute_id) FROM person_attribute)+1);"
-			        + "SELECT setval('allergy_allergy_id_seq', (SELECT MAX(allergy_id) FROM allergy)+1);"
-			        + "SELECT setval('location_attribute_type_location_attribute_type_id_seq', (SELECT MAX(location_attribute_type_id) FROM location_attribute_type)+1);"
-			        + "SELECT setval('order_frequency_order_frequency_id_seq', (SELECT MAX(order_frequency_id) FROM order_frequency)+1);"
-			        + "SELECT setval('patient_program_patient_program_id_seq', (SELECT MAX(patient_program_id) FROM patient_program)+1);"
-			        + "SELECT setval('form_field_form_field_id_seq', (SELECT MAX(form_field_id) FROM form_field)+1);"
-			        + "SELECT setval('concept_proposal_concept_proposal_id_seq', (SELECT MAX(concept_proposal_id) FROM concept_proposal)+1);"
-			        + "SELECT setval('program_workflow_program_workflow_id_seq', (SELECT MAX(program_workflow_id) FROM program_workflow)+1);"
-			        + "SELECT setval('program_workflow_state_program_workflow_state_id_seq', (SELECT MAX(program_workflow_state_id) FROM program_workflow_state)+1);"
-			        + "SELECT setval('patient_state_patient_state_id_seq', (SELECT MAX(patient_state_id) FROM patient_state)+1);"
-			        + "SELECT setval('obs_obs_id_seq', (SELECT MAX(obs_id) FROM obs)+1);"
-			        + "SELECT setval('order_type_order_type_id_seq', (SELECT MAX(order_type_id) FROM order_type)+1);"
-			        + "SELECT setval('patient_identifier_type_patient_identifier_type_id_seq', (SELECT MAX(patient_identifier_type_id) FROM patient_identifier_type)+1);"
-			        + "SELECT setval('scheduler_task_config_task_config_id_seq', (SELECT MAX(task_config_id) FROM scheduler_task_config)+1);"
-			        + "SELECT setval('scheduler_task_config_property_task_config_property_id_seq', (SELECT MAX(task_config_property_id) FROM scheduler_task_config_property)+1)"
-			        + "";
-			Session session = sessionFactory.getCurrentSession();
-			
-			session.doWork(new Work() {
-				
-				@Override
-				public void execute(Connection con) throws SQLException {
-					Statement stmt = con.createStatement();
-					stmt.addBatch(postgresSequences);
-					stmt.executeBatch();
-				}
-			});
 		}
 	}
 }

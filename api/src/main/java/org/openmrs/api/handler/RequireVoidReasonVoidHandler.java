@@ -11,7 +11,7 @@ package org.openmrs.api.handler;
 
 import java.util.Date;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.openmrs.Cohort;
 import org.openmrs.Encounter;
 import org.openmrs.Obs;
@@ -35,13 +35,12 @@ public class RequireVoidReasonVoidHandler implements VoidHandler<Voidable> {
 	/**
 	 * Validates that the voidReason is non-null and non-empty for supported objects
 	 * 
-	 * <strong>Should</strong> throw IllegalArgumentException if Patient voidReason is null
-	 * <strong>Should</strong> throw IllegalArgumentException if Encounter voidReason is empty
-	 * <strong>Should</strong> throw IllegalArgumentException if Obs voidReason is blank
-	 * <strong>Should</strong> not throw Exception if voidReason is not blank
-	 * <strong>Should</strong> not throw Exception if voidReason is null for unsupported types
+	 * @should throw IllegalArgumentException if Patient voidReason is null
+	 * @should throw IllegalArgumentException if Encounter voidReason is empty
+	 * @should throw IllegalArgumentException if Obs voidReason is blank
+	 * @should not throw Exception if voidReason is not blank
+	 * @should not throw Exception if voidReason is null for unsupported types
 	 */
-	@Override
 	public void handle(Voidable voidableObject, User voidingUser, Date voidedDate, String voidReason) {
 		
 		if (StringUtils.isBlank(voidReason)) {

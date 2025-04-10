@@ -9,16 +9,16 @@
  */
 package org.openmrs.api.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.openmrs.serialization.OpenmrsSerializer;
 import org.openmrs.serialization.SerializationException;
+import org.openmrs.test.Verifies;
 
 /**
  * Tests the {@link SerializationServiceImpl} class
@@ -33,7 +33,7 @@ public class SerializationServiceImplTest {
 	 * 
 	 * @see #restoreSerializers()
 	 */
-	@BeforeAll
+	@BeforeClass
 	public static void clearSerializers() {
 		SerializationServiceImpl ssi = new SerializationServiceImpl();
 		currentSerializers = ssi.getSerializers();
@@ -44,15 +44,16 @@ public class SerializationServiceImplTest {
 	 * @see SerializationServiceImpl#setSerializers(List<OpenmrsSerializer>)
 	 */
 	@Test
-	public void setSerializers_shouldNotResetSerializersListWhenCalledMultipleTimes() {
+	@Verifies(value = "should not reset serializers list when called multiple times", method = "setSerializers(List<+QOpenmrsSerializer;>)")
+	public void setSerializers_shouldNotResetSerializersListWhenCalledMultipleTimes() throws Exception {
 		SerializationServiceImpl ssi = new SerializationServiceImpl();
-		assertEquals(0, ssi.getSerializers().size());
+		Assert.assertEquals(0, ssi.getSerializers().size());
 		
 		ssi.setSerializers(Collections.singletonList(new MockSerializer1()));
-		assertEquals(1, ssi.getSerializers().size());
+		Assert.assertEquals(1, ssi.getSerializers().size());
 		
 		ssi.setSerializers(Collections.singletonList(new MockSerializer2()));
-		assertEquals(2, ssi.getSerializers().size());
+		Assert.assertEquals(2, ssi.getSerializers().size());
 	}
 	
 	class MockSerializer1 implements OpenmrsSerializer {
@@ -64,7 +65,6 @@ public class SerializationServiceImplTest {
 		 * @see org.openmrs.serialization.OpenmrsSerializer#deserialize(java.lang.String,
 		 *      java.lang.Class)
 		 */
-		@Override
 		public <T> T deserialize(String serializedObject, Class<? extends T> clazz) throws SerializationException {
 			return null;
 		}
@@ -72,7 +72,6 @@ public class SerializationServiceImplTest {
 		/**
 		 * @see org.openmrs.serialization.OpenmrsSerializer#serialize(java.lang.Object)
 		 */
-		@Override
 		public String serialize(Object o) throws SerializationException {
 			return null;
 		}
@@ -88,7 +87,6 @@ public class SerializationServiceImplTest {
 		 * @see org.openmrs.serialization.OpenmrsSerializer#deserialize(java.lang.String,
 		 *      java.lang.Class)
 		 */
-		@Override
 		public <T> T deserialize(String serializedObject, Class<? extends T> clazz) throws SerializationException {
 			return null;
 		}
@@ -96,7 +94,6 @@ public class SerializationServiceImplTest {
 		/**
 		 * @see org.openmrs.serialization.OpenmrsSerializer#serialize(java.lang.Object)
 		 */
-		@Override
 		public String serialize(Object o) throws SerializationException {
 			return null;
 		}
@@ -107,7 +104,7 @@ public class SerializationServiceImplTest {
 	 * Clear out what we did in this class and restore the serializers that were on the
 	 * {@link SerializationServiceImpl} class before we started
 	 */
-	@AfterAll
+	@AfterClass
 	public static void restoreSerializers() {
 		SerializationServiceImpl ssi = new SerializationServiceImpl();
 		ssi.setSerializers(null); // clear out our serializers

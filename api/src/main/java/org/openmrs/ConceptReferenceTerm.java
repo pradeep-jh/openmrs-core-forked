@@ -9,13 +9,12 @@
  */
 package org.openmrs;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
-
-import org.hibernate.envers.Audited;
 import org.hibernate.search.annotations.Analyze;
 import org.hibernate.search.annotations.DocumentId;
 import org.hibernate.search.annotations.Field;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * A concept reference term is typically name for a concept by which it is referred in another
@@ -24,8 +23,7 @@ import org.hibernate.search.annotations.Field;
  *
  * @since 1.9
  */
-@Audited
-public class ConceptReferenceTerm extends BaseChangeableOpenmrsMetadata {
+public class ConceptReferenceTerm extends BaseOpenmrsMetadata {
 	
 	private static final long serialVersionUID = 1L;
 	
@@ -126,7 +124,7 @@ public class ConceptReferenceTerm extends BaseChangeableOpenmrsMetadata {
 	 */
 	public Set<ConceptReferenceTermMap> getConceptReferenceTermMaps() {
 		if (conceptReferenceTermMaps == null) {
-			conceptReferenceTermMaps = new LinkedHashSet<>();
+			conceptReferenceTermMaps = new LinkedHashSet<ConceptReferenceTermMap>();
 		}
 		return conceptReferenceTermMaps;
 	}
@@ -160,9 +158,9 @@ public class ConceptReferenceTerm extends BaseChangeableOpenmrsMetadata {
 	 * object for this concept reference term already, this one will not be added.
 	 *
 	 * @param conceptReferenceTermMap
-	 * <strong>Should</strong> not add a map where termB is itself
-	 * <strong>Should</strong> set termA as the term to which a mapping is being added
-	 * <strong>Should</strong> not add duplicate concept reference term maps
+	 * @should not add a map where termB is itself
+	 * @should set termA as the term to which a mapping is being added
+	 * @should not add duplicate concept reference term maps
 	 */
 	public void addConceptReferenceTermMap(ConceptReferenceTermMap conceptReferenceTermMap) {
 		if (conceptReferenceTermMap != null && conceptReferenceTermMap.getTermB() != null
@@ -170,7 +168,7 @@ public class ConceptReferenceTerm extends BaseChangeableOpenmrsMetadata {
 			//can't map a term to itself
 			conceptReferenceTermMap.setTermA(this);
 			if (conceptReferenceTermMaps == null) {
-				conceptReferenceTermMaps = new LinkedHashSet<>();
+				conceptReferenceTermMaps = new LinkedHashSet<ConceptReferenceTermMap>();
 			}
 			if (!conceptReferenceTermMaps.contains(conceptReferenceTermMap)) {
 				conceptReferenceTermMaps.add(conceptReferenceTermMap);

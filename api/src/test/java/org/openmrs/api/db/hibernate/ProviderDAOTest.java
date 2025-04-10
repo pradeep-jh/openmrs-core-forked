@@ -9,21 +9,18 @@
  */
 package org.openmrs.api.db.hibernate;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.Collection;
-import java.util.List;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import org.openmrs.Person;
 import org.openmrs.Provider;
 import org.openmrs.api.db.PersonDAO;
 import org.openmrs.api.db.ProviderDAO;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.Collection;
+import java.util.List;
 
 public class ProviderDAOTest extends BaseContextSensitiveTest {
 	
@@ -40,35 +37,38 @@ public class ProviderDAOTest extends BaseContextSensitiveTest {
 	 * 
 	 * @throws Exception
 	 */
-	@BeforeEach
-	public void runBeforeEachTest() {
+	@Before
+	public void runBeforeEachTest() throws Exception {
 		executeDataSet(PROVIDERS_INITIAL_XML);
 	}
 	
 	/**
 	 * @see ProviderDAO#getProvidersByPerson(Person,boolean)
+	 * @verifies not return retired providers if includeRetired false
 	 */
 	@Test
-	public void getProvidersByPerson_shouldNotReturnRetiredProvidersIfIncludeRetiredFalse() {
+	public void getProvidersByPerson_shouldNotReturnRetiredProvidersIfIncludeRetiredFalse() throws Exception {
 		Collection<Provider> providers = providerDao.getProvidersByPerson(personDao.getPerson(2), false);
-		assertEquals(1, providers.size());
-		assertFalse(providers.iterator().next().getRetired());
+		Assert.assertEquals(1, providers.size());
+		Assert.assertFalse(providers.iterator().next().isRetired());
 	}
 	
 	/**
 	 * @see ProviderDAO#getProvidersByPerson(Person,boolean)
+	 * @verifies list retired providers at the end
 	 */
 	@Test
-	public void getProvidersByPerson_shouldListRetiredProvidersAtTheEnd() {
+	public void getProvidersByPerson_shouldListRetiredProvidersAtTheEnd() throws Exception {
 		List<Provider> providers = (List<Provider>) providerDao.getProvidersByPerson(personDao.getPerson(2), true);
-		assertTrue(providers.get(1).getRetired());
+		Assert.assertEquals(true, providers.get(1).getRetired());
 	}
 	
 	/**
 	 * @see ProviderDAO#getProvidersByPerson(Person,boolean)
+	 * @verifies return all providers if includeRetired true
 	 */
 	@Test
-	public void getProvidersByPerson_shouldReturnAllProvidersIfIncludeRetiredTrue() {
-		assertEquals(2, providerDao.getProvidersByPerson(personDao.getPerson(2), true).size());
+	public void getProvidersByPerson_shouldReturnAllProvidersIfIncludeRetiredTrue() throws Exception {
+		Assert.assertEquals(2, providerDao.getProvidersByPerson(personDao.getPerson(2), true).size());
 	}
 }

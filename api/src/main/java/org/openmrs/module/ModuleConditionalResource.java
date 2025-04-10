@@ -11,7 +11,6 @@ package org.openmrs.module;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Allows to specify a conditionally loaded resource in a module based on
@@ -25,7 +24,7 @@ public class ModuleConditionalResource {
 	
 	private String openmrsPlatformVersion;
 	
-	private List<ModuleAndVersion> modules = new ArrayList<>();
+	private List<ModuleAndVersion> modules = new ArrayList<ModuleAndVersion>();
 	
 	public String getPath() {
 		return path;
@@ -66,14 +65,18 @@ public class ModuleConditionalResource {
 			return false;
 		}
 		ModuleConditionalResource that = (ModuleConditionalResource) o;
-
-		if (!Objects.equals(modules, that.modules)) {
+		
+		if (modules != null ? !modules.equals(that.modules) : that.modules != null) {
 			return false;
 		}
-		if (!Objects.equals(openmrsPlatformVersion, that.openmrsPlatformVersion)) {
+		if (openmrsPlatformVersion != null ? !openmrsPlatformVersion.equals(that.openmrsPlatformVersion) : that.openmrsPlatformVersion != null) {
 			return false;
 		}
-		return Objects.equals(path, that.path);
+		if (path != null ? !path.equals(that.path) : that.path != null) {
+			return false;
+		}
+		
+		return true;
 	}
 	
 	@Override
@@ -121,11 +124,15 @@ public class ModuleConditionalResource {
 				return false;
 			}
 			ModuleAndVersion that = (ModuleAndVersion) o;
-
-			if (!Objects.equals(moduleId, that.moduleId)) {
+			
+			if (moduleId != null ? !moduleId.equals(that.moduleId) : that.moduleId != null) {
 				return false;
 			}
-			return Objects.equals(version, that.version);
+			if (version != null ? !version.equals(that.version) : that.version != null) {
+				return false;
+			}
+			
+			return true;
 		}
 		
 		@Override

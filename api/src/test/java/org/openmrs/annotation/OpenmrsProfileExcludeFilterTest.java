@@ -9,52 +9,55 @@
  */
 package org.openmrs.annotation;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
-import org.junit.jupiter.api.Test;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.junit.Test;
+import org.openmrs.test.BaseContextSensitiveTest;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 
 public class OpenmrsProfileExcludeFilterTest extends BaseContextSensitiveTest {
 	
 	/**
+	 * @verifies not include bean for openmrs from 1_6 to 1_7
 	 * @see OpenmrsProfileExcludeFilter#match(org.springframework.core.type.classreading.MetadataReader, org.springframework.core.type.classreading.MetadataReaderFactory)
 	 */
-	@Test
-	public void match_shouldNotIncludeBeanForOpenmrsFrom1_6To1_7() {
-		assertThrows(NoSuchBeanDefinitionException.class, () -> applicationContext.getBean(OpenmrsProfile1_6To1_7.class));
+	@Test(expected = NoSuchBeanDefinitionException.class)
+	public void match_shouldNotIncludeBeanForOpenmrsFrom1_6To1_7() throws Exception {
+		applicationContext.getBean(OpenmrsProfile1_6To1_7.class);
 	}
 	
 	/**
+	 * @verifies include bean for openmrs 1_10 and later
 	 * @see OpenmrsProfileExcludeFilter#match(org.springframework.core.type.classreading.MetadataReader, org.springframework.core.type.classreading.MetadataReaderFactory)
 	 */
 	@Test
-	public void match_shouldIncludeBeanForOpenmrs1_10AndLater() {
+	public void match_shouldIncludeBeanForOpenmrs1_10AndLater() throws Exception {
 		OpenmrsProfile1_10 bean = applicationContext.getBean(OpenmrsProfile1_10.class);
 		
 		assertThat(bean, is(notNullValue()));
 	}
 	
 	/**
+	 * @verifies include bean for openmrs 1_8 and later
 	 * @see OpenmrsProfileExcludeFilter#match(org.springframework.core.type.classreading.MetadataReader, org.springframework.core.type.classreading.MetadataReaderFactory)
 	 */
 	@Test
-	public void match_shouldIncludeBeanForOpenmrs1_8AndLater() {
+	public void match_shouldIncludeBeanForOpenmrs1_8AndLater() throws Exception {
 		OpenmrsProfile1_8 bean = applicationContext.getBean(OpenmrsProfile1_8.class);
 		
 		assertThat(bean, is(notNullValue()));
 	}
 	
 	/**
+	 * @verifies not include bean for openmrs 1_8 and later if module missing
 	 * @see OpenmrsProfileExcludeFilter#match(org.springframework.core.type.classreading.MetadataReader, org.springframework.core.type.classreading.MetadataReaderFactory)
 	 */
-	@Test
-	public void match_shouldNotIncludeBeanForOpenmrs1_8AndLaterIfModuleMissing() {
-		assertThrows(NoSuchBeanDefinitionException.class, () -> applicationContext.getBean(OpenmrsProfile1_8WithHtmlformentry.class));
+	@Test(expected = NoSuchBeanDefinitionException.class)
+	public void match_shouldNotIncludeBeanForOpenmrs1_8AndLaterIfModuleMissing() throws Exception {
+		applicationContext.getBean(OpenmrsProfile1_8WithHtmlformentry.class);
 	}
 	
 	@Test
@@ -74,15 +77,5 @@ public class OpenmrsProfileExcludeFilterTest extends BaseContextSensitiveTest {
 	@Test
 	public void shouldNotBeIgnoredIfOpenmrsVersionDoesMatch() {
 		assumeOpenmrsPlatformVersion("1.9");
-	}
-	
-	/**
-	 * @see OpenmrsProfileExcludeFilter#match(org.springframework.core.type.classreading.MetadataReader, org.springframework.core.type.classreading.MetadataReaderFactory)
-	 */
-	@Test
-	public void match_shouldIncludeBeanIfModuleMissing() {
-		OpenmrsProfileWithoutMissingModule bean = applicationContext.getBean(OpenmrsProfileWithoutMissingModule.class);
-		
-		assertThat(bean, is(notNullValue()));
 	}
 }

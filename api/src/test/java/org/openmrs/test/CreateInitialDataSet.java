@@ -15,9 +15,8 @@ import org.dbunit.database.DatabaseConnection;
 import org.dbunit.database.IDatabaseConnection;
 import org.dbunit.database.QueryDataSet;
 import org.dbunit.dataset.xml.FlatXmlDataSet;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * This class can be run like a junit test, but it is not actually a test. JUnit won't run it
@@ -25,7 +24,7 @@ import org.openmrs.test.jupiter.BaseContextSensitiveTest;
  * {@link BaseContextSensitiveTest#INITIAL_DATA_SET_XML_FILENAME} file is overwritten by values in
  * the database defined by the runtime properties
  */
-@Disabled
+@Ignore
 public class CreateInitialDataSet extends BaseContextSensitiveTest {
 	
 	/**
@@ -117,7 +116,7 @@ public class CreateInitialDataSet extends BaseContextSensitiveTest {
 	 * Make sure we use the database defined by the runtime properties and not the hsql in-memory
 	 * database
 	 * 
-	 * @see BaseContextSensitiveTest#useInMemoryDatabase()
+	 * @see org.openmrs.test.BaseContextSensitiveTest#useInMemoryDatabase()
 	 */
 	@Override
 	public Boolean useInMemoryDatabase() {

@@ -9,6 +9,18 @@
  */
 package org.openmrs;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.openmrs.annotation.AllowDirectAccess;
+import org.openmrs.api.APIException;
+import org.openmrs.api.context.Context;
+import org.openmrs.obs.ComplexData;
+import org.openmrs.obs.ComplexObsHandler;
+import org.openmrs.util.Format;
+import org.openmrs.util.Format.FORMAT_TYPE;
+import org.openmrs.util.OpenmrsUtil;
+
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -16,23 +28,10 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
-
-import org.apache.commons.lang3.StringUtils;
-import org.hibernate.envers.Audited;
-import org.openmrs.annotation.AllowDirectAccess;
-import org.openmrs.api.APIException;
-import org.openmrs.api.context.Context;
-import org.openmrs.api.db.hibernate.HibernateUtil;
-import org.openmrs.obs.ComplexData;
-import org.openmrs.obs.ComplexObsHandler;
-import org.openmrs.util.Format;
-import org.openmrs.util.Format.FORMAT_TYPE;
-import org.openmrs.util.OpenmrsUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * An observation is a single unit of clinical information. <br>
@@ -63,21 +62,38 @@ import org.slf4j.LoggerFactory;
  * 
  * @see Encounter
  */
-@Audited
-public class Obs extends BaseFormRecordableOpenmrsData {
+public class Obs extends BaseOpenmrsData {
 	
 	/**
 	 * @since 2.1.0
 	 */
 	public enum Interpretation {
-		NORMAL, ABNORMAL, CRITICALLY_ABNORMAL, NEGATIVE, POSITIVE, CRITICALLY_LOW, LOW, HIGH, CRITICALLY_HIGH, VERY_SUSCEPTIBLE, SUSCEPTIBLE, INTERMEDIATE, RESISTANT, SIGNIFICANT_CHANGE_DOWN, SIGNIFICANT_CHANGE_UP, OFF_SCALE_LOW, OFF_SCALE_HIGH
+		NORMAL,
+		ABNORMAL,
+		CRITICALLY_ABNORMAL,
+		NEGATIVE,
+		POSITIVE,
+		CRITICALLY_LOW,
+		LOW,
+		HIGH,
+		CRITICALLY_HIGH,
+		VERY_SUSCEPTIBLE,
+		SUSCEPTIBLE,
+		INTERMEDIATE,
+		RESISTANT,
+		SIGNIFICANT_CHANGE_DOWN,
+		SIGNIFICANT_CHANGE_UP,
+		OFF_SCALE_LOW,
+		OFF_SCALE_HIGH
 	}
 	
 	/**
 	 * @since 2.1.0
 	 */
 	public enum Status {
-		PRELIMINARY, FINAL, AMENDED
+		PRELIMINARY,
+		FINAL,
+		AMENDED
 	}
 	
 	private static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm";
@@ -88,7 +104,11 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	
 	public static final long serialVersionUID = 112342333L;
 	
-	private static final Logger log = LoggerFactory.getLogger(Obs.class);
+	private static final Log log = LogFactory.getLog(Obs.class);
+	
+	private static final String FORM_NAMESPACE_PATH_SEPARATOR = "^";
+	
+	private static final int FORM_NAMESPACE_PATH_MAX_LENGTH = 255;
 	
 	protected Integer obsId;
 	
@@ -148,14 +168,14 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	
 	private Obs previousVersion;
 	
+	private String formNamespaceAndPath;
+	
 	private Boolean dirty = Boolean.FALSE;
 	
 	private Interpretation interpretation;
 	
 	private Status status = Status.FINAL;
-
-	private ObsReferenceRange referenceRange;
-
+	
 	/** default constructor */
 	public Obs() {
 	}
@@ -214,11 +234,10 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 		newObs.setVoidReason(obsToCopy.getVoidReason());
 		newObs.setStatus(obsToCopy.getStatus());
 		newObs.setInterpretation(obsToCopy.getInterpretation());
-		newObs.setOrder(obsToCopy.getOrder());
 		
 		newObs.setValueComplex(obsToCopy.getValueComplex());
 		newObs.setComplexData(obsToCopy.getComplexData());
-		newObs.setFormField(obsToCopy.getFormFieldNamespace(), obsToCopy.getFormFieldPath());
+		newObs.setFormField(obsToCopy.getFormFieldNamespace(),obsToCopy.getFormFieldPath());
 		
 		// Copy list of all members, including voided, and put them in respective groups
 		if (obsToCopy.hasGroupMembers(true)) {
@@ -379,7 +398,7 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	 * {@link #hasGroupMembers(boolean)} with value true.
 	 * 
 	 * @return true if this is the parent group of other obs
-	 * <strong>Should</strong> not include voided obs
+	 * @should not include voided obs
 	 */
 	public boolean hasGroupMembers() {
 		return hasGroupMembers(false);
@@ -392,7 +411,7 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	 * 
 	 * @param includeVoided determines if Voided members should be considered as group members.
 	 * @return true if this is the parent group of other Obs
-	 * <strong>Should</strong> return true if this obs has group members based on parameter
+	 * @should return true if this obs has group members based on parameter
 	 */
 	public boolean hasGroupMembers(boolean includeVoided) {
 		// ! symbol used because if it's not empty, we want true
@@ -404,7 +423,7 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	 * only returns non-voided group members. To get all group members, use
 	 * {@link #getGroupMembers(boolean)} with value true.
 	 * <p>
-	 * If it's not a group (i.e. {@link #getConcept()}.{@link org.openmrs.Concept#getSet()} is not
+	 * If it's not a group (i.e. {@link #getConcept()}.{@link org.openmrs.Concept#isSet()} is not
 	 * true, then this returns null.
 	 * 
 	 * @return a Set&lt;Obs&gt; of the members of this group.
@@ -412,8 +431,7 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	 * @see #hasGroupMembers()
 	 */
 	public Set<Obs> getGroupMembers() {
-		//same as just returning groupMembers
-		return getGroupMembers(false);
+		return getGroupMembers(false); //same as just returning groupMembers
 	}
 	
 	/**
@@ -423,7 +441,7 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	 * 
 	 * @param includeVoided
 	 * @return the set of group members in this obs group
-	 * <strong>Should</strong> Get all group members if passed true, and non-voided if passed false
+	 * @should Get all group members if passed true, and non-voided if passed false
 	 */
 	public Set<Obs> getGroupMembers(boolean includeVoided) {
 		if (includeVoided) {
@@ -434,28 +452,33 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 			//Empty set so return null
 			return null;
 		}
-		Set<Obs> nonVoided = new LinkedHashSet<>(groupMembers);
-		nonVoided.removeIf(BaseOpenmrsData::getVoided);
+		Set<Obs> nonVoided = new LinkedHashSet<Obs>(groupMembers);
+		Iterator<Obs> i = nonVoided.iterator();
+		while (i.hasNext()) {
+			Obs obs = i.next();
+			if (obs.isVoided()) {
+				i.remove();
+			}
+		}
 		return nonVoided;
 	}
 	
 	/**
 	 * Set the members of the obs group, if this obs is a group.
 	 * <p>
-	 * If it's not a group (i.e. {@link #getConcept()}.{@link org.openmrs.Concept#getSet()} is not
+	 * If it's not a group (i.e. {@link #getConcept()}.{@link org.openmrs.Concept#isSet()} is not
 	 * true, then this returns null.
 	 * 
 	 * @param groupMembers the groupedObs to set
 	 * @see #addGroupMember(Obs)
 	 * @see #hasGroupMembers()
-	 * <strong>Should</strong> mark the obs as dirty when the set is changed from null to a non empty one
-	 * <strong>Should</strong> not mark the obs as dirty when the set is changed from null to an empty one
-	 * <strong>Should</strong> mark the obs as dirty when the set is replaced with another with different members
-	 * <strong>Should</strong> not mark the obs as dirty when the set is replaced with another with same members
+	 * @should mark the obs as dirty when the set is changed from null to a non empty one
+	 * @should not mark the obs as dirty when the set is changed from null to an empty one
+	 * @should mark the obs as dirty when the set is replaced with another with different members
+	 * @should not mark the obs as dirty when the set is replaced with another with same members
 	 */
 	public void setGroupMembers(Set<Obs> groupMembers) {
-		//Copy over the entire list
-		this.groupMembers = groupMembers;
+		this.groupMembers = new HashSet<Obs>(groupMembers); //Copy over the entire list
 		
 	}
 	
@@ -466,8 +489,8 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	 * @param member Obs to add to this group
 	 * @see #setGroupMembers(Set)
 	 * @see #getGroupMembers()
-	 * <strong>Should</strong> return true when a new obs is added as a member
-	 * <strong>Should</strong> return false when a duplicate obs is added as a member
+	 * @should return true when a new obs is added as a member
+	 * @should return false when a duplicate obs is added as a member
 	 */
 	public void addGroupMember(Obs member) {
 		if (member == null) {
@@ -475,7 +498,7 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 		}
 		
 		if (getGroupMembers() == null) {
-			groupMembers = new HashSet<>();
+			groupMembers = new HashSet<Obs>();
 		}
 		
 		// a quick sanity check to make sure someone isn't adding
@@ -495,8 +518,8 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	 * @param member Obs to remove from this group
 	 * @see #setGroupMembers(Set)
 	 * @see #getGroupMembers()
-	 * <strong>Should</strong> return true when an obs is removed
-	 * <strong>Should</strong> return false when a non existent obs is removed
+	 * @should return true when an obs is removed
+	 * @should return false when a non existent obs is removed
 	 */
 	public void removeGroupMember(Obs member) {
 		if (member == null || getGroupMembers() == null) {
@@ -519,7 +542,7 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	 * @return Set&lt;Obs&gt;
 	 */
 	public Set<Obs> getRelatedObservations() {
-		Set<Obs> ret = new HashSet<>();
+		Set<Obs> ret = new HashSet<Obs>();
 		if (this.isObsGrouping()) {
 			ret.addAll(this.getGroupMembers());
 			Obs parentObs = this;
@@ -624,13 +647,11 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	 * @param valueBoolean the boolean value matching the boolean coded concept to set to
 	 */
 	public void setValueBoolean(Boolean valueBoolean) {
-		if (getConcept() != null && getConcept().getDatatype() != null && getConcept().getDatatype().isBoolean()) {
-			if (valueBoolean != null) {
-				setValueCoded(valueBoolean ? Context.getConceptService().getTrueConcept() : Context.getConceptService()
-				        .getFalseConcept());
-			} else {
-				setValueCoded(null);
-			}
+		if (valueBoolean != null && getConcept() != null && getConcept().getDatatype().isBoolean()) {
+			setValueCoded(valueBoolean.booleanValue() ? Context.getConceptService().getTrueConcept() : Context
+			        .getConceptService().getFalseConcept());
+		} else if (valueBoolean == null) {
+			setValueCoded(null);
 		}
 	}
 	
@@ -638,9 +659,9 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	 * Coerces a value to a Boolean representation
 	 * 
 	 * @return Boolean representation of the obs value
-	 * <strong>Should</strong> return true for value_numeric concepts if value is 1
-	 * <strong>Should</strong> return false for value_numeric concepts if value is 0
-	 * <strong>Should</strong> return null for value_numeric concepts if value is neither 1 nor 0
+	 * @should return true for value_numeric concepts if value is 1
+	 * @should return false for value_numeric concepts if value is 0
+	 * @should return null for value_numeric concepts if value is neither 1 nor 0
 	 */
 	public Boolean getValueAsBoolean() {
 		
@@ -665,8 +686,8 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	 * Returns the boolean value if the concept of this obs is of boolean datatype
 	 * 
 	 * @return true or false if value is set otherwise null
-	 * <strong>Should</strong> return true if value coded answer concept is true concept
-	 * <strong>Should</strong> return false if value coded answer concept is false concept
+	 * @should return true if value coded answer concept is true concept
+	 * @should return false if value coded answer concept is false concept
 	 */
 	public Boolean getValueBoolean() {
 		if (getConcept() != null && valueCoded != null && getConcept().getDatatype().isBoolean()) {
@@ -680,7 +701,6 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	/**
 	 * @return Returns the valueCoded.
 	 */
-	
 	public Concept getValueCoded() {
 		return valueCoded;
 	}
@@ -841,9 +861,13 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	/**
 	 * @return Returns true if this Obs is complex.
 	 * @since 1.5
-	 * <strong>Should</strong> return true if the concept is complex
+	 * @should return true if the concept is complex
 	 */
 	public boolean isComplex() {
+		//		if (getValueComplex() != null) {
+		//			return true;
+		//		}
+		
 		if (getConcept() != null) {
 			return getConcept().isComplex();
 		}
@@ -855,7 +879,7 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	 * Get the value for the ComplexData. This method is used by the ComplexObsHandler. The
 	 * valueComplex has two parts separated by a bar '|' character: part A) the title; and part B)
 	 * the URI. The title is the readable description of the valueComplex that is returned by
-	 * {@link Obs#getValueAsString(java.util.Locale)}. The URI is the location where the ComplexData is stored.
+	 * {@link Obs#getValueAsString()}. The URI is the location where the ComplexData is stored.
 	 * 
 	 * @return readable title and URI for the location of the ComplexData binary object.
 	 * @since 1.5
@@ -868,7 +892,7 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	 * Set the value for the ComplexData. This method is used by the ComplexObsHandler. The
 	 * valueComplex has two parts separated by a bar '|' character: part A) the title; and part B)
 	 * the URI. The title is the readable description of the valueComplex that is returned by
-	 * {@link Obs#getValueAsString(java.util.Locale)}. The URI is the location where the ComplexData is stored.
+	 * Obs.getValueAsString(). The URI is the location where the ComplexData is stored.
 	 * 
 	 * @param valueComplex readable title and URI for the location of the ComplexData binary object.
 	 * @since 1.5
@@ -938,22 +962,21 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	 * missing.
 	 *
 	 * @param locale locale for locale-specific depictions of value
-	 * <strong>Should</strong> return first part of valueComplex for complex obs
-	 * <strong>Should</strong> return first part of valueComplex for non null valueComplexes
-	 * <strong>Should</strong> return non precise values for NumericConcepts
-	 * <strong>Should</strong> return date in correct format
-	 * <strong>Should</strong> not return long decimal numbers as scientific notation
-	 * <strong>Should</strong> use commas or decimal places depending on locale
-	 * <strong>Should</strong> not use thousand separator
-	 * <strong>Should</strong> return regular number for size of zero to or greater than ten digits
-	 * <strong>Should</strong> return regular number if decimal places are as high as six
+	 * @should return first part of valueComplex for complex obs
+	 * @should return first part of valueComplex for non null valueComplexes
+	 * @should return non precise values for NumericConcepts
+	 * @should return date in correct format
+	 * @should not return long decimal numbers as scientific notation
+	 * @should use commas or decimal places depending on locale
+	 * @should not use thousand separator
+	 * @should return regular number for size of zero to or greater than ten digits
+	 * @should return regular number if decimal places are as high as six
 	 */
 	public String getValueAsString(Locale locale) {
 		// formatting for the return of numbers of type double
 		NumberFormat nf = NumberFormat.getNumberInstance(locale);
 		DecimalFormat df = (DecimalFormat) nf;
-		// formatting style up to 6 digits
-		df.applyPattern("#0.0#####");
+		df.applyPattern("#0.0#####"); // formatting style up to 6 digits
 		//branch on hl7 abbreviations
 		if (getConcept() != null) {
 			String abbrev = getConcept().getDatatype().getHl7Abbreviation();
@@ -966,8 +989,8 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 				if (getValueDrug() != null) {
 					return getValueDrug().getFullName(locale);
 				} else {
-					ConceptName codedName = getValueCodedName();
-					if (codedName != null) {
+					ConceptName valueCodedName = getValueCodedName();
+					if (valueCodedName != null) {
 						return getValueCoded().getName(locale, false).getName();
 					} else {
 						ConceptName fallbackName = getValueCoded().getName();
@@ -983,10 +1006,9 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 				if (getValueNumeric() == null) {
 					return "";
 				} else {
-					Concept deproxiedConcept = HibernateUtil.getRealObjectFromProxy(getConcept());
-					if (deproxiedConcept instanceof ConceptNumeric) {
-						ConceptNumeric cn = (ConceptNumeric) deproxiedConcept;
-						if (!cn.getAllowDecimal()) {
+					if (getConcept() instanceof ConceptNumeric) {
+						ConceptNumeric cn = (ConceptNumeric) getConcept();
+						if (!cn.isAllowDecimal()) {
 							double d = getValueNumeric();
 							int i = (int) d;
 							return Integer.toString(i);
@@ -1005,10 +1027,10 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 			} else if ("ST".equals(abbrev)) {
 				return getValueText();
 			} else if ("ED".equals(abbrev) && getValueComplex() != null) {
-				String[] valuesComplex = getValueComplex().split("\\|");
-				for (String value : valuesComplex) {
-					if (StringUtils.isNotEmpty(value)) {
-						return value.trim();
+				String[] valueComplex = getValueComplex().split("\\|");
+				for (int i = 0; i < valueComplex.length; i++) {
+					if (StringUtils.isNotEmpty(valueComplex[i])) {
+						return valueComplex[i].trim();
 					}
 				}
 			}
@@ -1050,10 +1072,10 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 		// returns the title portion of the valueComplex
 		// which is everything before the first bar '|' character.
 		if (getValueComplex() != null) {
-			String[] valuesComplex = getValueComplex().split("\\|");
-			for (String value : valuesComplex) {
-				if (StringUtils.isNotEmpty(value)) {
-					return value.trim();
+			String[] valueComplex = getValueComplex().split("\\|");
+			for (int i = 0; i < valueComplex.length; i++) {
+				if (StringUtils.isNotEmpty(valueComplex[i])) {
+					return valueComplex[i].trim();
 				}
 			}
 		}
@@ -1065,12 +1087,14 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	 * Sets the value for the obs from a string depending on the datatype of the question concept
 	 *
 	 * @param s the string to coerce to a boolean
-	 * <strong>Should</strong> set value as boolean if the datatype of the question concept is boolean
-	 * <strong>Should</strong> fail if the value of the string is null
-	 * <strong>Should</strong> fail if the value of the string is empty
+	 * @should set value as boolean if the datatype of the question concept is boolean
+	 * @should fail if the value of the string is null
+	 * @should fail if the value of the string is empty
 	 */
 	public void setValueAsString(String s) throws ParseException {
-		log.debug("getConcept() == {}", getConcept());
+		if (log.isDebugEnabled()) {
+			log.debug("getConcept() == " + getConcept());
+		}
 		
 		if (getConcept() != null && !StringUtils.isBlank(s)) {
 			String abbrev = getConcept().getDatatype().getHl7Abbreviation();
@@ -1092,7 +1116,7 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 			} else if ("ST".equals(abbrev)) {
 				setValueText(s);
 			} else {
-				throw new RuntimeException("Don't know how to handle " + abbrev + " for concept: " + getConcept().getName().getName());
+				throw new RuntimeException("Don't know how to handle " + abbrev);
 			}
 			
 		} else {
@@ -1103,7 +1127,6 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	/**
 	 * @see java.lang.Object#toString()
 	 */
-	@Override
 	public String toString() {
 		if (obsId == null) {
 			return "obs id is null";
@@ -1116,7 +1139,6 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		return getObsId();
 		
@@ -1126,7 +1148,6 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setObsId(id);
 		
@@ -1176,13 +1197,91 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	}
 	
 	/**
-	 * @see org.openmrs.FormRecordable#setFormField(String,String)
+	 * Gets the namespace for the form field that was used to capture the obs details in the form
+	 * 
+	 * @return the namespace
+	 * @since 1.11
+	 * @should return the namespace for a form field that has no path
+	 * @should return the correct namespace for a form field with a path
+	 * @should return null if the namespace is not specified
 	 */
-	@Override
+	public String getFormFieldNamespace() {
+		if (StringUtils.isNotBlank(formNamespaceAndPath)) {
+			//Only the path was specified
+			if (formNamespaceAndPath.startsWith(FORM_NAMESPACE_PATH_SEPARATOR)) {
+				return null;
+			}
+			return formNamespaceAndPath.substring(0, formNamespaceAndPath.indexOf(FORM_NAMESPACE_PATH_SEPARATOR));
+		}
+		
+		return formNamespaceAndPath;
+	}
+	
+	/**
+	 * Gets the path for the form field that was used to capture the obs details in the form
+	 * 
+	 * @return the the form field path
+	 * @since 1.11
+	 * @should return the path for a form field that has no namespace
+	 * @should return the correct path for a form field with a namespace
+	 * @should return null if the path is not specified
+	 */
+	public String getFormFieldPath() {
+		if (StringUtils.isNotBlank(formNamespaceAndPath)) {
+			//Only the namespace was specified
+			if (formNamespaceAndPath.endsWith(FORM_NAMESPACE_PATH_SEPARATOR)) {
+				return null;
+			}
+			return formNamespaceAndPath.substring(formNamespaceAndPath.indexOf(FORM_NAMESPACE_PATH_SEPARATOR) + 1);
+		}
+		
+		return formNamespaceAndPath;
+	}
+	
+	/**
+	 * Sets the namespace and path of the form field that was used to capture the obs details in the
+	 * form.<br>
+	 * <b>Note:</b> Namespace and formFieldPath together must not exceed 254 characters in length,
+	 * form applications can subtract the length of their namespace from 254 to determine the
+	 * maximum length they can use for a form field path.
+	 * 
+	 * @param namespace the namespace of the form field
+	 * @param formFieldPath the path of the form field
+	 * @since 1.11
+	 * @should set the underlying formNamespaceAndPath in the correct pattern
+	 * @should reject a namepace containing the separator
+	 * @should reject a path containing the separator
+	 * @should reject a namepace and path combination longer than the max length
+	 * @should not mark the obs as dirty when the value has not been changed
+	 * @should mark the obs as dirty when the value has been changed
+	 * @should mark the obs as dirty when the value is changed from a null to a non null value
+	 * @should mark the obs as dirty when the value is changed from a non null to a null value
+	 */
 	public void setFormField(String namespace, String formFieldPath) {
-		String oldValue = formNamespaceAndPath;
-		super.setFormField(namespace, formFieldPath);
-		markAsDirty(oldValue, formNamespaceAndPath);
+		if (namespace == null && formFieldPath == null) {
+			markAsDirty(formNamespaceAndPath, null);
+			formNamespaceAndPath = null;
+			return;
+		}
+		
+		String nsAndPathTemp = "";
+		if (StringUtils.isNotBlank(namespace) && StringUtils.isNotBlank(formFieldPath)) {
+			nsAndPathTemp = namespace + FORM_NAMESPACE_PATH_SEPARATOR + formFieldPath;
+		} else if (StringUtils.isNotBlank(namespace)) {
+			nsAndPathTemp = namespace + FORM_NAMESPACE_PATH_SEPARATOR;
+		} else if (StringUtils.isNotBlank(formFieldPath)) {
+			nsAndPathTemp = FORM_NAMESPACE_PATH_SEPARATOR + formFieldPath;
+		}
+		
+		if (nsAndPathTemp.length() > FORM_NAMESPACE_PATH_MAX_LENGTH) {
+			throw new APIException("Obs.namespaceAndPathTooLong", (Object[]) null);
+		}
+		if (StringUtils.countMatches(nsAndPathTemp, FORM_NAMESPACE_PATH_SEPARATOR) > 1) {
+			throw new APIException("Obs.namespaceAndPathNotContainSeparator", (Object[]) null);
+		}
+		
+		markAsDirty(this.formNamespaceAndPath, nsAndPathTemp);
+		formNamespaceAndPath = nsAndPathTemp;
 	}
 	
 	/**
@@ -1192,17 +1291,17 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	 *
 	 * @return true if not changed otherwise false
 	 * @since 2.0
-	 * <strong>Should</strong> return false when no change has been made
-	 * <strong>Should</strong> return true when any immutable field has been changed
-	 * <strong>Should</strong> return false when only mutable fields are changed
-	 * <strong>Should</strong> return true when an immutable field is changed from a null to a non null value
-	 * <strong>Should</strong> return true when an immutable field is changed from a non null to a null value
+	 * @should return false when no change has been made
+	 * @should return true when any immutable field has been changed
+	 * @should return false when only mutable fields are changed
+	 * @should return true when an immutable field is changed from a null to a non null value
+	 * @should return true when an immutable field is changed from a non null to a null value
 	 */
 	public boolean isDirty() {
 		return dirty;
 	}
 	
-	protected void markAsDirty(Object oldValue, Object newValue) {
+	private void markAsDirty(Object oldValue, Object newValue) {
 		//Should we ignore the case for Strings?
 		if (!isDirty() && obsId != null && !OpenmrsUtil.nullSafeEquals(oldValue, newValue)) {
 			dirty = true;
@@ -1210,9 +1309,8 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	}
 	
 	/**
-	 * Similar to FHIR's Observation.interpretation. Supports a subset of FHIR's Observation
-	 * Interpretation Codes. See https://www.hl7.org/fhir/valueset-observation-interpretation.html
-	 * 
+	 * Similar to FHIR's Observation.interpretation. Supports a subset of FHIR's Observation Interpretation Codes.
+	 * See https://www.hl7.org/fhir/valueset-observation-interpretation.html
 	 * @since 2.1.0
 	 */
 	public Interpretation getInterpretation() {
@@ -1229,10 +1327,9 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	
 	/**
 	 * Similar to FHIR's Observation.status. Supports a subset of FHIR's ObservationStatus values.
-	 * At present OpenMRS does not support FHIR's REGISTERED and CANCELLED statuses, because we
-	 * don't support obs with null values. See:
-	 * https://www.hl7.org/fhir/valueset-observation-status.html
-	 * 
+	 * At present OpenMRS does not support FHIR's REGISTERED and CANCELLED statuses, because we don't support obs with
+	 * null values.
+	 * See: https://www.hl7.org/fhir/valueset-observation-status.html
 	 * @since 2.1.0
 	 */
 	public Status getStatus() {
@@ -1245,26 +1342,5 @@ public class Obs extends BaseFormRecordableOpenmrsData {
 	public void setStatus(Status status) {
 		markAsDirty(this.status, status);
 		this.status = status;
-	}
-
-	/**
-	 * Returns the ObsReferenceRange
-	 * @return obsReferenceRange.
-	 * 
-	 * @since 2.7.0
-	 */
-	public ObsReferenceRange getReferenceRange() {
-		return referenceRange;
-	}
-	
-	/**
-	 * Sets ObsReferenceRange
-	 * 
-	 * @param referenceRange ObsReferenceRange to set.
-	 *               
-	 * @since 2.7.0
-	 */
-	public void setReferenceRange(ObsReferenceRange referenceRange) {
-		this.referenceRange = referenceRange;
 	}
 }

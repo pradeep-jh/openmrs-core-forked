@@ -10,18 +10,19 @@
 package org.openmrs.module;
 
 import java.io.StringReader;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.util.OpenmrsConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
+import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 
 /**
@@ -31,7 +32,7 @@ import org.xml.sax.InputSource;
  */
 public class UpdateFileParser {
 	
-	private static final Logger log = LoggerFactory.getLogger(UpdateFileParser.class);
+	private static Log log = LogFactory.getLog(UpdateFileParser.class);
 	
 	private String content;
 	
@@ -55,14 +56,14 @@ public class UpdateFileParser {
 	 * Parse the contents of the update.rdf file.
 	 *
 	 * @throws ModuleException
-	 * <strong>Should</strong> set properties from xml file
-	 * <strong>Should</strong> set properties using the newest update
-	 * <strong>Should</strong> not set properties using updates ahead of current openmrs version
+	 * @should set properties from xml file
+	 * @should set properties using the newest update
+	 * @should not set properties using updates ahead of current openmrs version
 	 */
 	public void parse() throws ModuleException {
 		StringReader stringReader = null;
 		try {
-			Document updateDoc;
+			Document updateDoc = null;
 			try {
 				stringReader = new StringReader(content);
 				InputSource inputSource = new InputSource(stringReader);
@@ -72,7 +73,12 @@ public class UpdateFileParser {
 				DocumentBuilder db = dbf.newDocumentBuilder();
 				
 				// Disable resolution of external entities. See TRUNK-3942 
-				db.setEntityResolver((publicId, systemId) -> new InputSource(new StringReader("")));
+				db.setEntityResolver(new EntityResolver() {
+					
+					public InputSource resolveEntity(String publicId, String systemId) {
+						return new InputSource(new StringReader(""));
+					}
+				});
 				
 				updateDoc = db.parse(inputSource);
 			}
@@ -99,11 +105,10 @@ public class UpdateFileParser {
 				this.moduleId = rootNode.getAttribute("moduleId");
 				
 				NodeList nodes = rootNode.getElementsByTagName("update");
-				// default to the lowest version possible
-				this.currentVersion = "";
+				this.currentVersion = ""; // default to the lowest version possible
 				
 				// loop over all 'update' tags
-				for (int i = 0; i < nodes.getLength(); i++) {
+				for (Integer i = 0; i < nodes.getLength(); i++) {
 					Element currentNode = (Element) nodes.item(i);
 					String currentVersion = getElement(currentNode, configVersion, "currentVersion");
 					// if the currently saved version is less than the current tag
@@ -153,7 +158,7 @@ public class UpdateFileParser {
 	 * @return
 	 */
 	private static List<String> validConfigVersions() {
-		List<String> versions = new ArrayList<>();
+		List<String> versions = new Vector<String>();
 		versions.add("1.0");
 		versions.add("1.1");
 		return versions;

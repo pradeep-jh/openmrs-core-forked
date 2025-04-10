@@ -9,9 +9,9 @@
  */
 package org.openmrs;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
+import org.openmrs.test.Verifies;
 
 /**
  * This tests methods on the provider object.
@@ -22,20 +22,22 @@ public class ProviderTest {
 	 * @see Provider#getName()
 	 */
 	@Test
-	public void getName_shouldReturnPersonFullNameIfPersonIsNotNullOrNullOtherwise() {
+	@Verifies(value = "return person full name if person is not null or null otherwise", method = "getName()")
+	public void getName_shouldReturnPersonFullNameIfPersonIsNotNullOrNullOtherwise() throws Exception {
 		Provider provider = new Provider();
 		
 		Person person = new Person(1);
 		person.addName(new PersonName("givenName", "middleName", "familyName"));
 		provider.setPerson(person);
-		assertEquals(person.getPersonName().getFullName(), provider.getName());
+		Assert.assertEquals(person.getPersonName().getFullName(), provider.getName());
 	}
 	
 	/**
 	 * @see Provider#toString()
 	 */
 	@Test
-	public void toString_shouldReturnPersonAllNamesWithSpecificFormat() {
+	@Verifies(value = "return person all names of person with specific format", method = "toString()")
+	public void toString_shouldReturnPersonAllNamesWithSpecificFormat() throws Exception {
 		
 		Provider provider = new Provider();
 		provider.setProviderId(1);
@@ -43,7 +45,7 @@ public class ProviderTest {
 		Person person = new Person(1);
 		person.addName(new PersonName("givenName", "middleName", "familyName"));
 		provider.setPerson(person);
-		assertEquals(provider.toString(), "[Provider: providerId:1 providerName:[givenName middleName familyName] ]");
+		Assert.assertEquals(provider.toString(), "[Provider: providerId:1 providerName:[givenName middleName familyName] ]");
 	}
 	
 }

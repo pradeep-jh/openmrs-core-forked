@@ -9,6 +9,8 @@
  */
 package org.openmrs.validator;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.PatientIdentifierType;
 import org.openmrs.annotation.Handler;
 import org.openmrs.api.context.Context;
@@ -25,6 +27,9 @@ import org.springframework.validation.Validator;
 @Handler(supports = { PatientIdentifierType.class }, order = 50)
 public class PatientIdentifierTypeValidator implements Validator {
 	
+	/** Log for this class and subclasses */
+	protected final Log log = LogFactory.getLog(getClass());
+	
 	/**
 	 * Determines if the command object being submitted is a valid type
 	 * 
@@ -40,15 +45,15 @@ public class PatientIdentifierTypeValidator implements Validator {
 	 * 
 	 * @see org.springframework.validation.Validator#validate(java.lang.Object,
 	 *      org.springframework.validation.Errors)
-	 * <strong>Should</strong> fail validation if name is null or empty or whitespace
-	 * <strong>Should</strong> pass validation if description is null or empty or whitespace
-	 * <strong>Should</strong> pass validation if all required fields have proper values
-	 * <strong>Should</strong> pass validation if regEx field length is not too long
-	 * <strong>Should</strong> fail validation if regEx field length is too long
-	 * <strong>Should</strong> fail validation if name field length is too long
-	 * <strong>Should</strong> fail validation if name is already exist in non retired identifier types
-	 * <strong>Should</strong> pass validation if field lengths are correct
-	 * <strong>Should</strong> fail validation if field lengths are not correct
+	 * @should fail validation if name is null or empty or whitespace
+	 * @should pass validation if description is null or empty or whitespace
+	 * @should pass validation if all required fields have proper values
+	 * @should pass validation if regEx field length is not too long
+	 * @should fail validation if regEx field length is too long
+	 * @should fail validation if name field length is too long
+	 * @should fail validation if name is already exist in non retired identifier types
+	 * @should pass validation if field lengths are correct
+	 * @should fail validation if field lengths are not correct
 	 */
 	@Override
 	public void validate(Object obj, Errors errors) {

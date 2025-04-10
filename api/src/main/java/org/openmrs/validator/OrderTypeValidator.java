@@ -9,6 +9,8 @@
  */
 package org.openmrs.validator;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.ConceptClass;
 import org.openmrs.OrderType;
 import org.openmrs.annotation.Handler;
@@ -26,6 +28,9 @@ import org.springframework.validation.Validator;
 @Handler(supports = { OrderType.class })
 public class OrderTypeValidator implements Validator {
 	
+	// Log for this class
+	protected final Log log = LogFactory.getLog(getClass());
+	
 	/**
 	 * Determines if the command object being submitted is a valid type
 	 * 
@@ -41,19 +46,19 @@ public class OrderTypeValidator implements Validator {
 	 * 
 	 * @see org.springframework.validation.Validator#validate(java.lang.Object,
 	 *      org.springframework.validation.Errors)
-	 * <strong>Should</strong> fail if the orderType object is null
-	 * <strong>Should</strong> fail if name is null
-	 * <strong>Should</strong> fail if name is empty
-	 * <strong>Should</strong> fail if name is whitespace
-	 * <strong>Should</strong> fail if name is a duplicate
-	 * <strong>Should</strong> fail if conceptClass is a duplicate
-	 * <strong>Should</strong> fail if parent is among its descendants
-	 * <strong>Should</strong> fail if parent is also a direct child
-	 * <strong>Should</strong> pass if all fields are correct for a new order type
-	 * <strong>Should</strong> pass if all fields are correct for an existing order type
-	 * <strong>Should</strong> be invoked when an order type is saved
-	 * <strong>Should</strong> pass validation if field lengths are correct
-	 * <strong>Should</strong> fail validation if field lengths are not correct
+	 * @should fail if the orderType object is null
+	 * @should fail if name is null
+	 * @should fail if name is empty
+	 * @should fail if name is whitespace
+	 * @should fail if name is a duplicate
+	 * @should fail if conceptClass is a duplicate
+	 * @should fail if parent is among its descendants
+	 * @should fail if parent is also a direct child
+	 * @should pass if all fields are correct for a new order type
+	 * @should pass if all fields are correct for an existing order type
+	 * @should be invoked when an order type is saved
+	 * @should pass validation if field lengths are correct
+	 * @should fail validation if field lengths are not correct
 	 */
 	@Override
 	public void validate(Object obj, Errors errors) {

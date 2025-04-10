@@ -9,52 +9,30 @@
  */
 package org.openmrs;
 
+import java.util.Comparator;
+
 import org.codehaus.jackson.annotate.JsonIgnore;
-import org.hibernate.envers.Audited;
 import org.hibernate.search.annotations.Field;
 import org.openmrs.util.OpenmrsUtil;
-
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import java.io.Serializable;
-import java.util.Comparator;
 
 /**
  * PersonAttributeType
  */
-@Entity
-@Table(name = "person_attribute_type")
-@Audited
-public class PersonAttributeType extends BaseChangeableOpenmrsMetadata implements java.io.Serializable, Comparable<PersonAttributeType> {
+public class PersonAttributeType extends BaseOpenmrsMetadata implements java.io.Serializable, Comparable<PersonAttributeType> {
 	
 	public static final long serialVersionUID = 2112313431211L;
 	
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "person_attribute_type_id")
 	private Integer personAttributeTypeId;
 	
-	@Column(name = "format", length = 50)
 	private String format;
 	
-	@Column(name = "foreign_key")
 	private Integer foreignKey;
 	
-	@Column(name = "sort_weight", nullable = false)
 	private Double sortWeight;
 
 	@Field
-	@Column(name = "searchable", nullable = false)
 	private Boolean searchable = false;
 	
-	@ManyToOne
-	@JoinColumn(name = "edit_privilege")
 	private Privilege editPrivilege;
 	
 	/** default constructor */
@@ -152,7 +130,6 @@ public class PersonAttributeType extends BaseChangeableOpenmrsMetadata implement
 	/**
 	 * @see java.lang.Object#toString()
 	 */
-	@Override
 	public String toString() {
 		return getName();
 	}
@@ -182,7 +159,6 @@ public class PersonAttributeType extends BaseChangeableOpenmrsMetadata implement
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		return getPersonAttributeTypeId();
 	}
@@ -191,7 +167,6 @@ public class PersonAttributeType extends BaseChangeableOpenmrsMetadata implement
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setPersonAttributeTypeId(id);
 		
@@ -213,9 +188,7 @@ public class PersonAttributeType extends BaseChangeableOpenmrsMetadata implement
 	 Provides a default comparator.
 	 @since 1.12
 	 **/
-	public static class DefaultComparator implements Comparator<PersonAttributeType>, Serializable {
-
-		private static final long serialVersionUID = 1L;
+	public static class DefaultComparator implements Comparator<PersonAttributeType> {
 		
 		@Override
 		public int compare(PersonAttributeType pat1, PersonAttributeType pat2) {

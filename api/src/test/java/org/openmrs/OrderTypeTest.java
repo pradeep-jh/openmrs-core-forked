@@ -9,10 +9,12 @@
  */
 package org.openmrs;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
+import org.openmrs.test.Verifies;
 
 /**
  * This class tests all methods that are not getter or setters in the {@link org.openmrs.OrderType}
@@ -26,7 +28,8 @@ public class OrderTypeTest {
 	 * @see org.openmrs.OrderType#getJavaClass()
 	 */
 	@Test
-	public void setJavaClass_shouldGetJavaClassObject() {
+	@Verifies(value = "should get java class String as class", method = "getJavaClassObject()")
+	public void setJavaClass_shouldGetJavaClassObject() throws Exception {
 		//Create a new OrderType
 		OrderType orderType = new OrderType();
 		
@@ -34,14 +37,15 @@ public class OrderTypeTest {
 		Class<?> clazz = Integer.class;
 		
 		orderType.setJavaClassName(clazz.getName());
-		assertEquals(clazz, orderType.getJavaClass());
+		Assert.assertEquals(clazz, orderType.getJavaClass());
 	}
 	
 	/**
+	 * @verifies add the specified concept class
 	 * @see OrderType#addConceptClass(ConceptClass)
 	 */
 	@Test
-	public void addConceptClass_shouldAddTheSpecifiedConceptClass() {
+	public void addConceptClass_shouldAddTheSpecifiedConceptClass() throws Exception {
 		OrderType ot = new OrderType();
 		ConceptClass cc = new ConceptClass();
 		ot.addConceptClass(cc);
@@ -52,10 +56,11 @@ public class OrderTypeTest {
 	 * Ensures that if the collection implementation gets changed from a set, that duplicates are
 	 * not added
 	 * 
+	 * @verifies not add a duplicate concept class
 	 * @see OrderType#addConceptClass(ConceptClass)
 	 */
 	@Test
-	public void addConceptClass_shouldNotAddADuplicateConceptClass() {
+	public void addConceptClass_shouldNotAddADuplicateConceptClass() throws Exception {
 		OrderType ot = new OrderType();
 		ConceptClass cc1 = new ConceptClass();
 		ot.addConceptClass(cc1);

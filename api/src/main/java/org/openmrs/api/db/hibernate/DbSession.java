@@ -250,7 +250,7 @@ public class DbSession {
 	 * @see FlushMode
 	 */
 	public void setFlushMode(FlushMode flushMode) {
-		getSession().setHibernateFlushMode(flushMode);
+		getSession().setFlushMode(flushMode);
 	}
 	
 	/**
@@ -259,7 +259,7 @@ public class DbSession {
 	 * @return The flush mode
 	 */
 	public FlushMode getFlushMode() {
-		return getSession().getHibernateFlushMode();
+		return getSession().getFlushMode();
 	}
 	
 	/**
@@ -301,8 +301,7 @@ public class DbSession {
 	 * @throws HibernateException Indicates problems cleaning up.
 	 */
 	public Connection close() throws HibernateException {
-		getSession().close();
-		return null;
+		return getSession().close();
 	}
 	
 	/**

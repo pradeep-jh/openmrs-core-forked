@@ -9,38 +9,24 @@
  */
 package org.openmrs;
 
-import org.hibernate.annotations.BatchSize;
-import org.hibernate.envers.Audited;
-import org.openmrs.attribute.Attribute;
-import org.openmrs.customdatatype.CustomValueDescriptor;
-import org.openmrs.customdatatype.Customizable;
-
-import javax.persistence.CascadeType;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.MappedSuperclass;
-import javax.persistence.OneToMany;
-import javax.persistence.OrderBy;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.openmrs.attribute.Attribute;
+import org.openmrs.customdatatype.CustomValueDescriptor;
+import org.openmrs.customdatatype.Customizable;
+
 /**
  * Extension of {@link org.openmrs.BaseOpenmrsMetadata} for classes that support customization via user-defined attributes.
  * @param <A> the type of attribute held
  * @since 1.9
  */
-@MappedSuperclass
-@Audited
-public abstract class BaseCustomizableMetadata<A extends Attribute> extends BaseChangeableOpenmrsMetadata implements Customizable<A> {
+public abstract class BaseCustomizableMetadata<A extends Attribute> extends BaseOpenmrsMetadata implements Customizable<A> {
 	
-	@OrderBy("voided asc")
-	@BatchSize(size = 100)
-	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-	@JoinColumn(name = "location_id")
-	private Set<A> attributes = new LinkedHashSet<>();
+	private Set<A> attributes = new LinkedHashSet<A>();
 	
 	/**
 	 * @see org.openmrs.customdatatype.Customizable#getAttributes()
@@ -62,10 +48,10 @@ public abstract class BaseCustomizableMetadata<A extends Attribute> extends Base
 	 */
 	@Override
 	public Collection<A> getActiveAttributes() {
-		List<A> ret = new ArrayList<>();
+		List<A> ret = new ArrayList<A>();
 		if (getAttributes() != null) {
 			for (A attr : getAttributes()) {
-				if (!attr.getVoided()) {
+				if (!attr.isVoided()) {
 					ret.add(attr);
 				}
 			}
@@ -77,11 +63,11 @@ public abstract class BaseCustomizableMetadata<A extends Attribute> extends Base
 	 * @see org.openmrs.customdatatype.Customizable#getActiveAttributes(org.openmrs.customdatatype.CustomValueDescriptor)
 	 */
 	@Override
-	public List<A> getActiveAttributes(CustomValueDescriptor ofType) {
-		List<A> ret = new ArrayList<>();
+	public java.util.List<A> getActiveAttributes(CustomValueDescriptor ofType) {
+		List<A> ret = new ArrayList<A>();
 		if (getAttributes() != null) {
 			for (A attr : getAttributes()) {
-				if (attr.getAttributeType().equals(ofType) && !attr.getVoided()) {
+				if (attr.getAttributeType().equals(ofType) && !attr.isVoided()) {
 					ret.add(attr);
 				}
 			}
@@ -95,7 +81,7 @@ public abstract class BaseCustomizableMetadata<A extends Attribute> extends Base
 	@Override
 	public void addAttribute(A attribute) {
 		if (getAttributes() == null) {
-			setAttributes(new LinkedHashSet<>());
+			setAttributes(new LinkedHashSet<A>());
 		}
 		getAttributes().add(attribute);
 		attribute.setOwner(this);
@@ -103,8 +89,10 @@ public abstract class BaseCustomizableMetadata<A extends Attribute> extends Base
 	
 	/**
 	 * Convenience method that voids all existing attributes of the given type, and sets this new one.
-	 * <strong>Should</strong> void the attribute if an attribute with same attribute type already exists and the maxOccurs is set to 1
-	 * <strong>Should</strong> work for attributes with datatypes whose values are stored in other tables
+	 * TODO fail if minOccurs &gt; 1
+	 * TODO decide whether this should require maxOccurs=1
+	 * @should void the attribute if an attribute with same attribute type already exists and the maxOccurs is set to 1
+	 * @should work for attributes with datatypes whose values are stored in other tables
 	 *
 	 * @param attribute
 	 */
@@ -116,7 +104,9 @@ public abstract class BaseCustomizableMetadata<A extends Attribute> extends Base
 		
 		if (getActiveAttributes(attribute.getAttributeType()).size() == 1) {
 			A existing = getActiveAttributes(attribute.getAttributeType()).get(0);
-			if (!existing.getValue().equals(attribute.getValue())) {
+			if (existing.getValue().equals(attribute.getValue())) {
+				// do nothing, since the value is already as-specified
+			} else {
 				if (existing.getId() != null) {
 					existing.setVoided(true);
 				} else {
@@ -125,20 +115,20 @@ public abstract class BaseCustomizableMetadata<A extends Attribute> extends Base
 				getAttributes().add(attribute);
 				attribute.setOwner(this);
 			}
-			return;
-		}
-		
-		for (A existing : getActiveAttributes(attribute.getAttributeType())) {
-			if (existing.getAttributeType().equals(attribute.getAttributeType())) {
-				if (existing.getId() != null) {
-					existing.setVoided(true);
-				} else {
-					getAttributes().remove(existing);
+			
+		} else {
+			for (A existing : getActiveAttributes(attribute.getAttributeType())) {
+				if (existing.getAttributeType().equals(attribute.getAttributeType())) {
+					if (existing.getId() != null) {
+						existing.setVoided(true);
+					} else {
+						getAttributes().remove(existing);
+					}
 				}
 			}
+			getAttributes().add(attribute);
+			attribute.setOwner(this);
 		}
-		getAttributes().add(attribute);
-		attribute.setOwner(this);
 	}
 	
 }

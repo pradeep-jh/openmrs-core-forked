@@ -9,9 +9,8 @@
  */
 package org.openmrs.api;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.api.context.Context;
 import org.openmrs.attribute.handler.DateDatatypeHandler;
 import org.openmrs.attribute.handler.LocationDatatypeHandler;
@@ -19,27 +18,29 @@ import org.openmrs.customdatatype.CustomDatatype;
 import org.openmrs.customdatatype.CustomDatatypeUtil;
 import org.openmrs.customdatatype.datatype.DateDatatype;
 import org.openmrs.customdatatype.datatype.LocationDatatype;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
 
 public class DatatypeServiceTest extends BaseContextSensitiveTest {
 	
 	/**
 	 * @see DatatypeService#getHandler(CustomDatatype,String)
+	 * @verifies return a handler for the specified datatype
 	 */
 	@Test
-	public void getHandler_shouldReturnAHandlerForTheSpecifiedDatatype() {
+	public void getHandler_shouldReturnAHandlerForTheSpecifiedDatatype() throws Exception {
 		DatatypeService service = Context.getDatatypeService();
 		CustomDatatype dateDatatype = CustomDatatypeUtil.getDatatype(DateDatatype.class.getName(), null);
-		assertEquals(DateDatatypeHandler.class, service.getHandler(dateDatatype, null).getClass());
+		Assert.assertEquals(DateDatatypeHandler.class, service.getHandler(dateDatatype, null).getClass());
 	}
 	
 	/**
 	 * @see DatatypeService#getHandler(CustomDatatype,String)
+	 * @verifies return a handler for a datatype that extends a generic superclass
 	 */
 	@Test
-	public void getHandler_shouldReturnAHandlerForADatatypeThatExtendsAGenericSuperclass() {
+	public void getHandler_shouldReturnAHandlerForADatatypeThatExtendsAGenericSuperclass() throws Exception {
 		DatatypeService service = Context.getDatatypeService();
 		CustomDatatype locationDatatype = CustomDatatypeUtil.getDatatype(LocationDatatype.class.getName(), null);
-		assertEquals(LocationDatatypeHandler.class, service.getHandler(locationDatatype, null).getClass());
+		Assert.assertEquals(LocationDatatypeHandler.class, service.getHandler(locationDatatype, null).getClass());
 	}
 }

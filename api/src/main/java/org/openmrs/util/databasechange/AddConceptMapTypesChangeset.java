@@ -17,11 +17,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Calendar;
 
-import org.apache.commons.lang3.StringUtils;
-import org.openmrs.util.DatabaseUpdater;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import liquibase.change.custom.CustomTaskChange;
 import liquibase.database.Database;
 import liquibase.database.jvm.JdbcConnection;
@@ -31,12 +26,17 @@ import liquibase.exception.SetupException;
 import liquibase.exception.ValidationErrors;
 import liquibase.resource.ResourceAccessor;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.openmrs.util.DatabaseUpdater;
+
 /**
  * Inserts core concept map types into the concept map type table
  */
 public class AddConceptMapTypesChangeset implements CustomTaskChange {
 	
-	private static final Logger log = LoggerFactory.getLogger(AddConceptMapTypesChangeset.class);
+	private static final Log log = LogFactory.getLog(AddConceptMapTypesChangeset.class);
 	
 	/**
 	 * The "visibleConceptMapTypes" parameter defined in the liquibase xml changeSet element that is
@@ -61,7 +61,6 @@ public class AddConceptMapTypesChangeset implements CustomTaskChange {
 	 *
 	 * @see liquibase.change.custom.CustomTaskChange#execute(liquibase.database.Database)
 	 */
-	@Override
 	public void execute(Database database) throws CustomChangeException {
 		runBatchInsert((JdbcConnection) database.getConnection());
 	}
@@ -73,6 +72,7 @@ public class AddConceptMapTypesChangeset implements CustomTaskChange {
 	 */
 	private void runBatchInsert(JdbcConnection connection) throws CustomChangeException {
 		PreparedStatement pStmt = null;
+		ResultSet rs = null;
 		try {
 			connection.setAutoCommit(false);
 			
@@ -127,12 +127,12 @@ public class AddConceptMapTypesChangeset implements CustomTaskChange {
 			
 			try {
 				int[] updateCounts = pStmt.executeBatch();
-				for (int updateCount : updateCounts) {
-					if (updateCount > -1) {
-						log.debug("Successfully executed: updateCount=" + updateCount);
-					} else if (updateCount == Statement.SUCCESS_NO_INFO) {
+				for (int i = 0; i < updateCounts.length; i++) {
+					if (updateCounts[i] > -1) {
+						log.debug("Successfully executed: updateCount=" + updateCounts[i]);
+					} else if (updateCounts[i] == Statement.SUCCESS_NO_INFO) {
 						log.debug("Successfully executed; No Success info");
-					} else if (updateCount == Statement.EXECUTE_FAILED) {
+					} else if (updateCounts[i] == Statement.EXECUTE_FAILED) {
 						log.warn("Failed to execute insert");
 					}
 				}
@@ -143,13 +143,13 @@ public class AddConceptMapTypesChangeset implements CustomTaskChange {
 			catch (BatchUpdateException be) {
 				log.warn("Error generated while processsing batch insert", be);
 				int[] updateCounts = be.getUpdateCounts();
-
-				for (int updateCount : updateCounts) {
-					if (updateCount > -1) {
-						log.warn("Executed with exception: insertCount=" + updateCount);
-					} else if (updateCount == Statement.SUCCESS_NO_INFO) {
+				
+				for (int i = 0; i < updateCounts.length; i++) {
+					if (updateCounts[i] > -1) {
+						log.warn("Executed with exception: insertCount=" + updateCounts[i]);
+					} else if (updateCounts[i] == Statement.SUCCESS_NO_INFO) {
 						log.warn("Executed with exception; No Success info");
-					} else if (updateCount == Statement.EXECUTE_FAILED) {
+					} else if (updateCounts[i] == Statement.EXECUTE_FAILED) {
 						log.warn("Failed to execute insert with exception");
 					}
 				}
@@ -166,7 +166,10 @@ public class AddConceptMapTypesChangeset implements CustomTaskChange {
 				throw new CustomChangeException("Failed to insert one or more concept map types", be);
 			}
 		}
-		catch (DatabaseException | SQLException e) {
+		catch (DatabaseException e) {
+			throw new CustomChangeException("Failed to insert one or more concept map types:", e);
+		}
+		catch (SQLException e) {
 			throw new CustomChangeException("Failed to insert one or more concept map types:", e);
 		}
 		finally {
@@ -176,6 +179,14 @@ public class AddConceptMapTypesChangeset implements CustomTaskChange {
 			}
 			catch (DatabaseException e) {
 				log.warn("Failed to reset auto commit back to true", e);
+			}
+			if (rs != null) {
+				try {
+					rs.close();
+				}
+				catch (SQLException e) {
+					log.warn("Failed to close the resultset object");
+				}
 			}
 			
 			if (pStmt != null) {
@@ -215,7 +226,10 @@ public class AddConceptMapTypesChangeset implements CustomTaskChange {
 			
 			return result;
 		}
-		catch (DatabaseException | SQLException e) {
+		catch (DatabaseException e) {
+			log.warn("Error generated", e);
+		}
+		catch (SQLException e) {
 			log.warn("Error generated", e);
 		}
 		finally {
@@ -238,7 +252,6 @@ public class AddConceptMapTypesChangeset implements CustomTaskChange {
 	 *
 	 * @see liquibase.change.custom.CustomChange#setUp()
 	 */
-	@Override
 	public void setUp() throws SetupException {
 		if (StringUtils.isNotBlank(visibleConceptMapTypes)) {
 			visibleConceptMapTypeArray = StringUtils.split(visibleConceptMapTypes, ",");
@@ -265,7 +278,6 @@ public class AddConceptMapTypesChangeset implements CustomTaskChange {
 	/**
 	 * @see liquibase.change.custom.CustomChange#getConfirmationMessage()
 	 */
-	@Override
 	public String getConfirmationMessage() {
 		return "Finished inserting core concept map types";
 	}

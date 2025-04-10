@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -29,8 +30,6 @@ import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -38,12 +37,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -52,6 +50,7 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.Vector;
 import java.util.jar.JarFile;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -68,23 +67,29 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.log4j.Appender;
+import org.apache.log4j.FileAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
+import org.apache.log4j.RollingFileAppender;
 import org.openmrs.Cohort;
 import org.openmrs.Concept;
 import org.openmrs.ConceptNumeric;
-import org.openmrs.ConceptReferenceRange;
 import org.openmrs.Drug;
 import org.openmrs.EncounterType;
 import org.openmrs.Form;
 import org.openmrs.Location;
-import org.openmrs.Obs;
+import org.openmrs.Patient;
 import org.openmrs.PersonAttributeType;
 import org.openmrs.Program;
 import org.openmrs.ProgramWorkflowState;
 import org.openmrs.User;
 import org.openmrs.annotation.AddOnStartup;
 import org.openmrs.annotation.HasAddOnStartupPrivileges;
-import org.openmrs.annotation.Logging;
 import org.openmrs.api.APIException;
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.ConceptService;
@@ -93,7 +98,6 @@ import org.openmrs.api.PasswordException;
 import org.openmrs.api.ShortPasswordException;
 import org.openmrs.api.WeakPasswordException;
 import org.openmrs.api.context.Context;
-import org.openmrs.logging.OpenmrsLoggingUtil;
 import org.openmrs.module.ModuleException;
 import org.openmrs.module.ModuleFactory;
 import org.openmrs.propertyeditor.CohortEditor;
@@ -105,11 +109,10 @@ import org.openmrs.propertyeditor.LocationEditor;
 import org.openmrs.propertyeditor.PersonAttributeTypeEditor;
 import org.openmrs.propertyeditor.ProgramEditor;
 import org.openmrs.propertyeditor.ProgramWorkflowStateEditor;
-import org.openmrs.validator.ObsValidator;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MarkerFactory;
 import org.springframework.beans.propertyeditors.CustomDateEditor;
+import org.springframework.context.ApplicationContextException;
 import org.springframework.context.NoSuchMessageException;
+import org.springframework.core.JdkVersion;
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentType;
 
@@ -117,17 +120,13 @@ import org.w3c.dom.DocumentType;
  * Utility methods used in openmrs
  */
 public class OpenmrsUtil {
-	private OpenmrsUtil() {
-	}
 	
-	private static volatile MimetypesFileTypeMap mimetypesFileTypeMap = null;
+	private static Log log = LogFactory.getLog(OpenmrsUtil.class);
 	
-	private static org.slf4j.Logger log = LoggerFactory.getLogger(OpenmrsUtil.class);
+	private static Map<Locale, SimpleDateFormat> dateFormatCache = new HashMap<Locale, SimpleDateFormat>();
 	
-	private static Map<Locale, SimpleDateFormat> dateFormatCache = new HashMap<>();
-	
-	private static Map<Locale, SimpleDateFormat> timeFormatCache = new HashMap<>();
-	
+	private static Map<Locale, SimpleDateFormat> timeFormatCache = new HashMap<Locale, SimpleDateFormat>();
+
 	/**
 	 * Compares origList to newList returning map of differences
 	 * 
@@ -135,11 +134,13 @@ public class OpenmrsUtil {
 	 * @param newList
 	 * @return [List toAdd, List toDelete] with respect to origList
 	 */
-	public static <E> Collection<Collection<E>> compareLists(Collection<E> origList, Collection<E> newList) {	
-		Collection<Collection<E>> returnList = new ArrayList<>();
+	public static <E extends Object> Collection<Collection<E>> compareLists(Collection<E> origList, Collection<E> newList) {
+		// TODO finish function
 		
-		Collection<E> toAdd = new LinkedList<>();
-		Collection<E> toDel = new LinkedList<>();
+		Collection<Collection<E>> returnList = new Vector<Collection<E>>();
+		
+		Collection<E> toAdd = new LinkedList<E>();
+		Collection<E> toDel = new LinkedList<E>();
 		
 		// loop over the new list.
 		for (E currentNewListObj : newList) {
@@ -171,14 +172,16 @@ public class OpenmrsUtil {
 	}
 	
 	public static boolean isStringInArray(String str, String[] arr) {
+		boolean retVal = false;
+		
 		if (str != null && arr != null) {
-			for (String anArr : arr) {
-				if (str.equals(anArr)) {
-					return true;
+			for (int i = 0; i < arr.length; i++) {
+				if (str.equals(arr[i])) {
+					retVal = true;
 				}
 			}
 		}
-		return false;
+		return retVal;
 	}
 	
 	public static Boolean isInNormalNumericRange(Float value, ConceptNumeric concept) {
@@ -218,9 +221,9 @@ public class OpenmrsUtil {
 	 */
 	public static String getFileAsString(File file) throws IOException {
 		StringBuilder fileData = new StringBuilder(1000);
-		BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
+		BufferedReader reader = new BufferedReader(new FileReader(file));
 		char[] buf = new char[1024];
-		int numRead;
+		int numRead = 0;
 		while ((numRead = reader.read(buf)) != -1) {
 			String readData = String.valueOf(buf, 0, numRead);
 			fileData.append(readData);
@@ -269,24 +272,25 @@ public class OpenmrsUtil {
 	 * @param inputStream Stream to copy from
 	 * @param outputStream Stream/location to copy to
 	 * @throws IOException thrown if an error occurs during read/write
-	 * <strong>Should</strong> not copy the outputstream if outputstream is null
-	 * <strong>Should</strong> not copy the outputstream if inputstream is null
-	 * <strong>Should</strong> copy inputstream to outputstream and close the outputstream
+	 * @should not copy the outputstream if outputstream is null
+	 * @should not copy the outputstream if inputstream is null
+	 * @should copy inputstream to outputstream and close the outputstream
 	 */
 	public static void copyFile(InputStream inputStream, OutputStream outputStream) throws IOException {
+
 		if (inputStream == null || outputStream == null) {
 			if (outputStream != null) {
 				IOUtils.closeQuietly(outputStream);
 			}
 			return;
 		}
-		
+
 		try {
 			IOUtils.copy(inputStream, outputStream);
-		}
-		finally {
+		} finally {
 			IOUtils.closeQuietly(outputStream);
 		}
+
 	}
 	
 	/**
@@ -296,12 +300,8 @@ public class OpenmrsUtil {
 	 * @return mime type
 	 */
 	public static String getFileMimeType(File file) {
-		if (mimetypesFileTypeMap == null) {
-			synchronized (OpenmrsUtil.class) {
-				mimetypesFileTypeMap = new MimetypesFileTypeMap();
-			}
-		}
-		return mimetypesFileTypeMap.getContentType(file);
+		MimetypesFileTypeMap mimeMap = new MimetypesFileTypeMap();
+		return mimeMap.getContentType(file);
 	}
 	
 	/**
@@ -318,12 +318,8 @@ public class OpenmrsUtil {
 		if (!folder.isDirectory()) {
 			return false;
 		}
-		File[] files = folder.listFiles();
-		if (files == null) {
-			return false;
-		}
 		
-		for (File f : files) {
+		for (File f : folder.listFiles()) {
 			if (f.getName().equals(filename)) {
 				return true;
 			}
@@ -342,7 +338,7 @@ public class OpenmrsUtil {
 	 * @see Context#checkCoreDataset()
 	 */
 	public static Map<String, String> getCorePrivileges() {
-		Map<String, String> corePrivileges = new HashMap<>();
+		Map<String, String> corePrivileges = new HashMap<String, String>();
 		
 		// TODO getCorePrivileges() is called so so many times that getClassesWithAnnotation() better do some catching.
 		Set<Class<?>> classes = OpenmrsClassScanner.getInstance().getClassesWithAnnotation(HasAddOnStartupPrivileges.class);
@@ -385,7 +381,7 @@ public class OpenmrsUtil {
 	 * @return roles that are core to the system
 	 */
 	public static Map<String, String> getCoreRoles() {
-		Map<String, String> roles = new HashMap<>();
+		Map<String, String> roles = new HashMap<String, String>();
 		
 		Field[] flds = RoleConstants.class.getDeclaredFields();
 		for (Field fld : flds) {
@@ -459,9 +455,8 @@ public class OpenmrsUtil {
 					OpenmrsConstants.DATABASE_NAME = val;
 				}
 				catch (Exception e) {
-					log.error(MarkerFactory.getMarker("FATAL"), "Database name cannot be configured from 'connection.url' ."
-					        + "Either supply 'connection.database_name' or correct the url",
-					    e);
+					log.fatal("Database name cannot be configured from 'connection.url' ."
+					        + "Either supply 'connection.database_name' or correct the url", e);
 				}
 			}
 		}
@@ -472,43 +467,72 @@ public class OpenmrsUtil {
 			val = OpenmrsConstants.DATABASE_NAME;
 		}
 		OpenmrsConstants.DATABASE_BUSINESS_NAME = val;
-	}
-	
-	/**
-	 * Gets the in-memory log appender. This method needed to be added as it is much more difficult to
-	 * get a specific appender in the Log4J2 architecture. This method is called in places where we need
-	 * to display logging message.
-	 *
-	 * @since 2.4.0
-	 * @deprecated As of 2.4.4, 2.5.1, and 2.6.0; replaced by {@link OpenmrsLoggingUtil#getMemoryAppender()} instead
-	 */
-	@Deprecated
-	public static MemoryAppender getMemoryAppender() {
-		return new MemoryAppender(OpenmrsLoggingUtil.getMemoryAppender());
+		
+		// set global log level
+		applyLogLevels();
+		
+		setupLogAppenders();
 	}
 	
 	/**
 	 * Set the org.openmrs log4j logger's level if global property log.level.openmrs (
 	 * OpenmrsConstants.GLOBAL_PROPERTY_LOG_LEVEL ) exists. Valid values for global property are
 	 * trace, debug, info, warn, error or fatal.
-	 * 
-	 * @deprecated As of 2.4.4, 2.5.1, and 2.6.0; replaced by {@link OpenmrsLoggingUtil#applyLogLevels()}
 	 */
-	@Logging(ignore = true)
-	@Deprecated
 	public static void applyLogLevels() {
-		OpenmrsLoggingUtil.applyLogLevels();
+		AdministrationService adminService = Context.getAdministrationService();
+		String logLevel = adminService.getGlobalProperty(OpenmrsConstants.GLOBAL_PROPERTY_LOG_LEVEL, "");
+		
+		String[] levels = logLevel.split(",");
+		for (String level : levels) {
+			String[] classAndLevel = level.split(":");
+			if (classAndLevel.length == 1) {
+				applyLogLevel(OpenmrsConstants.LOG_CLASS_DEFAULT, logLevel);
+			} else {
+				applyLogLevel(classAndLevel[0].trim(), classAndLevel[1].trim());
+			}
+		}
 	}
 	
 	/**
 	 * Setup root level log appenders.
-	 *
+	 * 
 	 * @since 1.9.2
-	 * @deprecated As of 2.4.4, 2.5.1, and 2.6.0; replaced by {@link OpenmrsLoggingUtil#reloadLoggingConfiguration()}
 	 */
-	@Deprecated
 	public static void setupLogAppenders() {
-		OpenmrsLoggingUtil.reloadLoggingConfiguration();
+		Logger rootLogger = Logger.getRootLogger();
+		
+		FileAppender fileAppender = null;
+		@SuppressWarnings("rawtypes")
+		Enumeration appenders = rootLogger.getAllAppenders();
+		while (appenders.hasMoreElements()) {
+			Appender appender = (Appender) appenders.nextElement();
+			if (OpenmrsConstants.LOG_OPENMRS_FILE_APPENDER.equals(appender.getName())) {
+				fileAppender = (FileAppender) appender; //the appender already exists
+				break;
+			}
+		}
+		
+		String logLayout = Context.getAdministrationService().getGlobalProperty(OpenmrsConstants.GP_LOG_LAYOUT,
+		    "%p - %C{1}.%M(%L) |%d{ISO8601}| %m%n");
+		PatternLayout patternLayout = new PatternLayout(logLayout);
+		
+		String logLocation = null;
+		try {
+			logLocation = OpenmrsUtil.getOpenmrsLogLocation();
+			if (fileAppender == null) {
+				fileAppender = new RollingFileAppender(patternLayout, logLocation);
+				fileAppender.setName(OpenmrsConstants.LOG_OPENMRS_FILE_APPENDER);
+				rootLogger.addAppender(fileAppender);
+			} else {
+				fileAppender.setFile(logLocation);
+				fileAppender.setLayout(patternLayout);
+			}
+			fileAppender.activateOptions();
+		}
+		catch (IOException e) {
+			log.error("Error while setting an OpenMRS log file to " + logLocation, e);
+		}
 	}
 	
 	/**
@@ -517,30 +541,54 @@ public class OpenmrsUtil {
 	 * @param logClass optional string giving the class level to change. Defaults to
 	 *            OpenmrsConstants.LOG_CLASS_DEFAULT . Should be something like org.openmrs.___
 	 * @param logLevel one of OpenmrsConstants.LOG_LEVEL_*
-	 *                 
-	 * @deprecated As of 2.4.4, 2.5.1, and 2.6.0; replaced by {@link OpenmrsLoggingUtil#applyLogLevel(String, String)}
 	 */
-	@Deprecated
 	public static void applyLogLevel(String logClass, String logLevel) {
-		OpenmrsLoggingUtil.applyLogLevel(logClass, logLevel);
+		
+		if (logLevel != null) {
+			
+			// the default log level is org.openmrs
+			if (StringUtils.isEmpty(logClass)) {
+				logClass = OpenmrsConstants.LOG_CLASS_DEFAULT;
+			}
+			
+			Logger logger = Logger.getLogger(logClass);
+			
+			logLevel = logLevel.toLowerCase();
+			if (OpenmrsConstants.LOG_LEVEL_TRACE.equals(logLevel)) {
+				logger.setLevel(Level.TRACE);
+			} else if (OpenmrsConstants.LOG_LEVEL_DEBUG.equals(logLevel)) {
+				logger.setLevel(Level.DEBUG);
+			} else if (OpenmrsConstants.LOG_LEVEL_INFO.equals(logLevel)) {
+				logger.setLevel(Level.INFO);
+			} else if (OpenmrsConstants.LOG_LEVEL_WARN.equals(logLevel)) {
+				logger.setLevel(Level.WARN);
+			} else if (OpenmrsConstants.LOG_LEVEL_ERROR.equals(logLevel)) {
+				logger.setLevel(Level.ERROR);
+			} else if (OpenmrsConstants.LOG_LEVEL_FATAL.equals(logLevel)) {
+				logger.setLevel(Level.FATAL);
+			} else {
+				log.warn("Global property " + logLevel + " is invalid. "
+				        + "Valid values are trace, debug, info, warn, error or fatal");
+			}
+		}
 	}
 	
 	/**
-	 * Takes a String like "size=compact|order=date" and returns a Map&lt;String,String&gt; from the
-	 * keys to the values.
+	 * Takes a String like "size=compact|order=date" and returns a Map&lt;String,String&gt; from the keys
+	 * to the values.
 	 * 
 	 * @param paramList <code>String</code> with a list of parameters
 	 * @return Map&lt;String, String&gt; of the parameters passed
 	 */
 	public static Map<String, String> parseParameterList(String paramList) {
-		Map<String, String> ret = new HashMap<>();
+		Map<String, String> ret = new HashMap<String, String>();
 		if (paramList != null && paramList.length() > 0) {
 			String[] args = paramList.split("\\|");
 			for (String s : args) {
 				int ind = s.indexOf('=');
 				if (ind <= 0) {
-					throw new IllegalArgumentException(
-					        "Misformed argument in dynamic page specification string: '" + s + "' is not 'key=value'.");
+					throw new IllegalArgumentException("Misformed argument in dynamic page specification string: '" + s
+					        + "' is not 'key=value'.");
 				}
 				String name = s.substring(0, ind);
 				String value = s.substring(ind + 1);
@@ -549,7 +597,7 @@ public class OpenmrsUtil {
 		}
 		return ret;
 	}
-	
+
 	public static <Arg1, Arg2 extends Arg1> boolean nullSafeEquals(Arg1 d1, Arg2 d2) {
 		if (d1 == null) {
 			return d2 == null;
@@ -568,10 +616,10 @@ public class OpenmrsUtil {
 			return d1.compareTo(d2);
 		}
 		if (d1 instanceof Timestamp) {
-			d1 = new Date(d1.getTime());
+			d1 = new Date(((Timestamp) d1).getTime());
 		}
 		if (d2 instanceof Timestamp) {
-			d2 = new Date(d2.getTime());
+			d2 = new Date(((Timestamp) d2).getTime());
 		}
 		return d1.compareTo(d2);
 	}
@@ -640,10 +688,8 @@ public class OpenmrsUtil {
 	 * @param c Collection to be joined
 	 * @param separator string to put between all elements
 	 * @return a String representing the toString() of all elements in c, separated by separator
-	 * @deprecated as of 2.2 use Java's {@link String#join} or Apache Commons StringUtils.join for iterables which do not extend {@link CharSequence}
 	 */
-	@Deprecated
-	public static <E> String join(Collection<E> c, String separator) {
+	public static <E extends Object> String join(Collection<E> c, String separator) {
 		if (c == null) {
 			return "";
 		}
@@ -659,7 +705,7 @@ public class OpenmrsUtil {
 	}
 	
 	public static Set<Concept> conceptSetHelper(String descriptor) {
-		Set<Concept> ret = new HashSet<>();
+		Set<Concept> ret = new HashSet<Concept>();
 		if (descriptor == null || descriptor.length() == 0) {
 			return ret;
 		}
@@ -707,7 +753,7 @@ public class OpenmrsUtil {
 		if (delimitedString != null) {
 			String[] tokens = delimitedString.split(delimiter);
 			for (String token : tokens) {
-				Integer conceptId;
+				Integer conceptId = null;
 				
 				try {
 					conceptId = Integer.valueOf(token);
@@ -716,7 +762,7 @@ public class OpenmrsUtil {
 					conceptId = null;
 				}
 				
-				Concept c;
+				Concept c = null;
 				
 				if (conceptId != null) {
 					c = Context.getConceptService().getConcept(conceptId);
@@ -726,7 +772,7 @@ public class OpenmrsUtil {
 				
 				if (c != null) {
 					if (ret == null) {
-						ret = new ArrayList<>();
+						ret = new ArrayList<Concept>();
 					}
 					ret.add(c);
 				}
@@ -746,7 +792,7 @@ public class OpenmrsUtil {
 				
 				if (c != null) {
 					if (ret == null) {
-						ret = new HashMap<>();
+						ret = new HashMap<String, Concept>();
 					}
 					ret.put(token, c);
 				}
@@ -755,11 +801,12 @@ public class OpenmrsUtil {
 		
 		return ret;
 	}
-
+	
+	// TODO: properly handle duplicates
 	public static List<Concept> conceptListHelper(String descriptor) {
-		Set<Concept> ret = new LinkedHashSet<>();
+		List<Concept> ret = new ArrayList<Concept>();
 		if (descriptor == null || descriptor.length() == 0) {
-			return Collections.emptyList();
+			return ret;
 		}
 		ConceptService cs = Context.getConceptService();
 		
@@ -788,7 +835,7 @@ public class OpenmrsUtil {
 				}
 			}
 		}
-		return new ArrayList<>(ret);
+		return ret;
 	}
 	
 	/**
@@ -848,12 +895,11 @@ public class OpenmrsUtil {
 			throw new IOException("Could not delete directory '" + dir.getAbsolutePath() + "' (not a directory)");
 		}
 		
-		log.debug("Deleting directory {}", dir.getAbsolutePath());
+		if (log.isDebugEnabled()) {
+			log.debug("Deleting directory " + dir.getAbsolutePath());
+		}
 		
 		File[] fileList = dir.listFiles();
-		if (fileList == null) {
-			return false;
-		}
 		for (File f : fileList) {
 			if (f.isDirectory()) {
 				deleteDirectory(f);
@@ -888,7 +934,7 @@ public class OpenmrsUtil {
 	 * 
 	 * @param url an URL
 	 * @return file object for given URL or <code>null</code> if URL is not local
-	 * <strong>Should</strong> return null given null parameter
+	 * @should return null given null parameter
 	 */
 	public static File url2file(final URL url) {
 		if (url == null || !"file".equalsIgnoreCase(url.getProtocol())) {
@@ -935,16 +981,24 @@ public class OpenmrsUtil {
 		if (file == null) {// non-local JAR file URL
 			return url.openStream();
 		}
-		try (JarFile jarFile = new JarFile(file)) {
+		JarFile jarFile = new JarFile(file);
+		try {
 			ZipEntry entry = jarFile.getEntry(path);
 			if (entry == null) {
 				throw new FileNotFoundException(url.toExternalForm());
 			}
-			try (InputStream in = jarFile.getInputStream(entry)) {
+			InputStream in = jarFile.getInputStream(entry);
+			try {
 				ByteArrayOutputStream out = new ByteArrayOutputStream();
 				copyFile(in, out);
 				return new ByteArrayInputStream(out.toByteArray());
 			}
+			finally {
+				in.close();
+			}
+		}
+		finally {
+			jarFile.close();
 		}
 	}
 	
@@ -962,10 +1016,6 @@ public class OpenmrsUtil {
 	 *         the application (runtime properties, modules, etc)
 	 */
 	public static String getApplicationDataDirectory() {
-		return getApplicationDataDirectoryAsFile().toString();
-	}
-	
-	public static File getApplicationDataDirectoryAsFile() {
 		String filepath = null;
 		final String openmrsDir = "OpenMRS";
 		
@@ -974,8 +1024,8 @@ public class OpenmrsUtil {
 		if (StringUtils.isNotBlank(systemProperty)) {
 			filepath = systemProperty;
 		} else {
-			String runtimeProperty = Context.getRuntimeProperties()
-				.getProperty(OpenmrsConstants.APPLICATION_DATA_DIRECTORY_RUNTIME_PROPERTY, null);
+			String runtimeProperty = Context.getRuntimeProperties().getProperty(
+			    OpenmrsConstants.APPLICATION_DATA_DIRECTORY_RUNTIME_PROPERTY, null);
 			if (StringUtils.isNotBlank(runtimeProperty)) {
 				filepath = runtimeProperty;
 			}
@@ -983,20 +1033,18 @@ public class OpenmrsUtil {
 		
 		if (filepath == null) {
 			if (OpenmrsConstants.UNIX_BASED_OPERATING_SYSTEM) {
-				filepath = Paths.get(System.getProperty("user.home"), "." + openmrsDir).toString();
+				filepath = System.getProperty("user.home") + File.separator + "." + openmrsDir;
 				if (!canWrite(new File(filepath))) {
 					log.warn("Unable to write to users home dir, fallback to: "
-						+ OpenmrsConstants.APPLICATION_DATA_DIRECTORY_FALLBACK_UNIX);
-					filepath = Paths.get(OpenmrsConstants.APPLICATION_DATA_DIRECTORY_FALLBACK_UNIX, openmrsDir).toString();
+					        + OpenmrsConstants.APPLICATION_DATA_DIRECTORY_FALLBACK_UNIX);
+					filepath = OpenmrsConstants.APPLICATION_DATA_DIRECTORY_FALLBACK_UNIX + File.separator + openmrsDir;
 				}
 			} else {
-				filepath = Paths.get(System.getProperty("user.home"), "Application Data", "OpenMRS").toString();
-				if (!new File(filepath).exists()) {
-					filepath = Paths.get(System.getenv("appdata"), "OpenMRS").toString();
-				}
+				filepath = System.getProperty("user.home") + File.separator + "Application Data" + File.separator
+						+ "OpenMRS";
 				if (!canWrite(new File(filepath))) {
 					log.warn("Unable to write to users home dir, fallback to: "
-						+ OpenmrsConstants.APPLICATION_DATA_DIRECTORY_FALLBACK_WIN);
+							+ OpenmrsConstants.APPLICATION_DATA_DIRECTORY_FALLBACK_WIN);
 					filepath = OpenmrsConstants.APPLICATION_DATA_DIRECTORY_FALLBACK_WIN + File.separator + openmrsDir;
 				}
 			}
@@ -1009,7 +1057,7 @@ public class OpenmrsUtil {
 			folder.mkdirs();
 		}
 		
-		return folder;
+		return filepath;
 	}
 	
 	/**
@@ -1023,7 +1071,8 @@ public class OpenmrsUtil {
 	public static void setApplicationDataDirectory(String path) {
 		if (StringUtils.isBlank(path)) {
 			System.clearProperty(OpenmrsConstants.KEY_OPENMRS_APPLICATION_DATA_DIRECTORY);
-		} else {
+		}
+		else {
 			System.setProperty(OpenmrsConstants.KEY_OPENMRS_APPLICATION_DATA_DIRECTORY, path);
 		}
 	}
@@ -1054,32 +1103,27 @@ public class OpenmrsUtil {
 	
 	/**
 	 * Returns the location of the OpenMRS log file.
-	 * <p/>
-	 * <strong>Warning:</strong> as of 2.4.4, 2.5.1, and 2.6.0 which allows configuration via a configuration file, the
-	 * result of this call can return null if either the file appender uses a name other than
-	 * {@link OpenmrsConstants#LOG_OPENMRS_FILE_APPENDER} or if the appender with that name is not one of the default file
-	 * appending types.
 	 * 
 	 * @return the path to the OpenMRS log file
 	 * @since 1.9.2
-	 * @deprecated As of 2.4.4, 2.5.1, and 2.6.0; replaced by {@link OpenmrsLoggingUtil#getOpenmrsLogLocation()}
 	 */
-	@Deprecated
 	public static String getOpenmrsLogLocation() {
-		return OpenmrsLoggingUtil.getOpenmrsLogLocation();
+		String logPathGP = Context.getAdministrationService().getGlobalProperty(OpenmrsConstants.GP_LOG_LOCATION, "");
+		File logPath = OpenmrsUtil.getDirectoryInApplicationDataDirectory(logPathGP);
+		
+		File logFile = new File(logPath, "openmrs.log");
+		return logFile.getPath();
 	}
 	
 	/**
-	 * Checks whether the current JVM version is at least Java 8.
+	 * Checks whether the current JVM version is at least Java 6.
 	 * 
-	 * @throws APIException if the current JVM version is earlier than Java 8
+	 * @throws ApplicationContextException if the current JVM version is earlier than Java 6
 	 */
 	public static void validateJavaVersion() {
-		// check whether the current JVM version is at least Java 8
-		if (System.getProperty("java.version").matches("1\\.[0-7]\\.(.*)")) {
-			throw new APIException(
-				"OpenMRS " + OpenmrsConstants.OPENMRS_VERSION_SHORT + " requires Java 8 and above, but is running under " + 
-					System.getProperty("java.version"));
+		// check whether the current JVM version is at least Java 6
+		if (JdkVersion.getJavaVersion().matches("1.(0|1|2|3|4|5).(.*)")) {
+			throw new APIException("OpenMRS requires Java 6, but is running under " + JdkVersion.getJavaVersion());
 		}
 	}
 	
@@ -1098,7 +1142,7 @@ public class OpenmrsUtil {
 		// be a folder in the
 		// application directory
 		if (!folder.isAbsolute()) {
-			folder = new File(getApplicationDataDirectoryAsFile(), folderName);
+			folder = new File(OpenmrsUtil.getApplicationDataDirectory(), folderName);
 		}
 		
 		// now create the directory folder if it doesn't exist
@@ -1157,11 +1201,13 @@ public class OpenmrsUtil {
 	}
 	
 	public static List<Integer> delimitedStringToIntegerList(String delimitedString, String delimiter) {
-		List<Integer> ret = new ArrayList<>();
+		List<Integer> ret = new ArrayList<Integer>();
 		String[] tokens = delimitedString.split(delimiter);
 		for (String token : tokens) {
 			token = token.trim();
-			if (token.length() != 0) {
+			if (token.length() == 0) {
+				continue;
+			} else {
 				ret.add(Integer.valueOf(token));
 			}
 		}
@@ -1259,12 +1305,20 @@ public class OpenmrsUtil {
 	 * Allows easy manipulation of a Map&lt;?, Set&gt;
 	 */
 	public static <K, V> void addToSetMap(Map<K, Set<V>> map, K key, V obj) {
-		Set<V> set = map.computeIfAbsent(key, k -> new HashSet<>());
+		Set<V> set = map.get(key);
+		if (set == null) {
+			set = new HashSet<V>();
+			map.put(key, set);
+		}
 		set.add(obj);
 	}
 	
 	public static <K, V> void addToListMap(Map<K, List<V>> map, K key, V obj) {
-		List<V> list = map.computeIfAbsent(key, k -> new ArrayList<>());
+		List<V> list = map.get(key);
+		if (list == null) {
+			list = new ArrayList<V>();
+			map.put(key, list);
+		}
 		list.add(obj);
 	}
 	
@@ -1273,8 +1327,8 @@ public class OpenmrsUtil {
 	 * locale.
 	 * 
 	 * @return a simple date format
-	 * <strong>Should</strong> return a pattern with four y characters in it
-	 * <strong>Should</strong> not allow the returned SimpleDateFormat to be modified
+	 * @should return a pattern with four y characters in it
+	 * @should not allow the returned SimpleDateFormat to be modified
 	 * @since 1.5
 	 */
 	public static SimpleDateFormat getDateFormat(Locale locale) {
@@ -1283,18 +1337,13 @@ public class OpenmrsUtil {
 		}
 		
 		// note that we are using the custom OpenmrsDateFormat class here which prevents erroneous parsing of 2-digit years
-		SimpleDateFormat sdf = new OpenmrsDateFormat((SimpleDateFormat) DateFormat.getDateInstance(DateFormat.SHORT, locale),
-		        locale);
+		SimpleDateFormat sdf = new OpenmrsDateFormat(
+		        (SimpleDateFormat) DateFormat.getDateInstance(DateFormat.SHORT, locale), locale);
 		String pattern = sdf.toPattern();
 		
 		if (!pattern.contains("yyyy")) {
 			// otherwise, change the pattern to be a four digit year
-			String regex = "yy";
-			if (!pattern.contains("yy")) {
-				//Java 11 has dd/MM/y instead of dd/MM/yy
-				regex = "y";
-			}
-			pattern = pattern.replaceFirst(regex, "yyyy");
+			pattern = pattern.replaceFirst("yy", "yyyy");
 			sdf.applyPattern(pattern);
 		}
 		if (!pattern.contains("MM")) {
@@ -1317,8 +1366,8 @@ public class OpenmrsUtil {
 	 * Get the current user's time format Will look similar to "hh:mm a". Depends on user's locale.
 	 * 
 	 * @return a simple time format
-	 * <strong>Should</strong> return a pattern with two h characters in it
-	 * <strong>Should</strong> not allow the returned SimpleDateFormat to be modified
+	 * @should return a pattern with two h characters in it
+	 * @should not allow the returned SimpleDateFormat to be modified
 	 * @since 1.9
 	 */
 	public static SimpleDateFormat getTimeFormat(Locale locale) {
@@ -1345,8 +1394,8 @@ public class OpenmrsUtil {
 	 * user's locale.
 	 * 
 	 * @return a simple date format
-	 * <strong>Should</strong> return a pattern with four y characters and two h characters in it
-	 * <strong>Should</strong> not allow the returned SimpleDateFormat to be modified
+	 * @should return a pattern with four y characters and two h characters in it
+	 * @should not allow the returned SimpleDateFormat to be modified
 	 * @since 1.9
 	 */
 	public static SimpleDateFormat getDateTimeFormat(Locale locale) {
@@ -1465,8 +1514,8 @@ public class OpenmrsUtil {
 	 * @param objects collection to loop over
 	 * @param obj Object to look for in the <code>objects</code>
 	 * @return true/false whether the given object is found
-	 * <strong>Should</strong> use equals method for comparison instead of compareTo given List collection
-	 * <strong>Should</strong> use equals method for comparison instead of compareTo given SortedSet collection
+	 * @should use equals method for comparison instead of compareTo given List collection
+	 * @should use equals method for comparison instead of compareTo given SortedSet collection
 	 */
 	public static boolean collectionContains(Collection<?> objects, Object obj) {
 		if (obj == null || objects == null) {
@@ -1560,7 +1609,7 @@ public class OpenmrsUtil {
 	public static String generateUid() {
 		return generateUid(20);
 	}
-	
+		
 	/**
 	 * Convenience method to replace Properties.store(), which isn't UTF-8 compliant <br>
 	 * NOTE: In Java 6, you will be able to pass the load() and store() methods a UTF-8
@@ -1602,7 +1651,7 @@ public class OpenmrsUtil {
 	 */
 	public static void storeProperties(Properties properties, OutputStream outStream, String comment) {
 		try {
-			Charset utf8 = StandardCharsets.UTF_8;
+			Charset utf8 = Charset.forName("UTF-8");
 			properties.store(new OutputStreamWriter(outStream, utf8), comment);
 		}
 		catch (FileNotFoundException fnfe) {
@@ -1625,12 +1674,12 @@ public class OpenmrsUtil {
 	 * Reader/Writer object as an argument, making this method unnecessary.
 	 * 
 	 * @param props the properties object to write into
-	 * @param inputStream the input stream to read from
+	 * @param input the input stream to read from
 	 */
 	public static void loadProperties(Properties props, InputStream inputStream) {
 		InputStreamReader reader = null;
 		try {
-			reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+			reader = new InputStreamReader(inputStream, "UTF-8");
 			props.load(reader);
 		}
 		catch (FileNotFoundException fnfe) {
@@ -1706,7 +1755,8 @@ public class OpenmrsUtil {
 	 * </tr>
 	 * <tr>
 	 * <th>Require that it not match the {@link User}'s username or system id
-	 * <th>{@link OpenmrsConstants#GP_PASSWORD_CANNOT_MATCH_USERNAME_OR_SYSTEMID}</th>
+	 * <th>
+	 * {@link OpenmrsConstants#GP_PASSWORD_CANNOT_MATCH_USERNAME_OR_SYSTEMID}</th>
 	 * <th>true</th>
 	 * </tr>
 	 * <tr>
@@ -1741,29 +1791,29 @@ public class OpenmrsUtil {
 	 * @param systemId system id of the user with password to be validated
 	 * @throws PasswordException
 	 * @since 1.5
-	 * <strong>Should</strong> fail with short password by default
-	 * <strong>Should</strong> fail with short password if not allowed
-	 * <strong>Should</strong> pass with short password if allowed
-	 * <strong>Should</strong> fail with digit only password by default
-	 * <strong>Should</strong> fail with digit only password if not allowed
-	 * <strong>Should</strong> pass with digit only password if allowed
-	 * <strong>Should</strong> fail with char only password by default
-	 * <strong>Should</strong> fail with char only password if not allowed
-	 * <strong>Should</strong> pass with char only password if allowed
-	 * <strong>Should</strong> fail without both upper and lower case password by default
-	 * <strong>Should</strong> fail without both upper and lower case password if not allowed
-	 * <strong>Should</strong> pass without both upper and lower case password if allowed
-	 * <strong>Should</strong> fail with password equals to user name by default
-	 * <strong>Should</strong> fail with password equals to user name if not allowed
-	 * <strong>Should</strong> pass with password equals to user name if allowed
-	 * <strong>Should</strong> fail with password equals to system id by default
-	 * <strong>Should</strong> fail with password equals to system id if not allowed
-	 * <strong>Should</strong> pass with password equals to system id if allowed
-	 * <strong>Should</strong> fail with password not matching configured regex
-	 * <strong>Should</strong> pass with password matching configured regex
-	 * <strong>Should</strong> allow password to contain non alphanumeric characters
-	 * <strong>Should</strong> allow password to contain white spaces
-	 * <strong>Should</strong> still work without an open session
+	 * @should fail with short password by default
+	 * @should fail with short password if not allowed
+	 * @should pass with short password if allowed
+	 * @should fail with digit only password by default
+	 * @should fail with digit only password if not allowed
+	 * @should pass with digit only password if allowed
+	 * @should fail with char only password by default
+	 * @should fail with char only password if not allowed
+	 * @should pass with char only password if allowed
+	 * @should fail without both upper and lower case password by default
+	 * @should fail without both upper and lower case password if not allowed
+	 * @should pass without both upper and lower case password if allowed
+	 * @should fail with password equals to user name by default
+	 * @should fail with password equals to user name if not allowed
+	 * @should pass with password equals to user name if allowed
+	 * @should fail with password equals to system id by default
+	 * @should fail with password equals to system id if not allowed
+	 * @should pass with password equals to system id if allowed
+	 * @should fail with password not matching configured regex
+	 * @should pass with password matching configured regex
+	 * @should allow password to contain non alphanumeric characters
+	 * @should allow password to contain white spaces
+	 * @should still work without an open session
 	 */
 	public static void validatePassword(String username, String password, String systemId) throws PasswordException {
 		
@@ -1812,8 +1862,9 @@ public class OpenmrsUtil {
 				}
 			}
 			catch (NumberFormatException nfe) {
-				log.warn(
-				    "Error in global property <" + OpenmrsConstants.GP_PASSWORD_MINIMUM_LENGTH + "> must be an Integer");
+				log
+				        .warn("Error in global property <" + OpenmrsConstants.GP_PASSWORD_MINIMUM_LENGTH
+				                + "> must be an Integer");
 			}
 		}
 		
@@ -1847,9 +1898,9 @@ public class OpenmrsUtil {
 	/**
 	 * @param test the string to test
 	 * @return true if the passed string contains both upper and lower case characters
-	 * <strong>Should</strong> return true if string contains upper and lower case
-	 * <strong>Should</strong> return false if string does not contain lower case characters
-	 * <strong>Should</strong> return false if string does not contain upper case characters
+	 * @should return true if string contains upper and lower case
+	 * @should return false if string does not contain lower case characters
+	 * @should return false if string does not contain upper case characters
 	 */
 	public static boolean containsUpperAndLowerCase(String test) {
 		if (test != null) {
@@ -1863,8 +1914,8 @@ public class OpenmrsUtil {
 	/**
 	 * @param test the string to test
 	 * @return true if the passed string contains only numeric characters
-	 * <strong>Should</strong> return true if string contains only digits
-	 * <strong>Should</strong> return false if string contains any non-digits
+	 * @should return true if string contains only digits
+	 * @should return false if string contains any non-digits
 	 */
 	public static boolean containsOnlyDigits(String test) {
 		if (test != null) {
@@ -1880,8 +1931,8 @@ public class OpenmrsUtil {
 	/**
 	 * @param test the string to test
 	 * @return true if the passed string contains any numeric characters
-	 * <strong>Should</strong> return true if string contains any digits
-	 * <strong>Should</strong> return false if string contains no digits
+	 * @should return true if string contains any digits
+	 * @should return false if string contains no digits
 	 */
 	public static boolean containsDigit(String test) {
 		if (test != null) {
@@ -1917,8 +1968,8 @@ public class OpenmrsUtil {
 	 * 
 	 * @param stackTrace original stack trace from an error
 	 * @return shortened stack trace
-	 * <strong>Should</strong> return null if stackTrace is null
-	 * <strong>Should</strong> remove springframework and reflection related lines
+	 * @should return null if stackTrace is null
+	 * @should remove springframework and reflection related lines
 	 * @since 1.7
 	 */
 	public static String shortenedStackTrace(String stackTrace) {
@@ -1926,7 +1977,7 @@ public class OpenmrsUtil {
 			return null;
 		}
 		
-		List<String> results = new ArrayList<>();
+		List<String> results = new ArrayList<String>();
 		final Pattern exclude = Pattern.compile("(org.springframework.|java.lang.reflect.Method.invoke|sun.reflect.)");
 		boolean found = false;
 		
@@ -1966,7 +2017,7 @@ public class OpenmrsUtil {
 		if (applicationName == null) {
 			applicationName = "openmrs";
 		}
-		String pathName;
+		String pathName = "";
 		pathName = getRuntimePropertiesFilePathName(applicationName);
 		FileInputStream propertyStream = null;
 		try {
@@ -1992,8 +2043,8 @@ public class OpenmrsUtil {
 		}
 		catch (Exception ex) {
 			log.info("Got an error while attempting to load the runtime properties", ex);
-			log.warn(
-			    "Unable to find a runtime properties file. Initial setup is needed. View the webapp to run the setup wizard.");
+			log
+			        .warn("Unable to find a runtime properties file. Initial setup is needed. View the webapp to run the setup wizard.");
 			return null;
 		}
 	}
@@ -2089,8 +2140,8 @@ public class OpenmrsUtil {
 	 * @param s1 the string to compare
 	 * @param s2 the string to compare
 	 * @return true if strings are equal (ignoring case)
-	 * <strong>Should</strong> return false if only one of the strings is null
-	 * <strong>Should</strong> be case insensitive
+	 * @should return false if only one of the strings is null
+	 * @should be case insensitive
 	 * @since 1.8
 	 */
 	public static boolean nullSafeEqualsIgnoreCase(String s1, String s2) {
@@ -2137,43 +2188,17 @@ public class OpenmrsUtil {
 		Calendar c2 = Calendar.getInstance();
 		c2.setTime(date);
 		
-		return (c1.get(Calendar.ERA) == c2.get(Calendar.ERA) && c1.get(Calendar.YEAR) == c2.get(Calendar.YEAR)
-		        && c1.get(Calendar.DAY_OF_YEAR) == c2.get(Calendar.DAY_OF_YEAR));
+		return (c1.get(Calendar.ERA) == c2.get(Calendar.ERA) && c1.get(Calendar.YEAR) == c2.get(Calendar.YEAR) && c1
+		        .get(Calendar.DAY_OF_YEAR) == c2.get(Calendar.DAY_OF_YEAR));
 	}
-	
+
 	/**
 	 * Get declared field names of a class
-	 * 
 	 * @param clazz
 	 * @return
 	 */
 	public static Set<String> getDeclaredFields(Class<?> clazz) {
-		return Arrays.stream(clazz.getDeclaredFields()).map(Field::getName).collect(Collectors.toSet());
-	}
-
-	/**
-	 * This method checks if a given value is a valid numeric value for the person/patient in subject 
-	 * given the concept. It checks if a given value is within the valid reference range.
-	 *
-	 * @param value The value to check
-	 * @param concept The concept associated with the value
-	 * @param obs The observation to be verified
-	 * @return Error message containing expected range if there was a range mismatch, else returns empty string.
-	 * 
-	 * @since 2.7.0
-	 */
-	public static String isValidNumericValue(Float value, Concept concept, Obs obs) {
-		ConceptReferenceRange conceptReferenceRange = new ObsValidator().getReferenceRange(concept, obs);
-		if (conceptReferenceRange == null) {
-			return "";
-		}
-
-		if ((conceptReferenceRange.getHiAbsolute() != null && conceptReferenceRange.getHiAbsolute() < value) ||
-			(conceptReferenceRange.getLowAbsolute() != null && conceptReferenceRange.getLowAbsolute() > value)) {
-			return String.format("Expected value between %s and %s", conceptReferenceRange.getLowAbsolute(), conceptReferenceRange.getHiAbsolute());
-		} else {
-			return "";
-		}
+		return Arrays.asList(clazz.getDeclaredFields()).stream().map(f -> f.getName()).collect(Collectors.toSet());
 	}
 	
 }

@@ -9,16 +9,16 @@
  */
 package org.openmrs.scheduler.timer;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.Assert.assertNotNull;
 
 import java.util.Calendar;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import org.openmrs.api.context.Context;
-import org.openmrs.scheduler.SchedulerException;
 import org.openmrs.scheduler.Task;
 import org.openmrs.scheduler.TaskDefinition;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 
 /**
  * Tests methods in TimerSchedulerServiceImpl
@@ -28,17 +28,17 @@ public class TimerSchedulerServiceImplTest extends BaseContextSensitiveTest {
 	/**
 	 * Tests whether the TimerScheduler schedules tasks even if the repeatInterval is zero.
 	 * 
-	 * @throws SchedulerException
 	 * @see TimerSchedulerServiceImpl#scheduleTask(TaskDefinition)
 	 */
 	@Test
-	public void scheduleTask_shouldHandleZeroRepeatInterval() throws SchedulerException {
+	@Verifies(value = "should handle zero repeat interval", method = "scheduleTask(TaskDefinition)")
+	public void scheduleTask_shouldHandleZeroRepeatInterval() throws Exception {
 		
 		// Represents the start time of the task (right now)
 		Calendar startTime = Calendar.getInstance();
 		
 		// Define repeatInterval as zero
-		Long repeatInterval = 0L;
+		Long repeatInterval = new Long(0);
 		
 		String taskName = "TestTask";
 		String className = "org.openmrs.scheduler.tasks.TestTask";
@@ -61,7 +61,9 @@ public class TimerSchedulerServiceImplTest extends BaseContextSensitiveTest {
 		Context.flushSession();
 		
 		// Assert that the clientTask is not null, i.e. the sheduleTask was able to successfully schedule in case of zero repeatInterval.
-		assertNotNull(clientTask, "The clientTask variable is null, so either the TimerSchedulerServiceImpl.scheduleTask method hasn't finished or didn't get run");
+		assertNotNull(
+		    "The clientTask variable is null, so either the TimerSchedulerServiceImpl.scheduleTask method hasn't finished or didn't get run",
+		    clientTask);
 	}
 	
 }

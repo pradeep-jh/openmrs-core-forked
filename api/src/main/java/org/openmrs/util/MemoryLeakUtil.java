@@ -12,18 +12,17 @@ package org.openmrs.util;
 import java.lang.reflect.Field;
 import java.util.Timer;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import sun.net.www.http.KeepAliveCache;
 
 /**
  * Utility functions to clean up causes of memory leakages.
  */
 public class MemoryLeakUtil {
 	
-	private MemoryLeakUtil() {
-	}
-	
-	private static final Logger log = LoggerFactory.getLogger(MemoryLeakUtil.class);
+	private final static Log log = LogFactory.getLog(MemoryLeakUtil.class);
 	
 	//http://bugs.mysql.com/bug.php?id=36565
 	public static void shutdownMysqlCancellationTimer() {
@@ -44,15 +43,40 @@ public class MemoryLeakUtil {
 			timer.cancel();
 			log.info("completed timer cancellation");
 		}
-		catch (ClassNotFoundException | NoSuchFieldException cnfe) {
+		catch (ClassNotFoundException cnfe) {
 			// Ignore
 			log.error("Cannot cancel", cnfe);
+		}
+		catch (NoSuchFieldException nsfe) {
+			// Ignore
+			log.error("Cannot cancel", nsfe);
 		}
 		catch (SecurityException se) {
 			log.info("Failed to shut-down MySQL Statement Cancellation Timer due to a SecurityException", se);
 		}
 		catch (IllegalAccessException iae) {
 			log.info("Failed to shut-down MySQL Statement Cancellation Timer due to an IllegalAccessException", iae);
+		}
+	}
+	
+	public static void shutdownKeepAliveTimer() {
+		try {
+			final Field kac = HttpClient.class.getDeclaredField("kac");
+			
+			kac.setAccessible(true);
+			final Field keepAliveTimer = KeepAliveCache.class.getDeclaredField("keepAliveTimer");
+			
+			keepAliveTimer.setAccessible(true);
+			
+			final Thread thread = (Thread) keepAliveTimer.get(kac.get(null));
+			
+			if (thread.getContextClassLoader() == OpenmrsClassLoader.getInstance()) {
+				//Set to system class loader such that we can be garbage collected.
+				thread.setContextClassLoader(ClassLoader.getSystemClassLoader());
+			}
+		}
+		catch (final Exception e) {
+			log.error(e.getMessage(), e);
 		}
 	}
 }

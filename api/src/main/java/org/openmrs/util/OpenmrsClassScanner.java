@@ -15,8 +15,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
@@ -34,7 +34,7 @@ import org.springframework.core.type.filter.TypeFilter;
  */
 public class OpenmrsClassScanner {
 	
-	private static final Logger log = LoggerFactory.getLogger(OpenmrsClassScanner.class);
+	protected final Log log = LogFactory.getLog(getClass());
 	
 	private final MetadataReaderFactory metadataReaderFactory;
 	
@@ -75,10 +75,10 @@ public class OpenmrsClassScanner {
 				return annotationToClassMap.get(annotationClass);
 			}
 		} else {
-			annotationToClassMap = new HashMap<>();
+			annotationToClassMap = new HashMap<Class<?>, Set<Class<?>>>();
 		}
 		
-		Set<Class<?>> types = new HashSet<>();
+		Set<Class<?>> types = new HashSet<Class<?>>();
 		String pattern = "classpath*:org/openmrs/**/*.class";
 		
 		try {
@@ -90,7 +90,8 @@ public class OpenmrsClassScanner {
 					if (typeFilter.match(metadataReader, metadataReaderFactory)) {
 						String classname = metadataReader.getClassMetadata().getClassName();
 						try {
-							Class<?> metadata = OpenmrsClassLoader.getInstance().loadClass(classname);
+							@SuppressWarnings("unchecked")
+							Class<?> metadata = (Class<?>) OpenmrsClassLoader.getInstance().loadClass(classname);
 							types.add(metadata);
 						}
 						catch (ClassNotFoundException e) {
@@ -118,9 +119,6 @@ public class OpenmrsClassScanner {
 	 * collection can happen correctly.
 	 */
 	private static class OpenmrsClassScannerHolder {
-
-		private OpenmrsClassScannerHolder() {
-		}
 		
 		private static OpenmrsClassScanner INSTANCE = null;
 	}

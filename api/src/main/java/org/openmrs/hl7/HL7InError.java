@@ -9,47 +9,22 @@
  */
 package org.openmrs.hl7;
 
-import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.Parameter;
-import org.hibernate.envers.Audited;
 import org.openmrs.api.APIException;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Lob;
-import javax.persistence.Table;
-
 /**
- * Represents an error in processing an hl7 message.
+ * Represents a error in processing an hl7 message.
  *
  * @see HL7InQueue
  * @see HL7Service
  */
-@Entity
-@Table(name = "hl7_in_error")
-@Audited
 public class HL7InError extends HL7QueueItem {
 	
 	private static final int MAX_ERROR_DETAILS_LENGTH = 16777215;
-
-	@Id
-	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "hl7_in_error_id_seq")
-	@GenericGenerator(
-		name = "hl7_in_error_id_seq",
-		strategy = "native",
-		parameters = @Parameter(name = "sequence", value = "hl7_in_error_hl7_in_error_id_seq")
-	)
-	@Column(name = "hl7_in_error_id", nullable = false)
+	
 	private Integer hl7InErrorId;
-
-	@Column(name = "error", nullable = false)
+	
 	private String error;
 	
-	@Column(name = "error_details", columnDefinition = "mediumtext")
-	@Lob
 	private String errorDetails;
 	
 	/**
@@ -118,7 +93,6 @@ public class HL7InError extends HL7QueueItem {
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 * @since 1.5
 	 */
-	@Override
 	public Integer getId() {
 		return getHL7InErrorId();
 	}
@@ -127,7 +101,6 @@ public class HL7InError extends HL7QueueItem {
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 * @since 1.5
 	 */
-	@Override
 	public void setId(Integer id) {
 		setHL7InErrorId(id);
 	}

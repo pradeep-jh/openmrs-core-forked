@@ -9,65 +9,51 @@
  */
 package org.openmrs.util;
 
-import liquibase.Contexts;
-import liquibase.GlobalConfiguration;
-import liquibase.LabelExpression;
-import liquibase.Liquibase;
-import liquibase.RuntimeEnvironment;
-import liquibase.Scope;
-import liquibase.changelog.ChangeLogHistoryServiceFactory;
-import liquibase.changelog.ChangeLogIterator;
-import liquibase.changelog.ChangeSet;
-import liquibase.changelog.DatabaseChangeLog;
-import liquibase.changelog.filter.ChangeSetFilterResult;
-import liquibase.changelog.filter.ContextChangeSetFilter;
-import liquibase.changelog.filter.DbmsChangeSetFilter;
-import liquibase.changelog.filter.ShouldRunChangeSetFilter;
-import liquibase.changelog.visitor.UpdateVisitor;
-import liquibase.command.core.StatusCommandStep;
-import liquibase.database.Database;
-import liquibase.database.DatabaseFactory;
-import liquibase.database.jvm.JdbcConnection;
-import liquibase.exception.LiquibaseException;
-import liquibase.exception.LockException;
-import liquibase.lockservice.LockService;
-import liquibase.lockservice.LockServiceFactory;
-import liquibase.resource.CompositeResourceAccessor;
-import liquibase.resource.FileSystemResourceAccessor;
-import liquibase.resource.ResourceAccessor;
-import org.apache.commons.io.IOUtils;
-import org.openmrs.api.context.Context;
-import org.openmrs.liquibase.ChangeLogDetective;
-import org.openmrs.liquibase.ChangeLogVersionFinder;
-import org.openmrs.liquibase.ChangeSetExecutorCallback;
-import org.openmrs.liquibase.LiquibaseProvider;
-import org.openmrs.liquibase.OpenmrsClassLoaderResourceAccessor;
-import org.openmrs.module.ModuleClassLoader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+
+import liquibase.Liquibase;
+import liquibase.changelog.ChangeLogIterator;
+import liquibase.changelog.ChangeLogParameters;
+import liquibase.changelog.ChangeSet;
+import liquibase.changelog.DatabaseChangeLog;
+import liquibase.changelog.filter.ContextChangeSetFilter;
+import liquibase.changelog.filter.DbmsChangeSetFilter;
+import liquibase.changelog.filter.ShouldRunChangeSetFilter;
+import liquibase.changelog.visitor.UpdateVisitor;
+import liquibase.database.Database;
+import liquibase.database.DatabaseFactory;
+import liquibase.database.jvm.JdbcConnection;
+import liquibase.exception.LiquibaseException;
+import liquibase.exception.LockException;
+import liquibase.lockservice.LockService;
+import liquibase.parser.core.xml.XMLChangeLogSAXParser;
+import liquibase.resource.CompositeResourceAccessor;
+import liquibase.resource.FileSystemResourceAccessor;
+import liquibase.resource.ResourceAccessor;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.openmrs.annotation.Authorized;
+import org.openmrs.api.context.Context;
 
 /**
  * This class uses Liquibase to update the database. <br>
@@ -80,42 +66,15 @@ import java.util.Set;
  */
 public class DatabaseUpdater {
 	
-	private static final Logger log = LoggerFactory.getLogger(DatabaseUpdater.class);
+	private static final Log log = LogFactory.getLog(DatabaseUpdater.class);
 	
-	private static final String EMPTY_CHANGE_LOG_FILE = "liquibase-empty-changelog.xml";
+	private static final String CHANGE_LOG_FILE = "liquibase-update-to-latest.xml";
 	
-	public static final String CONTEXT = "core";
+	private static final String CONTEXT = "core";
 	
 	public static final String DATABASE_UPDATES_LOG_FILE = "liquibaseUpdateLogs.txt";
 	
 	private static Integer authenticatedUserId;
-	
-	private static final ChangeLogDetective changeLogDetective;
-	
-	private static final ChangeLogVersionFinder changeLogVersionFinder;
-	
-	private static LiquibaseProvider liquibaseProvider;
-	
-	static {
-		changeLogDetective = ChangeLogDetective.getInstance();
-		changeLogVersionFinder = new ChangeLogVersionFinder();
-	}
-	
-	/**
-	 * Allows to inject a LiquibaseProvider instance for testing purposes.
-	 * 
-	 * @param liquibaseProvider
-	 */
-	static void setLiquibaseProvider(LiquibaseProvider liquibaseProvider) {
-		DatabaseUpdater.liquibaseProvider = liquibaseProvider;
-	}
-
-	/**
-	 * Removes any LiquibaseProvider instance that was set for testing purposes.
-	 */
-	static void unsetLiquibaseProvider() {
-		DatabaseUpdater.liquibaseProvider = null;
-	}
 	
 	/**
 	 * Holds the update warnings generated by the custom liquibase changesets as they are executed
@@ -123,70 +82,70 @@ public class DatabaseUpdater {
 	private static volatile List<String> updateWarnings = null;
 	
 	/**
-	 * Convenience method to run the changesets using Liquibase to bring the database up to a version
-	 * compatible with the code
+	 * Convenience method to run the changesets using Liquibase to bring the database up to a
+	 * version compatible with the code
+	 *
+	 * @throws InputRequiredException if the changelog file requires some sort of user input. The
+	 *             error object will list of the user prompts and type of data for each prompt
+	 * @see #executeChangelog(String, Map)
 	 */
-	public static void executeChangelog() throws DatabaseUpdateException {
-		final LiquibaseProvider liquibaseProvider = new DatabaseUpdaterLiquibaseProvider();
-		
-		final List<String> changeLogs;
-		try {
-			final String version = changeLogDetective.getInitialLiquibaseSnapshotVersion(CONTEXT, liquibaseProvider);
-			log.debug(
-				"updating the database with versions of liquibase-update-to-latest files greater than '{}'",
-				version);
-			
-			changeLogs = changeLogDetective.getUnrunLiquibaseUpdateFileNames(version, CONTEXT, liquibaseProvider);
-			log.debug("found applicable Liquibase update change logs: {}", changeLogs);
-		}
-		catch (Exception e) {
-			log.error("Error while trying to find database changes to run", e);
-			throw new DatabaseUpdateException("Error while trying to find database changes to run", e);
-		}
-		
-		if (changeLogs.isEmpty()) {
-			return;
-		}
-		
-		for (String changeLog : changeLogs) {
-			log.debug("applying Liquibase changelog '{}'", changeLog);
-			executeChangelog(changeLog, (ChangeSetExecutorCallback) null);
-		}
+	public static void executeChangelog() throws DatabaseUpdateException, InputRequiredException {
+		executeChangelog(null, null);
 	}
 	
 	/**
 	 * Run changesets on database using Liquibase to get the database up to the most recent version
 	 *
 	 * @param changelog the liquibase changelog file to use (or null to use the default file)
-	 * @param userInput nullable map from question to user answer. Used if a call to update(null) threw
-	 *            an {@link InputRequiredException}
-	 * @throws DatabaseUpdateException if an error occurs
-	 * @deprecated as of 2.4 see {@link #executeChangelog(String, ChangeSetExecutorCallback)}
+	 * @param userInput nullable map from question to user answer. Used if a call to update(null)
+	 *            threw an {@link InputRequiredException}
+	 * @throws DatabaseUpdateException
+	 * @throws InputRequiredException
 	 */
-	@Deprecated
-	public static void executeChangelog(String changelog, Map<String, Object> userInput)
-	        throws DatabaseUpdateException {
-		log.debug("Executing changelog: {}" , changelog);
-		executeChangelog(changelog, (ChangeSetExecutorCallback) null);
+	public static void executeChangelog(String changelog, Map<String, Object> userInput) throws DatabaseUpdateException,
+	        InputRequiredException {
+		
+		log.debug("Executing changelog: " + changelog);
+		
+		executeChangelog(changelog, userInput, null);
 	}
-
+	
 	/**
-	 * Executes the given changelog file. This file is assumed to be on the classpath.
+	 * Interface used for callbacks when updating the database. Implement this interface and pass it
+	 * to {@link DatabaseUpdater#executeChangelog(String, Map, ChangeSetExecutorCallback)}
+	 */
+	public interface ChangeSetExecutorCallback {
+		
+		/**
+		 * This method is called after each changeset is executed.
+		 *
+		 * @param changeSet the liquibase changeset that was just run
+		 * @param numChangeSetsToRun the total number of changesets in the current file
+		 */
+		public void executing(ChangeSet changeSet, int numChangeSetsToRun);
+	}
+	
+	/**
+	 * Executes the given changelog file. This file is assumed to be on the classpath. If no file is
+	 * given, the default {@link #CHANGE_LOG_FILE} is ran.
 	 *
 	 * @param changelog The string filename of a liquibase changelog xml file to run
+	 * @param userInput nullable map from question to user answer. Used if a call to
+	 *            executeChangelog(&lt;String&gt;, null) threw an {@link InputRequiredException}
 	 * @return A list of messages or warnings generated by the executed changesets
+	 * @throws InputRequiredException if the changelog file requires some sort of user input. The
+	 *             error object will list of the user prompts and type of data for each prompt
 	 */
-	public static List<String> executeChangelog(String changelog, ChangeSetExecutorCallback callback)
-	        throws DatabaseUpdateException {
+	public static List<String> executeChangelog(String changelog, Map<String, Object> userInput,
+	        ChangeSetExecutorCallback callback) throws DatabaseUpdateException, InputRequiredException {
 		log.debug("installing the tables into the database");
 		
 		if (changelog == null) {
-			throw new IllegalArgumentException("changelog must not be null");
+			changelog = CHANGE_LOG_FILE;
 		}
 		
 		try {
-			log.debug("executing liquibase changelog {}", changelog);
-			return executeChangelog(changelog, new Contexts(CONTEXT), callback, null);
+			return executeChangelog(changelog, CONTEXT, userInput, callback, null);
 		}
 		catch (Exception e) {
 			throw new DatabaseUpdateException("There was an error while updating the database to the latest. file: "
@@ -195,79 +154,81 @@ public class DatabaseUpdater {
 	}
 	
 	/**
-	 * This code was borrowed from the liquibase jar so that we can call the given callback function.
+	 * This code was borrowed from the liquibase jar so that we can call the given callback
+	 * function.
 	 *
 	 * @param changeLogFile the file to execute
 	 * @param contexts the liquibase changeset context
+	 * @param userInput answers given by the user
 	 * @param callback the function to call after every changeset
+	 * @param cl {@link ClassLoader} to use to find the changeLogFile (or null to use
+	 *            {@link OpenmrsClassLoader})
 	 * @return A list of messages or warnings generated by the executed changesets
 	 * @throws Exception
 	 */
-	public static List<String> executeChangelog(String changeLogFile, Contexts contexts, ChangeSetExecutorCallback callback,
-	        ClassLoader cl) throws Exception {
+	public static List<String> executeChangelog(String changeLogFile, String contexts, Map<String, Object> userInput,
+	        ChangeSetExecutorCallback callback, ClassLoader cl) throws Exception {
+		final class OpenmrsUpdateVisitor extends UpdateVisitor {
+			
+			private ChangeSetExecutorCallback callback;
+			
+			private int numChangeSetsToRun;
+			
+			public OpenmrsUpdateVisitor(Database database, ChangeSetExecutorCallback callback, int numChangeSetsToRun) {
+				super(database);
+				this.callback = callback;
+				this.numChangeSetsToRun = numChangeSetsToRun;
+			}
+			
+			@Override
+			public void visit(ChangeSet changeSet, DatabaseChangeLog databaseChangeLog, Database database)
+			        throws LiquibaseException {
+				if (callback != null) {
+					callback.executing(changeSet, numChangeSetsToRun);
+				}
+				super.visit(changeSet, databaseChangeLog, database);
+			}
+		}
 		
 		if (cl == null) {
 			cl = OpenmrsClassLoader.getInstance();
 		}
 		
-		Thread.currentThread().setContextClassLoader(cl);
-		
-		log.debug("Setting up liquibase object to run changelog: {}", changeLogFile);
+		log.debug("Setting up liquibase object to run changelog: " + changeLogFile);
 		Liquibase liquibase = getLiquibase(changeLogFile, cl);
-
-		int numChangeSetsToRun = new StatusCommandStep()
-			.listUnrunChangeSets(contexts,
-				new LabelExpression(), liquibase.getDatabaseChangeLog(), liquibase.getDatabase()).size();
-
+		int numChangeSetsToRun = liquibase.listUnrunChangeSets(contexts).size();
 		Database database = null;
 		LockService lockHandler = null;
 		
 		try {
 			database = liquibase.getDatabase();
-			lockHandler = LockServiceFactory.getInstance().getLockService(database);
+			lockHandler = LockService.getInstance(database);
 			lockHandler.waitForLock();
 			
-			Map<String, Object> scopeValues = new HashMap<>();
-			scopeValues.put(Scope.Attr.resourceAccessor.name(), getCompositeResourceAccessor(null));
-			String scopeId = null;
-			try {
-				scopeId = Scope.enter(scopeValues);
-				DatabaseChangeLog changeLog = liquibase.getDatabaseChangeLog();
-				changeLog.setChangeLogParameters(liquibase.getChangeLogParameters());
-				changeLog.validate(database);
-
-				ChangeLogIterator logIterator = new ChangeLogIterator(changeLog, new ShouldRunChangeSetFilter(database),
-					new ContextChangeSetFilter(contexts), new DbmsChangeSetFilter(database));
-
-				// ensure that the change log history service is initialised
-				Scope.getCurrentScope().getSingleton(ChangeLogHistoryServiceFactory.class).getChangeLogService(database).init();
-
-				logIterator.run(new OpenmrsUpdateVisitor(database, callback, numChangeSetsToRun),
-					new RuntimeEnvironment(database, contexts, new LabelExpression()));
-			}
-			finally {
-				try {
-					Scope.exit(scopeId);
-				}
-				catch (Exception e) {
-					log.warn("An error occurred trying to exit the liquibase scope", e);
-				}
-			}
+			ResourceAccessor openmrsFO = new ClassLoaderFileOpener(cl);
+			ResourceAccessor fsFO = new FileSystemResourceAccessor();
+			
+			DatabaseChangeLog changeLog = new XMLChangeLogSAXParser().parse(changeLogFile, new ChangeLogParameters(),
+			    new CompositeResourceAccessor(openmrsFO, fsFO));
+			changeLog.setChangeLogParameters(liquibase.getChangeLogParameters());
+			changeLog.validate(database);
+			ChangeLogIterator logIterator = new ChangeLogIterator(changeLog, new ShouldRunChangeSetFilter(database),
+			        new ContextChangeSetFilter(contexts), new DbmsChangeSetFilter(database));
+			database.checkDatabaseChangeLogTable(true, changeLog, new String[] { contexts });
+			logIterator.run(new OpenmrsUpdateVisitor(database, callback, numChangeSetsToRun), database);
+		}
+		catch (LiquibaseException e) {
+			throw e;
 		}
 		finally {
 			try {
-				if (lockHandler != null) {
-					lockHandler.releaseLock();
-				}
+				lockHandler.releaseLock();
 			}
 			catch (Exception e) {
 				log.error("Could not release lock", e);
 			}
-
 			try {
-				if (database != null && database.getConnection() != null) {
-					database.getConnection().close();
-				}
+				database.getConnection().close();
 			}
 			catch (Exception e) {
 				//pass
@@ -278,14 +239,14 @@ public class DatabaseUpdater {
 	}
 	
 	/**
-	 * Ask Liquibase if it needs to do any updates.
+	 * Ask Liquibase if it needs to do any updates. Only looks at the {@link #CHANGE_LOG_FILE}
 	 *
 	 * @return true/false whether database updates are required
-	 * @throws Exception when an exception is raised while processing Liquibase changelog files
+	 * @should always have a valid update to latest file
 	 */
 	public static boolean updatesRequired() throws Exception {
 		log.debug("checking for updates");
-		List<OpenMRSChangeSet> changesets = getUnrunDatabaseChanges(new DatabaseUpdaterLiquibaseProvider());
+		List<OpenMRSChangeSet> changesets = getUnrunDatabaseChanges();
 		
 		// if the db is locked, it means there was a crash
 		// or someone is executing db updates right now. either way
@@ -306,42 +267,43 @@ public class DatabaseUpdater {
 	 * Ask Liquibase if it needs to do any updates
 	 *
 	 * @param changeLogFilenames the filenames of all files to search for unrun changesets
-	 * @return true/false whether database updates are required <strong>Should</strong> always have a
-	 *         valid update to latest file
+	 * @return true/false whether database updates are required
+	 * @should always have a valid update to latest file
 	 */
 	public static boolean updatesRequired(String... changeLogFilenames) throws Exception {
 		log.debug("checking for updates");
+		
 		List<OpenMRSChangeSet> changesets = getUnrunDatabaseChanges(changeLogFilenames);
 		return !changesets.isEmpty();
 	}
 	
 	/**
-	 * Indicates whether automatic database updates are allowed by this server. Automatic updates are
-	 * disabled by default. In order to enable automatic updates, the admin needs to add
+	 * Indicates whether automatic database updates are allowed by this server. Automatic updates
+	 * are disabled by default. In order to enable automatic updates, the admin needs to add
 	 * 'auto_update_database=true' to the runtime properties file.
 	 *
 	 * @return true/false whether the 'auto_update_database' has been enabled.
 	 */
 	public static Boolean allowAutoUpdate() {
-		String allowAutoUpdate = Context.getRuntimeProperties()
-		        .getProperty(OpenmrsConstants.AUTO_UPDATE_DATABASE_RUNTIME_PROPERTY, "false");
+		String allowAutoUpdate = Context.getRuntimeProperties().getProperty(
+		    OpenmrsConstants.AUTO_UPDATE_DATABASE_RUNTIME_PROPERTY, "false");
 		
 		return "true".equals(allowAutoUpdate);
 		
 	}
 	
 	/**
-	 * Takes the default properties defined in /metadata/api/hibernate/hibernate.default.properties and
-	 * merges it into the user-defined runtime properties
+	 * Takes the default properties defined in /metadata/api/hibernate/hibernate.default.properties
+	 * and merges it into the user-defined runtime properties
 	 *
-	 * @see org.openmrs.api.db.ContextDAO#mergeDefaultRuntimeProperties(Properties)
+	 * @see org.openmrs.api.db.ContextDAO#mergeDefaultRuntimeProperties(java.util.Properties)
 	 */
 	private static void mergeDefaultRuntimeProperties(Properties runtimeProperties) {
 		
 		// loop over runtime properties and precede each with "hibernate" if
 		// it isn't already
-		// must do it this way to prevent concurrent mod errors
-		Set<Object> runtimePropertyKeys = new HashSet<>(runtimeProperties.keySet());
+		Set<Object> runtimePropertyKeys = new HashSet<Object>();
+		runtimePropertyKeys.addAll(runtimeProperties.keySet()); // must do it this way to prevent concurrent mod errors
 		for (Object key : runtimePropertyKeys) {
 			String prop = (String) key;
 			String value = (String) runtimeProperties.get(key);
@@ -377,31 +339,8 @@ public class DatabaseUpdater {
 	}
 	
 	/**
-	 * Exposes Liquibase instances created by this class. When calling
-	 * org.openmrs.util.DatabaseUpdater#getInitialLiquibaseSnapshotVersion(LiquibaseProvider) and
-	 * org.openmrs.util.DatabaseUpdater#getInitialLiquibaseSnapshotVersion(String,LiquibaseProvider), a
-	 * Liquibase instance created by this class is injected into these methods. The Liquibase instance
-	 * is injected into these methods instead of calling
-	 * org.openmrs.util.DatabaseUpdater#getLiquibase(String,ClassLoader) directly. The reason for that
-	 * design decision is that injecting a Liquibase instance (via a Liquibase provider) makes it
-	 * possible to test the two methods mentioned above in isolation. The respective integration test is
-	 * org.openmrs.util.DatabaseUpdateIT.
-	 * 
-	 * @see LiquibaseProvider
-	 * @param changeLogFile name of a Liquibase change log file
-	 * @return a Liquibase instance
-	 * @throws Exception
-	 */
-	static Liquibase getLiquibase(String changeLogFile) throws Exception {
-		if (liquibaseProvider != null) {
-			return liquibaseProvider.getLiquibase(changeLogFile);
-		}
-		return getLiquibase(changeLogFile, OpenmrsClassLoader.getInstance());
-	}
-	
-	/**
-	 * Get a connection to the database through Liquibase. The calling method /must/ close the database
-	 * connection when finished with this Liquibase object.
+	 * Get a connection to the database through Liquibase. The calling method /must/ close the
+	 * database connection when finished with this Liquibase object.
 	 * liquibase.getDatabase().getConnection().close()
 	 *
 	 * @param changeLogFile the name of the file to look for the on classpath or filesystem
@@ -411,7 +350,7 @@ public class DatabaseUpdater {
 	 * @throws Exception
 	 */
 	private static Liquibase getLiquibase(String changeLogFile, ClassLoader cl) throws Exception {
-		Connection connection;
+		Connection connection = null;
 		try {
 			connection = getConnection();
 		}
@@ -426,8 +365,8 @@ public class DatabaseUpdater {
 		}
 		
 		try {
-			Database database = DatabaseFactory.getInstance()
-			        .findCorrectDatabaseImplementation(new JdbcConnection(connection));
+			Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(
+			    new JdbcConnection(connection));
 			database.setDatabaseChangeLogTableName("liquibasechangelog");
 			database.setDatabaseChangeLogLockTableName("liquibasechangeloglock");
 			
@@ -437,19 +376,17 @@ public class DatabaseUpdater {
 				database.setDatabaseChangeLogTableName(database.getDatabaseChangeLogTableName().toUpperCase());
 				database.setDatabaseChangeLogLockTableName(database.getDatabaseChangeLogLockTableName().toUpperCase());
 			}
-
+			
+			ResourceAccessor openmrsFO = new ClassLoaderFileOpener(cl);
+			ResourceAccessor fsFO = new FileSystemResourceAccessor();
+			
 			if (changeLogFile == null) {
-				changeLogFile = EMPTY_CHANGE_LOG_FILE;
+				changeLogFile = CHANGE_LOG_FILE;
 			}
-
-			configureLiquibaseDuplicateFileMode();
-
-			// ensure that the change log history service is initialised
-			Scope.getCurrentScope()
-				.getSingleton(ChangeLogHistoryServiceFactory.class)
-				.getChangeLogService(database)
-				.init();
-			return new Liquibase(changeLogFile, getCompositeResourceAccessor(cl), database);
+			
+			database.checkDatabaseChangeLogTable(false, null, null);
+			
+			return new Liquibase(changeLogFile, new CompositeResourceAccessor(openmrsFO, fsFO), database);
 		}
 		catch (Exception e) {
 			// if an error occurs, close the connection
@@ -602,108 +539,81 @@ public class DatabaseUpdater {
 	}
 	
 	/**
-	 * Returns all change sets defined by (a) the Liquibase snapshot files that had been used to
-	 * initialise the OpenMRS database and (b) the Liquibase update files that that are applicable on
-	 * top of the snapshot version.
-	 * 
-	 * @return list of change sets that both have and haven't been run
+	 * Looks at the current liquibase-update-to-latest
+	 * .xml file and then checks the database to see
+	 * if they have been run.
+	 *
+	 * @return list of changesets that both have and haven't been run
 	 */
+	@Authorized(PrivilegeConstants.GET_DATABASE_CHANGES)
 	public static List<OpenMRSChangeSet> getDatabaseChanges() throws Exception {
-		if (Context.isSessionOpen()) { // Do not check privileges if not run in webapp context (e.g. in tests)
-			Context.requirePrivilege(PrivilegeConstants.GET_DATABASE_CHANGES);
-		}
-		List<OpenMRSChangeSet> result = new ArrayList<>();
+		Database database = null;
 		
-		String initialSnapshotVersion = changeLogDetective.getInitialLiquibaseSnapshotVersion(CONTEXT,
-		    new DatabaseUpdaterLiquibaseProvider());
-		List<String> updateVersions = changeLogVersionFinder.getUpdateVersionsGreaterThan(initialSnapshotVersion);
-		
-		Map<String, List<String>> snapshotCombinations = changeLogVersionFinder.getSnapshotCombinations();
-
-		List<String> changeLogFileNames = new ArrayList<>();
-		changeLogFileNames.addAll(snapshotCombinations.get(initialSnapshotVersion));
-		changeLogFileNames.addAll(changeLogVersionFinder.getUpdateFileNames(updateVersions));
-		
-		Liquibase liquibase = null;
 		try {
-			for (String filename : changeLogFileNames) {
-				liquibase = getLiquibase(filename);
-				List<ChangeSet> changeSets = liquibase.getDatabaseChangeLog().getChangeSets();
-				
-				for (ChangeSet changeSet : changeSets) {
-					OpenMRSChangeSet openMRSChangeSet = new OpenMRSChangeSet(changeSet, liquibase.getDatabase());
-					result.add(openMRSChangeSet);
-				}
-				liquibase.close();
+			Liquibase liquibase = getLiquibase(CHANGE_LOG_FILE, null);
+			database = liquibase.getDatabase();
+			DatabaseChangeLog changeLog = new XMLChangeLogSAXParser().parse(CHANGE_LOG_FILE, new ChangeLogParameters(),
+			    liquibase.getFileOpener());
+			List<ChangeSet> changeSets = changeLog.getChangeSets();
+			
+			List<OpenMRSChangeSet> results = new ArrayList<OpenMRSChangeSet>();
+			for (ChangeSet changeSet : changeSets) {
+				OpenMRSChangeSet omrschangeset = new OpenMRSChangeSet(changeSet, database);
+				results.add(omrschangeset);
 			}
+			
+			return results;
 		}
 		finally {
-			if (liquibase != null) {
-				try {
-					liquibase.close();
-				}
-				catch (Exception e) {
-					// ignore exceptions triggered by closing liquibase a second time 
+			try {
+				if (database != null) {
+					database.getConnection().close();
 				}
 			}
+			catch (Exception e) {
+				//pass
+			}
 		}
-		
-		return result;
 	}
 	
 	/**
-	 * Returns a list of Liquibase change sets were not run yet.
-	 *
-	 * @param liquibaseProvider provides access to a Liquibase instance
-	 * @return list of change sets that were not run yet.
+	 * @see DatabaseUpdater#getUnrunDatabaseChanges(String...)
 	 */
-	public static List<OpenMRSChangeSet> getUnrunDatabaseChanges(LiquibaseProvider liquibaseProvider) throws Exception {
-		if (Context.isSessionOpen()) { // Do not check privileges if not run in webapp context (e.g. in tests)
-			Context.requirePrivilege(PrivilegeConstants.GET_DATABASE_CHANGES);
-		}
-		String initialSnapshotVersion = changeLogDetective.getInitialLiquibaseSnapshotVersion(CONTEXT, liquibaseProvider);
-		log.debug("initial snapshot version is '{}'", initialSnapshotVersion);
-		
-		List<String> liquibaseUpdateFilenames = changeLogDetective.getUnrunLiquibaseUpdateFileNames(initialSnapshotVersion,
-		    CONTEXT, liquibaseProvider);
-		
-		if (!liquibaseUpdateFilenames.isEmpty()) {
-			return getUnrunDatabaseChanges(liquibaseUpdateFilenames.toArray(new String[0]));
-		}
-		
-		return new ArrayList<OpenMRSChangeSet>();
+	@Authorized(PrivilegeConstants.GET_DATABASE_CHANGES)
+	public static List<OpenMRSChangeSet> getUnrunDatabaseChanges() throws Exception {
+		return getUnrunDatabaseChanges(CHANGE_LOG_FILE);
 	}
 	
 	/**
-	 * Looks at the specified liquibase change log files and returns all changesets in the files that
-	 * have not been run on the database yet. If no argument is specified, then it looks at the current
-	 * liquibase-update-to-latest.xml file
+	 * Looks at the specified liquibase change log files and returns all changesets in the files
+	 * that have not been run on the database yet. If no argument is specified, then it looks at the
+	 * current liquibase-update-to-latest.xml file
 	 *
 	 * @param changeLogFilenames the filenames of all files to search for unrun changesets
 	 * @return list of change sets
+	 * @throws Exception
 	 */
-	public static List<OpenMRSChangeSet> getUnrunDatabaseChanges(String... changeLogFilenames) {
-		if (Context.isSessionOpen()) { // Do not check privileges if not run in webapp context (e.g. in tests)
-			Context.requirePrivilege(PrivilegeConstants.GET_DATABASE_CHANGES);
-		}
-		log.debug("looking for un-run change sets in '{}'", Arrays.toString(changeLogFilenames));
+	@Authorized(PrivilegeConstants.GET_DATABASE_CHANGES)
+	public static List<OpenMRSChangeSet> getUnrunDatabaseChanges(String... changeLogFilenames) throws Exception {
+		log.debug("Getting unrun changesets");
 		
 		Database database = null;
 		try {
-			if (changeLogFilenames == null || changeLogFilenames.length == 0) {
-				throw new IllegalArgumentException("changeLogFilenames can neither null nor an empty array");
+			if (changeLogFilenames == null) {
+				throw new IllegalArgumentException("changeLogFilenames cannot be null");
 			}
 			
-			List<OpenMRSChangeSet> results = new ArrayList<>();
+			//if no argument, look ONLY in liquibase-update-to-latest.xml
+			if (changeLogFilenames.length == 0) {
+				changeLogFilenames = new String[] { CHANGE_LOG_FILE };
+			}
 			
+			List<OpenMRSChangeSet> results = new ArrayList<OpenMRSChangeSet>();
 			for (String changelogFile : changeLogFilenames) {
 				Liquibase liquibase = getLiquibase(changelogFile, null);
 				database = liquibase.getDatabase();
+				List<ChangeSet> changeSets = liquibase.listUnrunChangeSets(CONTEXT);
 				
-				List<ChangeSet> changeSets = new StatusCommandStep()
-					.listUnrunChangeSets(new Contexts(CONTEXT),
-						new LabelExpression(), liquibase.getDatabaseChangeLog(), liquibase.getDatabase());
-
 				for (ChangeSet changeSet : changeSets) {
 					OpenMRSChangeSet omrschangeset = new OpenMRSChangeSet(changeSet, database);
 					results.add(omrschangeset);
@@ -714,8 +624,8 @@ public class DatabaseUpdater {
 			
 		}
 		catch (Exception e) {
-			throw new RuntimeException(
-			        "Error occurred while trying to get the updates needed for the database. " + e.getMessage(), e);
+			throw new RuntimeException("Error occurred while trying to get the updates needed for the database. "
+			        + e.getMessage(), e);
 		}
 		finally {
 			try {
@@ -748,7 +658,7 @@ public class DatabaseUpdater {
 	 */
 	public static void reportUpdateWarnings(List<String> warnings) {
 		if (updateWarnings == null) {
-			updateWarnings = new LinkedList<>();
+			updateWarnings = new LinkedList<String>();
 		}
 		updateWarnings.addAll(warnings);
 	}
@@ -760,15 +670,13 @@ public class DatabaseUpdater {
 	 * @param text text to be written to the file
 	 */
 	public static void writeUpdateMessagesToFile(String text) {
-		OutputStreamWriter streamWriter = null;
 		PrintWriter writer = null;
 		File destFile = new File(OpenmrsUtil.getApplicationDataDirectory(), DatabaseUpdater.DATABASE_UPDATES_LOG_FILE);
 		try {
 			String lineSeparator = System.getProperty("line.separator");
 			Date date = Calendar.getInstance().getTime();
 			
-			streamWriter = new OutputStreamWriter(new FileOutputStream(destFile, true), StandardCharsets.UTF_8);
-			writer = new PrintWriter(new BufferedWriter(streamWriter));
+			writer = new PrintWriter(new BufferedWriter(new FileWriter(destFile, true)));
 			writer.write("********** START OF DATABASE UPDATE LOGS AS AT " + date + " **********");
 			writer.write(lineSeparator);
 			writer.write(lineSeparator);
@@ -789,29 +697,34 @@ public class DatabaseUpdater {
 		catch (FileNotFoundException e) {
 			log.warn("Failed to find the database update log file", e);
 		}
+		catch (IOException e) {
+			log.warn("Failed to write to the database update log file", e);
+		}
 		finally {
-			IOUtils.closeQuietly(streamWriter);
 			IOUtils.closeQuietly(writer);
 		}
 	}
 	
 	/**
-	 * This method releases the liquibase db lock, and is intended to be usd after a crashed database update.
+	 * This method releases the liquibase db lock after a crashed database update. First, it
+	 * checks whether "liquibasechangeloglock" table exists in db. If so, it will check
+	 * whether the database is locked. If that is also true, this means that last attempted db
+	 * update crashed.<br>
 	 * <br>
-	 * This should only be called if the user is sure that no one else is currently running database
-	 * updates. This method should be used if there was a db crash while updates were being written and
-	 * the lock table was never cleaned up.
+	 * This should only be called if the user is sure that no one else is currently running
+	 * database updates. This method should be used if there was a db crash while updates
+	 * were being written and the lock table was never cleaned up.
 	 *
 	 * @throws LockException
 	 */
 	public static synchronized void releaseDatabaseLock() throws LockException {
 		Database database = null;
+		
 		try {
 			Liquibase liquibase = getLiquibase(null, null);
 			database = liquibase.getDatabase();
-			LockService lockService = LockServiceFactory.getInstance().getLockService(database);
-			if (isLocked()) {
-				lockService.forceReleaseLock();
+			if (database.hasDatabaseChangeLogLockTable() && isLocked()) {
+				LockService.getInstance(database).forceReleaseLock();
 			}
 		}
 		catch (Exception e) {
@@ -828,8 +741,8 @@ public class DatabaseUpdater {
 	}
 	
 	/**
-	 * This method currently checks the liquibasechangeloglock table to see if there is a row with a
-	 * lock in it. This uses the liquibase API to do this
+	 * This method currently checks the liquibasechangeloglock table to see if there is a row
+	 * with a lock in it.  This uses the liquibase API to do this
 	 *
 	 * @return true if database is currently locked
 	 */
@@ -838,7 +751,7 @@ public class DatabaseUpdater {
 		try {
 			Liquibase liquibase = getLiquibase(null, null);
 			database = liquibase.getDatabase();
-			return LockServiceFactory.getInstance().getLockService(database).listLocks().length > 0;
+			return LockService.getInstance(database).listLocks().length > 0;
 		}
 		catch (Exception e) {
 			return false;
@@ -850,72 +763,6 @@ public class DatabaseUpdater {
 			catch (Exception e) {
 				// pass
 			}
-		}
-	}
-
-	private final static class OpenmrsUpdateVisitor extends UpdateVisitor {
-
-		private final ChangeSetExecutorCallback callback;
-
-		private final int numChangeSetsToRun;
-
-		public OpenmrsUpdateVisitor(Database database, ChangeSetExecutorCallback callback, int numChangeSetsToRun) {
-			super(database, null);
-			this.callback = callback;
-			this.numChangeSetsToRun = numChangeSetsToRun;
-		}
-
-		@Override
-		public void visit(ChangeSet changeSet, DatabaseChangeLog databaseChangeLog, Database database,
-			Set<ChangeSetFilterResult> filterResults) throws LiquibaseException {
-			if (callback != null) {
-				callback.executing(changeSet, numChangeSetsToRun);
-			}
-			Map<String, Object> scopeValues = new HashMap<>();
-			scopeValues.put(Scope.Attr.resourceAccessor.name(), getCompositeResourceAccessor(null));
-			String scopeId = null;
-			try {
-				scopeId = Scope.enter(scopeValues);
-				super.visit(changeSet, databaseChangeLog, database, filterResults);
-			}
-			catch (Exception e) {
-				throw new LiquibaseException("Unable to execute change set: " + changeSet, e);
-			}
-			finally {
-				try {
-					Scope.exit(scopeId);
-				}
-				catch (Exception e) {
-					log.warn("An error occurred trying to exit the liquibase scope", e);
-				}
-			}
-		}
-	}
-
-	/**
-	 * @return a resourceAccessor that includes both classpath and filesystem at the application data directory
-	 */
-	private static CompositeResourceAccessor getCompositeResourceAccessor(ClassLoader classLoader) {
-		if (classLoader == null) {
-			classLoader = Thread.currentThread().getContextClassLoader();
-			if (!(classLoader instanceof OpenmrsClassLoader) && !(classLoader instanceof ModuleClassLoader)) {
-				classLoader = OpenmrsClassLoader.getInstance();
-			}
-		}
-		
-		ResourceAccessor openmrsFO = new OpenmrsClassLoaderResourceAccessor(classLoader);
-		ResourceAccessor fsFO = new FileSystemResourceAccessor(OpenmrsUtil.getApplicationDataDirectoryAsFile());
-		return new CompositeResourceAccessor(openmrsFO, fsFO);
-	}
-	
-	private static void configureLiquibaseDuplicateFileMode() {
-		final String dupFlagModeKey = GlobalConfiguration.DUPLICATE_FILE_MODE.getKey();
-		final String dupFlagMode = Context.getRuntimeProperties().getProperty(dupFlagModeKey);
-
-		if (dupFlagMode != null) {
-			System.setProperty(dupFlagModeKey, dupFlagMode);
-		} else if (System.getProperty(dupFlagModeKey) == null) {
-			System.setProperty(dupFlagModeKey, OpenmrsConstants.LIQUIBASE_DUPLICATE_FILE_MODE_DEFAULT);
 		}
 	}
 }

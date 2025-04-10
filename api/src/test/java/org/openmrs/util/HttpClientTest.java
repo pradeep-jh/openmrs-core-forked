@@ -9,22 +9,21 @@
  */
 package org.openmrs.util;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.Map;
 import java.util.TreeMap;
 
 import org.hamcrest.CoreMatchers;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 
 public class HttpClientTest {
 	
@@ -32,8 +31,8 @@ public class HttpClientTest {
 	
 	private HttpURLConnection connection;
 	
-	@BeforeEach
-	public void setUp() throws IOException {
+	@Before
+	public void setUp() throws Exception {
 		HttpUrl url = mock(HttpUrl.class);
 		client = new HttpClient(url);
 		connection = mock(HttpURLConnection.class);
@@ -41,8 +40,8 @@ public class HttpClientTest {
 	}
 	
 	@Test
-	public void post_shouldPostUrlParametersAndGetResponse() throws IOException {
-		Map<String, String> parameters = new TreeMap<>();
+	public void post_shouldPostUrlParametersAndGetResponse() throws Exception {
+		Map<String, String> parameters = new TreeMap<String, String>();
 		parameters.put("one", "one");
 		parameters.put("two", "two");
 		

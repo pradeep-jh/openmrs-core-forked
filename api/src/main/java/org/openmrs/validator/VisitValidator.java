@@ -9,18 +9,13 @@
  */
 package org.openmrs.validator;
 
-import java.util.Calendar;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
 import org.openmrs.Encounter;
-import org.openmrs.Patient;
 import org.openmrs.Visit;
 import org.openmrs.annotation.Handler;
 import org.openmrs.api.context.Context;
-import org.openmrs.parameter.VisitSearchCriteria;
-import org.openmrs.parameter.VisitSearchCriteriaBuilder;
 import org.openmrs.util.OpenmrsConstants;
 import org.openmrs.util.OpenmrsUtil;
 import org.springframework.validation.Errors;
@@ -34,10 +29,6 @@ import org.springframework.validation.Validator;
 @Handler(supports = { Visit.class }, order = 50)
 public class VisitValidator extends BaseCustomizableValidator implements Validator {
 	
-	private static final double ESTIMATED_BIRTHDATE_ERROR_MARGIN = -0.5;
-	
-	private static final int ESTIMATED_BIRTHDATE_ERROR_MARGIN_MINIMUM_YEARS = -1;
-	
 	/**
 	 * @see org.springframework.validation.Validator#supports(java.lang.Class)
 	 */
@@ -49,29 +40,29 @@ public class VisitValidator extends BaseCustomizableValidator implements Validat
 	/**
 	 * @see org.springframework.validation.Validator#validate(java.lang.Object,
 	 *      org.springframework.validation.Errors)
-	 * <strong>Should</strong> accept a visit that has the right number of attribute occurrences
-	 * <strong>Should</strong> reject a visit if it has fewer than min occurs of an attribute
-	 * <strong>Should</strong> reject a visit if it has more than max occurs of an attribute
-	 * <strong>Should</strong> fail if patient is not set
-	 * <strong>Should</strong> fail if visit type is not set
-	 * <strong>Should</strong> fail if startDatetime is not set
-	 * <strong>Should</strong> fail if the endDatetime is before the startDatetime
-	 * <strong>Should</strong> fail if the startDatetime is after any encounter
-	 * <strong>Should</strong> fail if the stopDatetime is before any encounter
-	 * <strong>Should</strong> fail if an attribute is bad
+	 * @should accept a visit that has the right number of attribute occurrences
+	 * @should reject a visit if it has fewer than min occurs of an attribute
+	 * @should reject a visit if it has more than max occurs of an attribute
+	 * @should fail if patient is not set
+	 * @should fail if visit type is not set
+	 * @should fail if startDatetime is not set
+	 * @should fail if the endDatetime is before the startDatetime
+	 * @should fail if the startDatetime is after any encounter
+	 * @should fail if the stopDatetime is before any encounter
+	 * @should fail if an attribute is bad
 	 *
-	 * <strong>Should</strong> reject a visit if startDateTime is equal to startDateTime of another visit of the same patient
-	 * <strong>Should</strong> reject a visit if startDateTime falls into another visit of the same patient
-	 * <strong>Should</strong> reject a visit if stopDateTime falls into another visit of the same patient
-	 * <strong>Should</strong> reject a visit if it contains another visit of the same patient
+	 * @should reject a visit if startDateTime is equal to startDateTime of another visit of the same patient
+	 * @should reject a visit if startDateTime falls into another visit of the same patient
+	 * @should reject a visit if stopDateTime falls into another visit of the same patient
+	 * @should reject a visit if it contains another visit of the same patient
 
-	 * <strong>Should</strong> accept a visit if startDateTime is equal to startDateTime of another voided visit of the same patient
-	 * <strong>Should</strong> accept a visit if startDateTime falls into another voided visit of the same patient
-	 * <strong>Should</strong> accept a visit if stopDateTime falls into another voided visit of the same patient
-	 * <strong>Should</strong> accept a visit if it contains another voided visit of the same patient
+	 * @should accept a visit if startDateTime is equal to startDateTime of another voided visit of the same patient
+	 * @should accept a visit if startDateTime falls into another voided visit of the same patient
+	 * @should accept a visit if stopDateTime falls into another voided visit of the same patient
+	 * @should accept a visit if it contains another voided visit of the same patient
 	 *
-	 * <strong>Should</strong> pass validation if field lengths are correct
-	 * <strong>Should</strong> fail validation if field lengths are not correct
+	 * @should pass validation if field lengths are correct
+	 * @should fail validation if field lengths are not correct
 	 */
 	@Override
 	public void validate(Object target, Errors errors) {
@@ -108,37 +99,14 @@ public class VisitValidator extends BaseCustomizableValidator implements Validat
 		// check attributes
 		super.validateAttributes(visit, errors, Context.getVisitService().getAllVisitAttributeTypes());
 		
-		// Skipping validation if the patient is not set or not yet persisted
-		boolean nonExistingPatient = visit.getPatient() == null || visit.getPatient().getId() == null;
-		
-		Visit existingVisit = Context.getVisitService().getVisitByUuid(visit.getUuid());
-		
-		boolean endingVisit = existingVisit != null &&
-			existingVisit.getStopDatetime() == null &&
-			visit.getStopDatetime() != null
-			&& existingVisit.getStartDatetime().equals(visit.getStartDatetime());
-		
-		// check for overlapping visits
-		if (!nonExistingPatient && disallowOverlappingVisits() && !endingVisit) {
-			VisitSearchCriteria visitSearchCriteria = new VisitSearchCriteriaBuilder()
-				.patient(visit.getPatient())
-				.maxStartDatetime(visit.getStopDatetime())
-				.minEndDatetime(visit.getStartDatetime())
-				.includeVoided(false)
-				.includeInactive(true)
-				.build();
-			
-			List<Visit> overLappingVisits = Context.getVisitService().getVisits(visitSearchCriteria);
-			
-			boolean overlappingSameVisit = overLappingVisits.size() == 1 && overLappingVisits.get(0).getId().equals(visit.getId());
-					
-			if (!overlappingSameVisit && !overLappingVisits.isEmpty()) {
-				errors.rejectValue("startDatetime", "Visit.visitCannotOverlapAnotherVisitOfTheSamePatient",
-					"This visit overlaps with another visit of the same patient.");
+		// check start and end dates
+		if (disallowOverlappingVisits()) {
+			List<Visit> otherVisitList = Context.getVisitService().getVisitsByPatient(visit.getPatient());
+			for (Visit otherVisit : otherVisitList) {
+				validateStartDatetime(visit, otherVisit, errors);
+				validateStopDatetime(visit, otherVisit, errors);
 			}
 		}
-		
-		validateVisitStartedBeforePatientBirthdate(visit, errors);
 	}
 	
 	/*
@@ -153,32 +121,44 @@ public class VisitValidator extends BaseCustomizableValidator implements Validat
 		    OpenmrsConstants.GLOBAL_PROPERTY_ALLOW_OVERLAPPING_VISITS, "true"));
 	}
 	
-	private void validateVisitStartedBeforePatientBirthdate(Visit visit, Errors errors) {
-		if (visit.getPatient() == null || visit.getPatient().getBirthdate() == null || visit.getStartDatetime() == null) {
-			return;
+	private void validateStartDatetime(Visit visit, Visit otherVisit, Errors errors) {
+		
+		if (visit.getStartDatetime() != null && otherVisit.getStartDatetime() != null
+		        && visit.getStartDatetime().equals(otherVisit.getStartDatetime())) {
+			errors.rejectValue("startDatetime", "Visit.startCannotBeTheSameAsOtherStartDateOfTheSamePatient",
+			    "This visit has the same start date and time as another visit of this patient.");
 		}
 		
-		if (visit.getStartDatetime().before(getPatientBirthdateAdjustedIfEstimated(visit.getPatient()))) {
-			errors.rejectValue("startDatetime", "Visit.startDateCannotFallBeforeTheBirthDateOfTheSamePatient",
-			    "This visit has a start date that falls before the birthdate of the same patient.");
+		if (visit.getStartDatetime() != null && otherVisit.getStartDatetime() != null
+		        && otherVisit.getStopDatetime() != null && visit.getStartDatetime().after(otherVisit.getStartDatetime())
+		        && visit.getStartDatetime().before(otherVisit.getStopDatetime())) {
+			errors.rejectValue("startDatetime", "Visit.startDateCannotFallIntoAnotherVisitOfTheSamePatient",
+			    "This visit has a start date that falls into another visit of the same patient.");
 		}
 	}
 	
-	private Date getPatientBirthdateAdjustedIfEstimated(Patient patient) {
-		Date birthday = patient.getBirthdate();
+	private void validateStopDatetime(Visit visit, Visit otherVisit, Errors errors) {
 		
-		if (patient.getBirthdateEstimated()) {
-			Calendar cal = Calendar.getInstance();
-			cal.setTime(birthday);
-			cal.add(Calendar.YEAR, calculateGracePeriodInYears(patient.getAge()));
-			birthday = cal.getTime();
+		if (visit.getStopDatetime() != null && otherVisit.getStartDatetime() != null && otherVisit.getStopDatetime() != null
+		        && visit.getStopDatetime().after(otherVisit.getStartDatetime())
+		        && visit.getStopDatetime().before(otherVisit.getStopDatetime())) {
+			errors.rejectValue("stopDatetime", "Visit.stopDateCannotFallIntoAnotherVisitOfTheSamePatient",
+			    "This visit has a stop date that falls into another visit of the same patient.");
+			
 		}
 		
-		return birthday;
-	}
-	
-	private int calculateGracePeriodInYears(int age) {
-		return Math.min(ESTIMATED_BIRTHDATE_ERROR_MARGIN_MINIMUM_YEARS,
-			(int)Math.ceil(age * ESTIMATED_BIRTHDATE_ERROR_MARGIN));
+		if (visit.getStartDatetime() != null && visit.getStopDatetime() != null && otherVisit.getStartDatetime() != null
+		        && otherVisit.getStopDatetime() != null && visit.getStartDatetime().before(otherVisit.getStartDatetime())
+		        && visit.getStopDatetime().after(otherVisit.getStopDatetime())) {
+			
+			StringBuilder messageBuilder = new StringBuilder();
+			messageBuilder.append("This visit contains another visit of the same patient, ");
+			messageBuilder.append("i.e. its start date is before the start date of the other visit ");
+			messageBuilder.append("and its stop date is after the stop date of the other visit.");
+			
+			errors.rejectValue("stopDatetime", "Visit.visitCannotContainAnotherVisitOfTheSamePatient", messageBuilder
+			        .toString());
+		}
+		
 	}
 }

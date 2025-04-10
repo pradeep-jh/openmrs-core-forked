@@ -11,12 +11,6 @@ package org.openmrs.web;
 
 public class WebConstants {
 	
-	/**
-	 * Private constructor to prevent accidental instantiation of this utility class
-	 */
-	private WebConstants() {
-	}
-	
 	public static final String INIT_REQ_UNIQUE_ID = "__INIT_REQ_UNIQUE_ID__";
 	
 	public static final String OPENMRS_CONTEXT_HTTPSESSION_ATTR = "__openmrs_context";
@@ -80,7 +74,7 @@ public class WebConstants {
 	 * 
 	 * @see org.openmrs.web.servlet.LoginServlet
 	 */
-	public static final String GP_ALLOWED_LOGIN_ATTEMPTS_PER_IP = "security.loginAttemptsAllowedPerIP";
+	public static String GP_ALLOWED_LOGIN_ATTEMPTS_PER_IP = "security.loginAttemptsAllowedPerIP";
 	
 	/**
 	 * User names of the logged-in users are stored in this map (session id -&gt; user name) in the

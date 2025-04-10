@@ -11,15 +11,14 @@ package org.openmrs.web.filter.update;
 
 import java.util.List;
 
-import org.openmrs.liquibase.LiquibaseProvider;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.openmrs.util.DatabaseUpdater;
 import org.openmrs.util.DatabaseUpdater.OpenMRSChangeSet;
-import org.openmrs.util.DatabaseUpdaterLiquibaseProvider;
 import org.openmrs.util.OpenmrsConstants;
 import org.openmrs.util.RoleConstants;
 import org.openmrs.web.WebConstants;
 import org.openmrs.web.filter.StartupFilter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The {@link UpdateFilter} uses this model object to hold all properties that are edited by the
@@ -28,53 +27,33 @@ import org.slf4j.LoggerFactory;
  */
 public class UpdateFilterModel {
 	
-	private static final Logger log = LoggerFactory.getLogger(UpdateFilterModel.class);
+	// automatically given to the .vm files and used there
+	public String headerTemplate = "org/openmrs/web/filter/update/header.vm";
 	
 	// automatically given to the .vm files and used there
-	public static final String HEADER_TEMPLATE = "org/openmrs/web/filter/update/header.vm";
-
-	// automatically given to the .vm files and used there
-	public static final String FOOTER_TEMPLATE = "org/openmrs/web/filter/update/footer.vm";
-		
+	public String footerTemplate = "org/openmrs/web/filter/update/footer.vm";
+	
 	public List<OpenMRSChangeSet> changes = null;
 	
 	public String superuserrole = RoleConstants.SUPERUSER;
-
+	
 	public String setupPageUrl = WebConstants.SETUP_PAGE_URL;
 	
 	public static final String OPENMRS_VERSION = OpenmrsConstants.OPENMRS_VERSION_SHORT;
 	
 	public Boolean updateRequired = false;
 	
-	private LiquibaseProvider liquibaseProvider;
-	
-	private DatabaseUpdaterWrapper databaseUpdaterWrapper;
-	
 	/**
 	 * Default constructor that sets up some of the properties
 	 */
 	public UpdateFilterModel() {
-		this(new DatabaseUpdaterLiquibaseProvider(), new DatabaseUpdaterWrapper());
-		log.debug("executing default constructor...");
-	}
-	
-	/**
-	 * Constructor that allows to inject a Liquibase provider.
-	 * 
-	 * @param liquibaseProvider a Liquibase provider
-	 */
-	public UpdateFilterModel(LiquibaseProvider liquibaseProvider, DatabaseUpdaterWrapper databaseUpdaterWrapper) {
-		log.debug("executing non-default constructor...");
-		this.liquibaseProvider = liquibaseProvider;
-		this.databaseUpdaterWrapper = databaseUpdaterWrapper;
-		
 		updateChanges();
 		
 		try {
 			if (changes != null && !changes.isEmpty()) {
 				updateRequired = true;
 			} else {
-				updateRequired = databaseUpdaterWrapper.updatesRequired();
+				updateRequired = DatabaseUpdater.updatesRequired();
 			}
 		}
 		catch (Exception e) {
@@ -83,21 +62,23 @@ public class UpdateFilterModel {
 	}
 	
 	/**
-	 * Convenience method that reads from liquibase again to get the most recent list of changesets that
-	 * still need to be run.
+	 * Convenience method that reads from liquibase again to get the most recent list of changesets
+	 * that still need to be run.
 	 */
 	public void updateChanges() {
-		log.debug("executing updateChanges()...");
+		Log log = LogFactory.getLog(getClass());
+		
 		try {
-			changes = databaseUpdaterWrapper.getUnrunDatabaseChanges(liquibaseProvider);
+			changes = DatabaseUpdater.getUnrunDatabaseChanges();
 			
 			// not sure why this is necessary...
-			if (changes == null && databaseUpdaterWrapper.isLocked()) {
-				changes = databaseUpdaterWrapper.getUnrunDatabaseChanges(liquibaseProvider);
+			if (changes == null && DatabaseUpdater.isLocked()) {
+				changes = DatabaseUpdater.getUnrunDatabaseChanges();
 			}
 		}
 		catch (Exception e) {
 			log.error("Unable to get the database changes", e);
 		}
 	}
+	
 }

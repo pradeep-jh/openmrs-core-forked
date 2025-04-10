@@ -9,14 +9,13 @@
  */
 package org.openmrs.validator;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.ConceptStateConversion;
 import org.openmrs.ProgramWorkflow;
 import org.openmrs.api.context.Context;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 
@@ -29,7 +28,8 @@ public class StateConversionValidatorTest extends BaseContextSensitiveTest {
 	 * @see StateConversionValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfConceptIsNullOrEmptyOrWhitespace() {
+	@Verifies(value = "should fail validation if concept is null or empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfConceptIsNullOrEmptyOrWhitespace() throws Exception {
 		ConceptStateConversion csc = new ConceptStateConversion();
 		ProgramWorkflow workflow = Context.getProgramWorkflowService().getProgram(1).getAllWorkflows().iterator().next();
 		csc.setProgramWorkflow(workflow);
@@ -38,14 +38,15 @@ public class StateConversionValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(csc, "csc");
 		new StateConversionValidator().validate(csc, errors);
 		
-		assertTrue(errors.hasFieldErrors("concept"));
+		Assert.assertTrue(errors.hasFieldErrors("concept"));
 	}
 	
 	/**
 	 * @see StateConversionValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfProgramWorkflowIsNullOrEmptyOrWhitespace() {
+	@Verifies(value = "should fail validation if programWorkflow is null or empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfProgramWorkflowIsNullOrEmptyOrWhitespace() throws Exception {
 		ConceptStateConversion csc = new ConceptStateConversion();
 		csc.setProgramWorkflow(null);
 		
@@ -56,14 +57,15 @@ public class StateConversionValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(csc, "csc");
 		new StateConversionValidator().validate(csc, errors);
 		
-		assertTrue(errors.hasFieldErrors("programWorkflow"));
+		Assert.assertTrue(errors.hasFieldErrors("programWorkflow"));
 	}
 	
 	/**
 	 * @see StateConversionValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfProgramWorkflowStateIsNullOrEmptyOrWhitespace() {
+	@Verifies(value = "should fail validation if programWorkflowState is null or empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfProgramWorkflowStateIsNullOrEmptyOrWhitespace() throws Exception {
 		ConceptStateConversion csc = new ConceptStateConversion();
 		
 		ProgramWorkflow workflow = Context.getProgramWorkflowService().getProgram(1).getAllWorkflows().iterator().next();
@@ -74,14 +76,15 @@ public class StateConversionValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(csc, "csc");
 		new StateConversionValidator().validate(csc, errors);
 		
-		assertTrue(errors.hasFieldErrors("programWorkflowState"));
+		Assert.assertTrue(errors.hasFieldErrors("programWorkflowState"));
 	}
 	
 	/**
 	 * @see StateConversionValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfAllRequiredFieldsHaveProperValues() {
+	@Verifies(value = "should pass validation if all required fields have proper values", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfAllRequiredFieldsHaveProperValues() throws Exception {
 		ConceptStateConversion csc = new ConceptStateConversion();
 		ProgramWorkflow workflow = Context.getProgramWorkflowService().getProgram(1).getAllWorkflows().iterator().next();
 		csc.setConcept(Context.getConceptService().getConcept(3));
@@ -91,6 +94,6 @@ public class StateConversionValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(csc, "csc");
 		new StateConversionValidator().validate(csc, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 }

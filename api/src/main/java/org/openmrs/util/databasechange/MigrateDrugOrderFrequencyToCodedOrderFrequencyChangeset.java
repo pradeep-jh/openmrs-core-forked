@@ -9,15 +9,6 @@
  */
 package org.openmrs.util.databasechange;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Types;
-import java.util.Set;
-
-import org.apache.commons.lang3.StringUtils;
-import org.openmrs.util.DatabaseUtil;
-import org.openmrs.util.UpgradeUtil;
-
 import liquibase.change.custom.CustomTaskChange;
 import liquibase.database.Database;
 import liquibase.database.jvm.JdbcConnection;
@@ -26,6 +17,15 @@ import liquibase.exception.DatabaseException;
 import liquibase.exception.SetupException;
 import liquibase.exception.ValidationErrors;
 import liquibase.resource.ResourceAccessor;
+
+import org.apache.commons.lang3.StringUtils;
+import org.openmrs.util.DatabaseUtil;
+import org.openmrs.util.UpgradeUtil;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.util.Set;
 
 public class MigrateDrugOrderFrequencyToCodedOrderFrequencyChangeset implements CustomTaskChange {
 	
@@ -80,7 +80,10 @@ public class MigrateDrugOrderFrequencyToCodedOrderFrequencyChangeset implements 
 			}
 			connection.commit();
 		}
-		catch (DatabaseException | SQLException e) {
+		catch (DatabaseException e) {
+			handleError(connection, e);
+		}
+		catch (SQLException e) {
 			handleError(connection, e);
 		}
 		finally {

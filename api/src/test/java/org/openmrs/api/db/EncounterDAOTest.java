@@ -9,22 +9,27 @@
  */
 package org.openmrs.api.db;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 import org.openmrs.Encounter;
+import org.openmrs.Patient;
+import org.openmrs.PersonName;
 import org.openmrs.api.EncounterService;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.db.hibernate.HibernateEncounterDAO;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
+
+import junit.framework.Assert;
 
 /**
  * This class tests the {@link EncounterDAO} linked to from the Context. Currently that file is the
@@ -41,8 +46,8 @@ public class EncounterDAOTest extends BaseContextSensitiveTest {
 	 * 
 	 * @throws Exception
 	 */
-	@BeforeEach
-	public void runBeforeEachTest() {
+	@Before
+	public void runBeforeEachTest() throws Exception {
 		executeDataSet("org/openmrs/api/db/include/EncounterDAOTest-initialData.xml");
 		
 		if (dao == null)
@@ -56,7 +61,8 @@ public class EncounterDAOTest extends BaseContextSensitiveTest {
 	 * @see EncounterDAO#getSavedEncounterDatetime(Encounter)
 	 */
 	@Test
-	public void getSavedEncounterDatetime_shouldGetSavedEncounterDatetimeFromDatabase() {
+	@Verifies(value = "should get saved encounter datetime from database", method = "getSavedEncounterDatetime(Encounter)")
+	public void getSavedEncounterDatetime_shouldGetSavedEncounterDatetimeFromDatabase() throws Exception {
 		
 		Encounter encounter = Context.getEncounterService().getEncounter(1);
 		
@@ -81,30 +87,32 @@ public class EncounterDAOTest extends BaseContextSensitiveTest {
 	 * @see EncounterDAO#getEncounters(query, patientId, start, length, includeVoided)
 	 */
 	@Test
-	public void getEncounters_shouldWork_WithNameQuery() {
+	@Verifies(value = "should return encounter when query by name", method = "getEncounters(Name, null, null, null, true)")
+	public void getEncounters_shouldWork_WithNameQuery() throws Exception {
 		List<Encounter> expectedEncountersForPatientOne = initializeExpectedEncounters();
 		List<Encounter> encounters = dao.getEncounters("John Doe", null, null, null, true);
-		assertThat(expectedEncountersForPatientOne, Matchers.containsInAnyOrder(encounters.toArray()));
+		assertEquals(expectedEncountersForPatientOne, encounters);
 	}
 	
 	/**
 	 * @see EncounterDAO#getEncounters(query, patientId, start, length, includeVoided)
 	 */
 	@Test
-	public void getEncounters_shouldWork_WithIdentifierQuery() {
+	@Verifies(value = "should return encounter when querying by numeric and string identifiers", method = "getEncounters(Identifier, null, null, null, true)")
+	public void getEncounters_shouldWork_WithIdentifierQuery() throws Exception {
 		List<Encounter> expectedEncountersForPatientOne = initializeExpectedEncounters();
 		
 		List<Encounter> encountersByNumericIdentifier = dao.getEncounters("1234", null, null, null, true);
-		assertThat(expectedEncountersForPatientOne, Matchers.containsInAnyOrder(encountersByNumericIdentifier.toArray()));
+		assertEquals(expectedEncountersForPatientOne, encountersByNumericIdentifier);
 		
 		List<Encounter> encountersByStringIdentifier = dao.getEncounters("abcd", null, null, null, true);
-		assertThat(expectedEncountersForPatientOne, Matchers.containsInAnyOrder(encountersByStringIdentifier.toArray()));
+		assertEquals(expectedEncountersForPatientOne, encountersByStringIdentifier);
 	}
 	
 	private List<Encounter> initializeExpectedEncounters() {
 		Encounter encounterOne = Context.getEncounterService().getEncounter(1);
 		Encounter encounterSix = Context.getEncounterService().getEncounter(6);
-		List<Encounter> expectedEncountersForPatientOne = new ArrayList<>();
+		List<Encounter> expectedEncountersForPatientOne = new ArrayList<Encounter>();
 		expectedEncountersForPatientOne.add(encounterOne);
 		expectedEncountersForPatientOne.add(encounterSix);
 		return expectedEncountersForPatientOne;
@@ -114,7 +122,8 @@ public class EncounterDAOTest extends BaseContextSensitiveTest {
 	 * @see EncounterDAO#getEncounters(query, patientId, start, length, includeVoided)
 	 */
 	@Test
-	public void getEncounters_shouldNotWork_WithPartialIdentifier() {
+	@Verifies(value = "should not return encounter on a partial match of an identifier", method = "getEncounters(Identifier, null, null, null, true)")
+	public void getEncounters_shouldNotWork_WithPartialIdentifier() throws Exception {	
 		List<Encounter> encountersByPartialIdentifier = dao.getEncounters("123", null, null, null, true);
 		assertEquals(0, encountersByPartialIdentifier.size());
 	}

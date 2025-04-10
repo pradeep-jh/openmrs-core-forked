@@ -13,12 +13,12 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.ArrayList;
+import java.util.Vector;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.module.Module;
 import org.openmrs.module.ModuleException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -43,7 +43,7 @@ public class ModuleFilterDefinition implements Serializable {
 	
 	public static final long serialVersionUID = 1;
 	
-	private static final Logger log = LoggerFactory.getLogger(ModuleFilterDefinition.class);
+	private static Log log = LogFactory.getLog(ModuleFilterDefinition.class);
 	
 	// Properties
 	private Module module;
@@ -52,7 +52,7 @@ public class ModuleFilterDefinition implements Serializable {
 	
 	private String filterClass;
 	
-	private Map<String, String> initParameters = new HashMap<>();
+	private Map<String, String> initParameters = new HashMap<String, String>();
 	
 	/**
 	 * Default constructor, requires a Module
@@ -152,8 +152,9 @@ public class ModuleFilterDefinition implements Serializable {
 	 * @return List of {@link ModuleFilterDefinition}s that have been defined for the passed
 	 *         {@link Module}
 	 */
-	public static List<ModuleFilterDefinition> retrieveFilterDefinitions(Module module)  {
-		List<ModuleFilterDefinition> filters = new ArrayList<>();
+	public static List<ModuleFilterDefinition> retrieveFilterDefinitions(Module module) throws ModuleException {
+		
+		List<ModuleFilterDefinition> filters = new Vector<ModuleFilterDefinition>();
 		
 		try {
 			Element rootNode = module.getConfig().getDocumentElement();
@@ -165,27 +166,23 @@ public class ModuleFilterDefinition implements Serializable {
 					NodeList configNodes = node.getChildNodes();
 					for (int j = 0; j < configNodes.getLength(); j++) {
 						Node configNode = configNodes.item(j);
-						switch (configNode.getNodeName()) {
-							case "filter-name":
-								filter.setFilterName(configNode.getTextContent().trim());
-								break;
-							case "filter-class":
-								filter.setFilterClass(configNode.getTextContent().trim());
-								break;
-							case "init-param":
-								NodeList paramNodes = configNode.getChildNodes();
-								String paramName = "";
-								String paramValue = "";
-								for (int k = 0; k < paramNodes.getLength(); k++) {
-									Node paramNode = paramNodes.item(k);
-									if ("param-name".equals(paramNode.getNodeName())) {
-										paramName = paramNode.getTextContent().trim();
-									} else if ("param-value".equals(paramNode.getNodeName())) {
-										paramValue = paramNode.getTextContent().trim();
-									}
+						if ("filter-name".equals(configNode.getNodeName())) {
+							filter.setFilterName(configNode.getTextContent().trim());
+						} else if ("filter-class".equals(configNode.getNodeName())) {
+							filter.setFilterClass(configNode.getTextContent().trim());
+						} else if ("init-param".equals(configNode.getNodeName())) {
+							NodeList paramNodes = configNode.getChildNodes();
+							String paramName = "";
+							String paramValue = "";
+							for (int k = 0; k < paramNodes.getLength(); k++) {
+								Node paramNode = paramNodes.item(k);
+								if ("param-name".equals(paramNode.getNodeName())) {
+									paramName = paramNode.getTextContent().trim();
+								} else if ("param-value".equals(paramNode.getNodeName())) {
+									paramValue = paramNode.getTextContent().trim();
 								}
-								filter.addInitParameter(paramName, paramValue);
-								break;
+							}
+							filter.addInitParameter(paramName, paramValue);
 						}
 					}
 					filters.add(filter);
@@ -195,8 +192,7 @@ public class ModuleFilterDefinition implements Serializable {
 		catch (Exception e) {
 			throw new ModuleException("Unable to parse filters in module configuration.", e);
 		}
-		
-		log.debug("Retrieved {} filters for {}: {}", filters.size(), module, filters);
+		log.debug("Retrieved " + filters.size() + " filters for " + module + ": " + filters);
 		return filters;
 	}
 }

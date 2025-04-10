@@ -9,17 +9,12 @@
  */
 package org.openmrs.test;
 
-import static org.springframework.test.util.AssertionErrors.assertTrue;
-
 import java.net.URL;
 import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
+import org.junit.Assert;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.db.SerializedObjectDAOTest;
 import org.openmrs.module.ModuleConstants;
@@ -27,12 +22,7 @@ import org.openmrs.module.ModuleFactory;
 import org.openmrs.module.ModuleInteroperabilityTest;
 import org.openmrs.module.ModuleUtil;
 import org.openmrs.util.OpenmrsClassLoader;
-import org.openmrs.util.PrivilegeConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.UrlResource;
 import org.springframework.test.context.TestContext;
@@ -45,23 +35,12 @@ import org.springframework.test.context.support.AbstractTestExecutionListener;
  * @see SerializedObjectDAOTest
  * @see ModuleInteroperabilityTest
  * @see BaseContextSensitiveTest
- * @deprecated as of 2.4
- * <p>openmrs-core migrated its tests from JUnit 4 to JUnit 5.
- * JUnit 4 helpers are still supported so module developers can gradually migrate tests from JUnit 4 to JUnit 5.
- * To migrate your tests follow <a href="https://wiki.openmrs.org/display/docs/How+to+migrate+to+JUnit+5">How to migrate to JUnit 5</a>.
- * The JUnit 5 version of the class is {@link org.openmrs.test.jupiter.StartModuleExecutionListener}.<p>
  */
-@Deprecated
 public class StartModuleExecutionListener extends AbstractTestExecutionListener {
-	
-	private static final Logger log = LoggerFactory.getLogger(StartModuleExecutionListener.class);
 	
 	// stores the last class that restarted the module system because we only 
 	// want it restarted once per class, not once per method
 	private static String lastClassRun = "";
-	
-	// storing the bean definitions that have been manually removed from the context
-	private Map<String, BeanDefinition> filteredDefinitions = new HashMap<>();
 	
 	/**
 	 * called before @BeforeTransaction methods
@@ -90,17 +69,14 @@ public class StartModuleExecutionListener extends AbstractTestExecutionListener 
 				Properties props = BaseContextSensitiveTest.runtimeProperties;
 				props.setProperty(ModuleConstants.RUNTIMEPROPERTY_MODULE_LIST_TO_LOAD, modulesToLoad);
 				try {
-					Context.addProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
 					ModuleUtil.startup(props);
 				}
 				catch (Exception e) {
-					log.error("Error while starting modules: ", e);
+					System.out.println("Error while starting modules: ");
+					e.printStackTrace(System.out);
 					throw e;
 				}
-				finally {
-					Context.removeProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
-				}
-				assertTrue("Some of the modules did not start successfully for "
+				Assert.assertTrue("Some of the modules did not start successfully for "
 				        + testContext.getTestClass().getSimpleName() + ". Only " + ModuleFactory.getStartedModules().size()
 				        + " modules started instead of " + startModuleAnnotation.value().length, startModuleAnnotation
 				        .value().length <= ModuleFactory.getStartedModules().size());
@@ -111,48 +87,26 @@ public class StartModuleExecutionListener extends AbstractTestExecutionListener 
 				 * loading beans from moduleApplicationContext into it and then calling ctx.refresh()
 				 * This approach ensures that the application context remains consistent
 				 */
-				removeFilteredBeanDefinitions(testContext.getApplicationContext());
 				GenericApplicationContext ctx = new GenericApplicationContext(testContext.getApplicationContext());
-				
 				XmlBeanDefinitionReader xmlReader = new XmlBeanDefinitionReader(ctx);
+				
 				Enumeration<URL> list = OpenmrsClassLoader.getInstance().getResources("moduleApplicationContext.xml");
 				while (list.hasMoreElements()) {
 					xmlReader.loadBeanDefinitions(new UrlResource(list.nextElement()));
 				}
 				
+				//ensure that when refreshing, we use the openmrs class loader for the started modules.
+				boolean useSystemClassLoader = Context.isUseSystemClassLoader();
 				Context.setUseSystemClassLoader(false);
-				ctx.refresh();
-			}
-		}
-	}
-	
-	/*
-	 * Starting modules may require to remove beans definitions that were initially loaded.
-	 */
-	protected void removeFilteredBeanDefinitions(ApplicationContext context) {
-		// first looking at a context loading the bean definitions "now"
-		GenericApplicationContext ctx = new GenericApplicationContext();
-		(new XmlBeanDefinitionReader(ctx)).loadBeanDefinitions("classpath:applicationContext-service.xml");
-		Set<String> filteredBeanNames = new HashSet<>();
-		for (String beanName : ctx.getBeanDefinitionNames()) {
-			if (beanName.startsWith("openmrsProfile")) {
-				filteredBeanNames.add(beanName);
-			}
-		}
-		ctx.close();
-		
-		// then looking at the context as it loaded the bean definitions before the module(s) were started
-		Set<String> originalBeanNames = new HashSet<>();
-		for (String beanName : ((GenericApplicationContext) context).getBeanDefinitionNames()) {
-			if (beanName.startsWith("openmrsProfile")) {
-				originalBeanNames.add(beanName);
-			}
-		}
-		// removing the bean definitions that have been filtered out by starting the module(s)
-		for (String beanName : originalBeanNames) {
-			if (!filteredBeanNames.contains(beanName)) {
-				filteredDefinitions.put(beanName, ((GenericApplicationContext) context).getBeanDefinition(beanName));
-				((GenericApplicationContext) context).removeBeanDefinition(beanName);
+				try {
+					ctx.refresh();
+				}
+				finally {
+					Context.setUseSystemClassLoader(useSystemClassLoader);
+				}
+				
+				// session is closed by the test framework
+				//Context.closeSession();
 			}
 		}
 	}
@@ -165,13 +119,6 @@ public class StartModuleExecutionListener extends AbstractTestExecutionListener 
 			if (!Context.isSessionOpen()) {
 				Context.openSession();
 			}
-			
-			// re-registering the bean definitions that we may have removed
-			for (String beanName : filteredDefinitions.keySet()) {
-				((GenericApplicationContext) testContext.getApplicationContext())
-					.registerBeanDefinition(beanName, filteredDefinitions.get(beanName));
-			}
-			filteredDefinitions.clear();
 			
 			ModuleUtil.shutdown();
 			

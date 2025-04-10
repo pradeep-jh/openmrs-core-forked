@@ -11,16 +11,15 @@ package org.openmrs.scheduler.timer;
 
 import java.util.Date;
 import java.util.TimerTask;
-import java.util.concurrent.ExecutionException;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.context.Daemon;
 import org.openmrs.scheduler.SchedulerService;
 import org.openmrs.scheduler.SchedulerUtil;
 import org.openmrs.scheduler.Task;
 import org.openmrs.scheduler.TaskDefinition;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TimerSchedulerTask extends TimerTask {
 	
@@ -28,7 +27,7 @@ public class TimerSchedulerTask extends TimerTask {
 	private Task task;
 	
 	/** Logger */
-	private static final Logger log = LoggerFactory.getLogger(TimerSchedulerTask.class);
+	private static Log log = LogFactory.getLog(TimerSchedulerTask.class);
 	
 	/** * Public constructor */
 	public TimerSchedulerTask(Task task) {
@@ -58,7 +57,7 @@ public class TimerSchedulerTask extends TimerTask {
 	 * Save the last execution time in the TaskDefinition
 	 */
 	private static void saveLastExecutionTime(Task task) {
-		TaskDefinition taskDefinition;
+		TaskDefinition taskDefinition = null;
 		try {
 			// We re-get the task definition in case the copy set during the
 			// task initialization has become stale.  NOTE: If a task does not
@@ -92,11 +91,7 @@ public class TimerSchedulerTask extends TimerTask {
 	 * Executes the given task.
 	 */
 	public static void execute(Task task) {
-		try {
-			task.execute();
-		} catch (InterruptedException | ExecutionException e) {
-			// ignored
-		} 
+		task.execute();
 		saveLastExecutionTime(task);
 	}
 }

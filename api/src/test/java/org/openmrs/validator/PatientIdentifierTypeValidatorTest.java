@@ -9,13 +9,11 @@
  */
 package org.openmrs.validator;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.PatientIdentifierType;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 
@@ -29,24 +27,25 @@ public class PatientIdentifierTypeValidatorTest extends BaseContextSensitiveTest
 	 * 
 	 */
 	@Test
-	public void validate_shouldFailValidationIfNameIsNullOrEmptyOrWhitespace() {
+	@Verifies(value = "should fail validation if name is null or empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfNameIsNullOrEmptyOrWhitespace() throws Exception {
 		PatientIdentifierType type = new PatientIdentifierType();
 		type.setName(null);
 		type.setDescription("some text");
 		
 		Errors errors = new BindException(type, "type");
 		new PatientIdentifierTypeValidator().validate(type, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 		
 		type.setName("");
 		errors = new BindException(type, "type");
 		new PatientIdentifierTypeValidator().validate(type, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 		
 		type.setName(" ");
 		errors = new BindException(type, "type");
 		new PatientIdentifierTypeValidator().validate(type, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 	}
 	
 	/**
@@ -54,24 +53,25 @@ public class PatientIdentifierTypeValidatorTest extends BaseContextSensitiveTest
 	 * 
 	 */
 	@Test
-	public void validate_shouldPassValidationIfDescriptionIsNullOrEmptyOrWhitespace() {
+	@Verifies(value = "should pass validation if description is null or empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfDescriptionIsNullOrEmptyOrWhitespace() throws Exception {
 		PatientIdentifierType type = new PatientIdentifierType();
 		type.setName("name");
 		type.setDescription(null);
 		
 		Errors errors = new BindException(type, "type");
 		new PatientIdentifierTypeValidator().validate(type, errors);
-		assertFalse(errors.hasFieldErrors("description"));
+		Assert.assertFalse(errors.hasFieldErrors("description"));
 		
 		type.setDescription("");
 		errors = new BindException(type, "type");
 		new PatientIdentifierTypeValidator().validate(type, errors);
-		assertFalse(errors.hasFieldErrors("description"));
+		Assert.assertFalse(errors.hasFieldErrors("description"));
 		
 		type.setDescription(" ");
 		errors = new BindException(type, "type");
 		new PatientIdentifierTypeValidator().validate(type, errors);
-		assertFalse(errors.hasFieldErrors("description"));
+		Assert.assertFalse(errors.hasFieldErrors("description"));
 	}
 	
 	/**
@@ -79,7 +79,8 @@ public class PatientIdentifierTypeValidatorTest extends BaseContextSensitiveTest
 	 * 
 	 */
 	@Test
-	public void validate_shouldPassValidationIfAllRequiredFieldsHaveProperValues() {
+	@Verifies(value = "should pass validation if all required fields have proper values", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfAllRequiredFieldsHaveProperValues() throws Exception {
 		PatientIdentifierType type = new PatientIdentifierType();
 		type.setName("restraining");
 		type.setDescription(":(");
@@ -87,13 +88,14 @@ public class PatientIdentifierTypeValidatorTest extends BaseContextSensitiveTest
 		Errors errors = new BindException(type, "type");
 		new PatientIdentifierTypeValidator().validate(type, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see	PatientIdentifierTypeValidator#validate(Object, org.springframework.validation.Errors)
 	 */
 	@Test
+	@Verifies(value = "Should pass validation if regEx field length is not too long", method = "validate(Object, org.springframework.validation.Errors)")
 	public void validate_shouldPassValidationIfRegExFieldLengthIsNotTooLong() {
 		PatientIdentifierType type = new PatientIdentifierType();
 		type.setName("Martin");
@@ -104,13 +106,14 @@ public class PatientIdentifierTypeValidatorTest extends BaseContextSensitiveTest
 		Errors errors = new BindException(type, "type");
 		new PatientIdentifierTypeValidator().validate(type, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see	PatientIdentifierTypeValidator#validate(Object, org.springframework.validation.Errors)
 	 */
 	@Test
+	@Verifies(value = "Should fail validation if regEx field length is too long", method = "validate(Object, org.springframework.validation.Errors)")
 	public void validate_shouldFailValidationIfRegExFieldLengthIsTooLong() {
 		PatientIdentifierType type = new PatientIdentifierType();
 		type.setName("Martin");
@@ -121,14 +124,15 @@ public class PatientIdentifierTypeValidatorTest extends BaseContextSensitiveTest
 		Errors errors = new BindException(type, "type");
 		new PatientIdentifierTypeValidator().validate(type, errors);
 		
-		assertTrue(errors.hasErrors());
-		assertEquals(1, errors.getFieldErrorCount("format"));
+		Assert.assertTrue(errors.hasErrors());
+		Assert.assertEquals(1, errors.getFieldErrorCount("format"));
 	}
 	
 	/**
 	 * @see	PatientIdentifierTypeValidator#validate(Object, org.springframework.validation.Errors)
 	 */
 	@Test
+	@Verifies(value = "Should fail validation if name field length is too long", method = "validate(Object, org.springframework.validation.Errors)")
 	public void validate_shouldFailValidationIfNameFieldLengthIsTooLong() {
 		PatientIdentifierType type = new PatientIdentifierType();
 		String invalid51charInput = "123456789012345678901234567890123456789012345678901";
@@ -139,15 +143,16 @@ public class PatientIdentifierTypeValidatorTest extends BaseContextSensitiveTest
 		Errors errors = new BindException(type, "type");
 		new PatientIdentifierTypeValidator().validate(type, errors);
 		
-		assertTrue(errors.hasErrors());
-		assertEquals(1, errors.getFieldErrorCount("name"));
+		Assert.assertTrue(errors.hasErrors());
+		Assert.assertEquals(1, errors.getFieldErrorCount("name"));
 	}
 	
 	/**
 	 * @see org.openmrs.validator.PatientIdentifierTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfPatientIdentifierTypeNameAlreadyExist() {
+	@Verifies(value = "should fail validation if patient identifier type name is already exist", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfPatientIdentifierTypeNameAlreadyExist() throws Exception {
 		PatientIdentifierType type = new PatientIdentifierType();
 		type.setName("OpenMRS Identification Number");
 		type.setDescription("helps");
@@ -157,7 +162,7 @@ public class PatientIdentifierTypeValidatorTest extends BaseContextSensitiveTest
 		Errors errors = new BindException(type, "type");
 		new PatientIdentifierTypeValidator().validate(type, errors);
 		
-		assertTrue(errors.hasErrors());
+		Assert.assertTrue(errors.hasErrors());
 	}
 	
 	/**
@@ -165,7 +170,8 @@ public class PatientIdentifierTypeValidatorTest extends BaseContextSensitiveTest
 	 *
 	 */
 	@Test
-	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() {
+	@Verifies(value = "should pass validation if field lengths are correct", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() throws Exception {
 		PatientIdentifierType type = new PatientIdentifierType();
 		type.setName("name");
 		type.setFormat("format");
@@ -176,7 +182,7 @@ public class PatientIdentifierTypeValidatorTest extends BaseContextSensitiveTest
 		Errors errors = new BindException(type, "type");
 		new PatientIdentifierTypeValidator().validate(type, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
@@ -184,7 +190,8 @@ public class PatientIdentifierTypeValidatorTest extends BaseContextSensitiveTest
 	 *
 	 */
 	@Test
-	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() {
+	@Verifies(value = "should fail validation if field lengths are not correct", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() throws Exception {
 		PatientIdentifierType type = new PatientIdentifierType();
 		type
 		        .setName("too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text");
@@ -200,10 +207,10 @@ public class PatientIdentifierTypeValidatorTest extends BaseContextSensitiveTest
 		Errors errors = new BindException(type, "type");
 		new PatientIdentifierTypeValidator().validate(type, errors);
 		
-		assertTrue(errors.hasFieldErrors("name"));
-		assertTrue(errors.hasFieldErrors("format"));
-		assertTrue(errors.hasFieldErrors("formatDescription"));
-		assertTrue(errors.hasFieldErrors("validator"));
-		assertTrue(errors.hasFieldErrors("retireReason"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("format"));
+		Assert.assertTrue(errors.hasFieldErrors("formatDescription"));
+		Assert.assertTrue(errors.hasFieldErrors("validator"));
+		Assert.assertTrue(errors.hasFieldErrors("retireReason"));
 	}
 }

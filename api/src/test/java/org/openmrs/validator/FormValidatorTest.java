@@ -9,12 +9,11 @@
  */
 package org.openmrs.validator;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.Form;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 
@@ -27,37 +26,40 @@ public class FormValidatorTest extends BaseContextSensitiveTest {
 	 * @see FormValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfNameIsNull() {
+	@Verifies(value = "should fail validation if name is null", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfNameIsNull() throws Exception {
 		Form form = new Form();
 		form.setVersion("1.0");
 		
 		Errors errors = new BindException(form, "form");
 		new FormValidator().validate(form, errors);
 		
-		assertTrue(errors.hasFieldErrors("name"));
-		assertFalse(errors.hasFieldErrors("version"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertFalse(errors.hasFieldErrors("version"));
 	}
 	
 	/**
 	 * @see FormValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfVersionIsNull() {
+	@Verifies(value = "should fail validation if version is null", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfVersionIsNull() throws Exception {
 		Form form = new Form();
 		form.setName("test");
 		
 		Errors errors = new BindException(form, "form");
 		new FormValidator().validate(form, errors);
 		
-		assertFalse(errors.hasFieldErrors("name"));
-		assertTrue(errors.hasFieldErrors("version"));
+		Assert.assertFalse(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("version"));
 	}
 	
 	/**
 	 * @see FormValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfVersionDoesNotMatchRegex() {
+	@Verifies(value = "should fail validation if version does not match regex", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfVersionDoesNotMatchRegex() throws Exception {
 		Form form = new Form();
 		form.setName("test");
 		form.setVersion("first");
@@ -65,15 +67,16 @@ public class FormValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(form, "form");
 		new FormValidator().validate(form, errors);
 		
-		assertFalse(errors.hasFieldErrors("name"));
-		assertTrue(errors.hasFieldErrors("version"));
+		Assert.assertFalse(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("version"));
 	}
 	
 	/**
 	 * @see FormValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfRetiredReasonIsNull() {
+	@Verifies(value = "should fail validation if retiredReason is null", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfRetiredReasonIsNull() throws Exception {
 		Form form = new Form();
 		form.setName("test");
 		form.setVersion("1.0");
@@ -82,16 +85,17 @@ public class FormValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(form, "form");
 		new FormValidator().validate(form, errors);
 		
-		assertFalse(errors.hasFieldErrors("name"));
-		assertFalse(errors.hasFieldErrors("version"));
-		assertTrue(errors.hasFieldErrors("retireReason"));
+		Assert.assertFalse(errors.hasFieldErrors("name"));
+		Assert.assertFalse(errors.hasFieldErrors("version"));
+		Assert.assertTrue(errors.hasFieldErrors("retireReason"));
 	}
 	
 	/**
 	 * @see FormValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfAllFieldsAreCorrect() {
+	@Verifies(value = "should pass validation if all fields are correct", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfAllFieldsAreCorrect() throws Exception {
 		Form form = new Form();
 		form.setName("test");
 		form.setVersion("1.0");
@@ -99,14 +103,15 @@ public class FormValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(form, "form");
 		new FormValidator().validate(form, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see FormValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfRetiredReasonIsEmpty() {
+	@Verifies(value = "should fail validation if retiredReason is empty", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfRetiredReasonIsEmpty() throws Exception {
 		Form form = new Form();
 		form.setName("test");
 		form.setVersion("1.0");
@@ -116,14 +121,15 @@ public class FormValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(form, "form");
 		new FormValidator().validate(form, errors);
 		
-		assertTrue(errors.hasFieldErrors("retireReason"));
+		Assert.assertTrue(errors.hasFieldErrors("retireReason"));
 	}
 	
 	/**
 	 * @see FormValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() {
+	@Verifies(value = "should pass validation if field lengths are correct", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() throws Exception {
 		Form form = new Form();
 		form.setName("name");
 		form.setVersion("1.0");
@@ -133,14 +139,15 @@ public class FormValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(form, "form");
 		new FormValidator().validate(form, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see FormValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() {
+	@Verifies(value = "should fail validation if field lengths are not correct", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() throws Exception {
 		Form form = new Form();
 		form
 		        .setName("too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text");
@@ -153,9 +160,9 @@ public class FormValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(form, "form");
 		new FormValidator().validate(form, errors);
 		
-		assertTrue(errors.hasFieldErrors("name"));
-		assertTrue(errors.hasFieldErrors("version"));
-		assertTrue(errors.hasFieldErrors("description"));
-		assertTrue(errors.hasFieldErrors("retireReason"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("version"));
+		Assert.assertTrue(errors.hasFieldErrors("description"));
+		Assert.assertTrue(errors.hasFieldErrors("retireReason"));
 	}
 }

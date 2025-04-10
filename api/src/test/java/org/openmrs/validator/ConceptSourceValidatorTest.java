@@ -9,15 +9,14 @@
  */
 package org.openmrs.validator;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.ConceptSource;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
-import org.springframework.validation.BindException;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.springframework.validation.Errors;
+import org.springframework.validation.BindException;
 
 /**
  *Tests methods on the {@link org.openmrs.validator.ConceptSourceValidator} class.
@@ -25,31 +24,33 @@ import org.springframework.validation.Errors;
 public class ConceptSourceValidatorTest extends BaseContextSensitiveTest {
 	
 	@Test
-	public void validate_shouldFailValidationIfNameIsNullOrEmptyOrWhitespace() {
+	@Verifies(value = "should fail validation if name is null or empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfNameIsNullOrEmptyOrWhitespace() throws Exception {
 		ConceptSource conceptSource = new ConceptSource();
 		conceptSource.setName(null);
 		conceptSource.setDescription("Some description");
 		
 		Errors errors = new BindException(conceptSource, "conceptSource");
 		new ConceptSourceValidator().validate(conceptSource, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 		
 		conceptSource.setName("");
 		errors = new BindException(conceptSource, "conceptSource");
 		new ConceptSourceValidator().validate(conceptSource, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 		
 		conceptSource.setName("   ");
 		errors = new BindException(conceptSource, "conceptSource");
 		new ConceptSourceValidator().validate(conceptSource, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 	}
 
 	/**
+	 * @verifies fail validation if description is null or empty or whitespace
 	 * @see ConceptSourceValidator#validate(Object, Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfDescriptionIsNullOrEmptyOrWhitespace() {
+	public void validate_shouldFailValidationIfDescriptionIsNullOrEmptyOrWhitespace() throws Exception {
 
 		ConceptSource conceptSource = new ConceptSource();
 		conceptSource.setName("New name");
@@ -57,21 +58,22 @@ public class ConceptSourceValidatorTest extends BaseContextSensitiveTest {
 		conceptSource.setDescription(null);
 		Errors errors = new BindException(conceptSource, "conceptSource");
 		new ConceptSourceValidator().validate(conceptSource, errors);
-		assertTrue(errors.hasFieldErrors("description"));
+		Assert.assertTrue(errors.hasFieldErrors("description"));
 		
 		conceptSource.setDescription("");
 		errors = new BindException(conceptSource, "conceptSource");
 		new ConceptSourceValidator().validate(conceptSource, errors);
-		assertTrue(errors.hasFieldErrors("description"));
+		Assert.assertTrue(errors.hasFieldErrors("description"));
 		
 		conceptSource.setDescription("   ");
 		errors = new BindException(conceptSource, "conceptSource");
 		new ConceptSourceValidator().validate(conceptSource, errors);
-		assertTrue(errors.hasFieldErrors("description"));
+		Assert.assertTrue(errors.hasFieldErrors("description"));
 	}
 	
 	@Test
-	public void validate_shouldPassValidationIfHl7CodeIsNullOrEmptyOrWhitespace() {
+	@Verifies(value = "should pass validation if HL7 Code is null or empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfHl7CodeIsNullOrEmptyOrWhitespace() throws Exception {
 		ConceptSource conceptSource = new ConceptSource();
 		conceptSource.setName("New name");
 		conceptSource.setDescription("Some description");
@@ -79,32 +81,34 @@ public class ConceptSourceValidatorTest extends BaseContextSensitiveTest {
 		
 		Errors errors = new BindException(conceptSource, "conceptSource");
 		new ConceptSourceValidator().validate(conceptSource, errors);
-		assertFalse(errors.hasFieldErrors("Hl7Code"));
+		Assert.assertFalse(errors.hasFieldErrors("Hl7Code"));
 		
 		conceptSource.setHl7Code("");
 		errors = new BindException(conceptSource, "conceptSource");
 		new ConceptSourceValidator().validate(conceptSource, errors);
-		assertFalse(errors.hasFieldErrors("Hl7Code"));
+		Assert.assertFalse(errors.hasFieldErrors("Hl7Code"));
 		
 		conceptSource.setHl7Code("   ");
 		errors = new BindException(conceptSource, "conceptSource");
 		new ConceptSourceValidator().validate(conceptSource, errors);
-		assertFalse(errors.hasFieldErrors("Hl7Code"));
+		Assert.assertFalse(errors.hasFieldErrors("Hl7Code"));
 	}
 	
 	@Test
-	public void validate_shouldPassValidationIfAllRequiredFieldsHaveProperValues() {
+	@Verifies(value = "should pass validation if all required fields have proper values", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfAllRequiredFieldsHaveProperValues() throws Exception {
 		ConceptSource conceptSource = new ConceptSource();
 		conceptSource.setName("New name");
 		conceptSource.setDescription("Some description");
 		
 		Errors errors = new BindException(conceptSource, "conceptSource");
 		new ConceptSourceValidator().validate(conceptSource, errors);
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	@Test
-	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() {
+	@Verifies(value = "should pass validation if field lengths are correct", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() throws Exception {
 		ConceptSource conceptSource = new ConceptSource();
 		conceptSource.setName("New name");
 		conceptSource.setDescription("Some description");
@@ -113,11 +117,12 @@ public class ConceptSourceValidatorTest extends BaseContextSensitiveTest {
 		
 		Errors errors = new BindException(conceptSource, "conceptSource");
 		new ConceptSourceValidator().validate(conceptSource, errors);
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	@Test
-	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() {
+	@Verifies(value = "should fail validation if field lengths are not correct", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() throws Exception {
 		ConceptSource conceptSource = new ConceptSource();
 		conceptSource.setName(StringUtils.repeat("a", 51));
 		conceptSource.setDescription(StringUtils.repeat("a", 1025));
@@ -126,10 +131,10 @@ public class ConceptSourceValidatorTest extends BaseContextSensitiveTest {
 		conceptSource.setRetireReason(StringUtils.repeat("a", 256));
 		Errors errors = new BindException(conceptSource, "conceptSource");
 		new ConceptSourceValidator().validate(conceptSource, errors);
-		assertTrue(errors.hasFieldErrors("name"));
-		assertTrue(errors.hasFieldErrors("description"));
-		assertTrue(errors.hasFieldErrors("hl7Code"));
-		assertTrue(errors.hasFieldErrors("uniqueId"));
-		assertTrue(errors.hasFieldErrors("retireReason"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("description"));
+		Assert.assertTrue(errors.hasFieldErrors("hl7Code"));
+		Assert.assertTrue(errors.hasFieldErrors("uniqueId"));
+		Assert.assertTrue(errors.hasFieldErrors("retireReason"));
 	}
 }

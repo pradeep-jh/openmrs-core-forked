@@ -16,9 +16,9 @@ import java.util.Set;
 
 public class Graph<T> {
 	
-	private Set<T> nodes = new HashSet<>();
+	private Set<T> nodes = new HashSet<T>();
 	
-	private Set<Edge> edges = new HashSet<>();
+	private Set<Edge> edges = new HashSet<Edge>();
 	
 	public class Edge {
 		
@@ -81,14 +81,15 @@ public class Graph<T> {
 	
 	/**
 	 * Obtains all nodes without incoming edges 
-	 * @return set of nodes
+	 * @return
 	 */
 	private Set<T> getNodesWithNoIncomingEdges() {
-		Set<T> nodesWithIncomingEdges = new HashSet<>();
+		Set<T> nodesWithIncomingEdges = new HashSet<T>();
+		Set<T> nodesWithoutIncomingEdges = new HashSet<T>();
 		for (Edge edge : edges) {
 			nodesWithIncomingEdges.add(edge.getToNode());
 		}
-		Set<T> nodesWithoutIncomingEdges = new HashSet<>(nodes);
+		nodesWithoutIncomingEdges.addAll(nodes);
 		for (T node : nodesWithIncomingEdges) {
 			nodesWithoutIncomingEdges.remove(node);
 		}
@@ -98,7 +99,7 @@ public class Graph<T> {
 	/**
 	 * Determines if a node has incoming edges 
 	 * @param node
-	 * @return true if the node has an incoming edge, otherwise false
+	 * @return
 	 */
 	private boolean hasIncomingEdges(T node) {
 		for (Edge edge : edges) {
@@ -112,10 +113,10 @@ public class Graph<T> {
 	/**
 	 * Obtains the edges starting with a given node 
 	 * @param aNode
-	 * @return set of edges
+	 * @return
 	 */
 	private Set<Edge> getEdgesStartingWith(T aNode) {
-		Set<Edge> edgesPointing = new HashSet<>();
+		Set<Edge> edgesPointing = new HashSet<Edge>();
 		for (Edge edge : edges) {
 			if (edge.getFromNode().equals(aNode)) {
 				edgesPointing.add(edge);
@@ -130,7 +131,7 @@ public class Graph<T> {
 	 * @return set of edges
 	 */
 	public Set<Edge> getEdgesEndingWith(T aNode) {
-		Set<Edge> edgesPointing = new HashSet<>();
+		Set<Edge> edgesPointing = new HashSet<Edge>();
 		for (Edge edge : edges) {
 			if (edge.getToNode().equals(aNode)) {
 				edgesPointing.add(edge);
@@ -148,10 +149,11 @@ public class Graph<T> {
 	public List<T> topologicalSort() throws CycleException {
 		
 		Set<T> queue = getNodesWithNoIncomingEdges();
-		List<T> result = new ArrayList<>();
+		List<T> result = new ArrayList<T>();
 		
 		// The initial edges are stored.
-		List<Edge> initialEdges = new ArrayList<>(edges);
+		List<Edge> initialEdges = new ArrayList<Edge>();
+		initialEdges.addAll(edges);
 		while (!queue.isEmpty()) {
 			T node = queue.iterator().next();
 			queue.remove(node);

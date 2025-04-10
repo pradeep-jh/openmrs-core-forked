@@ -9,30 +9,28 @@
  */
 package org.openmrs.api.db.hibernate;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Join;
-import javax.persistence.criteria.JoinType;
-import javax.persistence.criteria.Order;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
-
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
+import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.criterion.Conjunction;
+import org.hibernate.criterion.Disjunction;
+import org.hibernate.criterion.Junction;
+import org.hibernate.criterion.MatchMode;
+import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Projections;
+import org.hibernate.criterion.Restrictions;
 import org.openmrs.Person;
-import org.openmrs.PersonName;
 import org.openmrs.Provider;
 import org.openmrs.ProviderAttribute;
 import org.openmrs.ProviderAttributeType;
 import org.openmrs.api.context.Context;
+import org.openmrs.api.db.DAOException;
 import org.openmrs.api.db.ProviderDAO;
 import org.openmrs.util.OpenmrsConstants;
 
@@ -65,7 +63,6 @@ public class HibernateProviderDAO implements ProviderDAO {
 	/**
 	 * @see org.openmrs.api.db.ProviderDAO#saveProvider(org.openmrs.Provider)
 	 */
-	@Override
 	public Provider saveProvider(Provider provider) {
 		getSession().saveOrUpdate(provider);
 		return provider;
@@ -84,7 +81,7 @@ public class HibernateProviderDAO implements ProviderDAO {
 	 */
 	@Override
 	public Provider getProvider(Integer id) {
-		return getSession().get(Provider.class, id);
+		return (Provider) getSession().load(Provider.class, id);
 	}
 	
 	/**
@@ -100,34 +97,26 @@ public class HibernateProviderDAO implements ProviderDAO {
 	 */
 	@Override
 	public Collection<Provider> getProvidersByPerson(Person person, boolean includeRetired) {
-		Session session = sessionFactory.getCurrentSession();
-		CriteriaBuilder cb = session.getCriteriaBuilder();
-		CriteriaQuery<Provider> cq = cb.createQuery(Provider.class);
-		Root<Provider> root = cq.from(Provider.class);
-
-		List<Predicate> predicates = new ArrayList<>();
-		List<Order> orders = new ArrayList<>();
-
+		Criteria criteria = getSession().createCriteria(Provider.class);
 		if (!includeRetired) {
-			predicates.add(cb.isFalse(root.get("retired")));
+			criteria.add(Restrictions.eq("retired", false));
 		} else {
 			//push retired Provider to the end of the returned list
-			orders.add(cb.asc(root.get("retired")));
+			criteria.addOrder(Order.asc("retired"));
 		}
-		predicates.add(cb.equal(root.get("person"), person));
+		criteria.add(Restrictions.eq("person", person));
 		
-		orders.add(cb.asc(root.get("providerId")));
+		criteria.addOrder(Order.asc("providerId"));
 		
-		cq.where(predicates.toArray(new Predicate[]{})).orderBy(orders);
-		return session.createQuery(cq).getResultList();
+		return criteria.list();
 	}
-
+	
 	/**
 	 * @see org.openmrs.api.db.ProviderDAO#getProviderAttribute(Integer)
 	 */
 	@Override
 	public ProviderAttribute getProviderAttribute(Integer providerAttributeID) {
-		return getSession().get(ProviderAttribute.class, providerAttributeID);
+		return (ProviderAttribute) getSession().load(ProviderAttribute.class, providerAttributeID);
 	}
 	
 	/**
@@ -145,28 +134,20 @@ public class HibernateProviderDAO implements ProviderDAO {
 	@Override
 	public List<Provider> getProviders(String name, Map<ProviderAttributeType, String> serializedAttributeValues,
 	        Integer start, Integer length, boolean includeRetired) {
-		Session session = sessionFactory.getCurrentSession();
-		CriteriaBuilder cb = session.getCriteriaBuilder();
-		CriteriaQuery<Provider> cq = cb.createQuery(Provider.class);
-		Root<Provider> root = cq.from(Provider.class);
-
-		List<Predicate> predicates = prepareProviderCriteria(cb, root, name, includeRetired);
-		cq.where(predicates.toArray(new Predicate[]{})).distinct(true);
+		Criteria criteria = prepareProviderCriteria(name, includeRetired);
+		if (start != null) {
+			criteria.setFirstResult(start);
+		}
+		if (length != null) {
+			criteria.setMaxResults(length);
+		}
 		
 		if (includeRetired) {
 			//push retired Provider to the end of the returned list
-			cq.orderBy(cb.asc(root.get("retired")));
+			criteria.addOrder(Order.asc("retired"));
 		}
 		
-		TypedQuery<Provider> typedQuery = session.createQuery(cq);
-		if (start != null) {
-			typedQuery.setFirstResult(start);
-		}
-		if (length != null) {
-			typedQuery.setMaxResults(length);
-		}
-		
-		List<Provider> providers = typedQuery.getResultList();
+		List<Provider> providers = criteria.list();
 		if (serializedAttributeValues != null) {
 			CollectionUtils.filter(providers, new AttributeMatcherPredicate<Provider, ProviderAttributeType>(
 			        serializedAttributeValues));
@@ -189,89 +170,79 @@ public class HibernateProviderDAO implements ProviderDAO {
 		}
 		return MatchMode.EXACT;
 	}
-
+	
 	/**
-	 * Prepares a list of JPA predicates for searching Provider entities based on a specified name
-	 * and retirement status.
+	 * Creates a Provider Criteria based on name
 	 *
-	 * @param cb The CriteriaBuilder used for creating predicates.
-	 * @param root The root entity (Provider) in the CriteriaQuery.
-	 * @param name The provider's name or a part of it to be used in the search. If blank, it defaults to a wildcard search.
-	 * @param includeRetired Boolean flag indicating whether to include retired providers in the search.
-	 * @return List<Predicate> A list of predicates that can be added to a CriteriaQuery for filtering Provider entities.
+	 * @param name represents provider name
+	 * @param includeRetired
+	 * @return Criteria represents the hibernate criteria to search
 	 */
-	private List<Predicate> prepareProviderCriteria(CriteriaBuilder cb, Root<Provider> root, String name, boolean includeRetired) {
+	private Criteria prepareProviderCriteria(String name, boolean includeRetired) {
 		if (StringUtils.isBlank(name)) {
 			name = "%";
 		}
-
-		List<Predicate> predicates = new ArrayList<>();
+		
+		Criteria criteria = sessionFactory.getCurrentSession().createCriteria(Provider.class).createAlias("person", "p",
+		    Criteria.LEFT_JOIN);
 		if (!includeRetired) {
-			predicates.add(cb.isFalse(root.get("retired")));
+			criteria.add(Restrictions.eq("retired", false));
 		}
-
-		Predicate orCondition = cb.or(
-			cb.like(cb.lower(root.get("identifier")), getMatchMode().toLowerCasePattern(name)),
-			cb.like(cb.lower(root.get("name")), MatchMode.ANYWHERE.toLowerCasePattern(name))
-		);
-
-		Join<Provider, Person> personJoin = root.join("person", JoinType.LEFT);
-		Join<Person, PersonName> personNameJoin = personJoin.join("names", JoinType.LEFT);
-
-		List<Predicate> splitNamePredicates = new ArrayList<>();
+		
+		criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
+		
+		criteria.createAlias("p.names", "personName", Criteria.LEFT_JOIN);
+		
+		Disjunction or = Restrictions.disjunction();
+		or.add(Restrictions.ilike("identifier", name, getMatchMode()));
+		or.add(Restrictions.ilike("name", name, MatchMode.ANYWHERE));
+		
+		Conjunction and = Restrictions.conjunction();
+		or.add(and);
+		
 		String[] splitNames = name.split(" ");
-		
 		for (String splitName : splitNames) {
-			splitNamePredicates.add(getNameSearchExpression(splitName, cb, personNameJoin));
+			and.add(getNameSearchExpression(splitName));
 		}
-		Predicate andCondition = cb.and(splitNamePredicates.toArray(new Predicate[]{}));
-
-		predicates.add(cb.or(orCondition, andCondition));
 		
-		return predicates;
+		criteria.add(or);
+		
+		return criteria;
 	}
 	
 	/**
 	 * Creates or that matches the input name with Provider-Person-Names (not voided)
 	 *
-	 * @param name The name string to be matched against the PersonName fields.
-	 * @param cb The CriteriaBuilder used for creating the CriteriaQuery predicates.
-	 * @param personNameJoin The join to the PersonName entity, allowing access to its fields.
-	 * @return Predicate The compound predicate representing the desired search conditions.
+	 * @param name
+	 * @return Junction
 	 */
-	private Predicate getNameSearchExpression(String name, CriteriaBuilder cb, Join<Person, PersonName> personNameJoin) {
+	private Junction getNameSearchExpression(String name) {
 		MatchMode mode = MatchMode.ANYWHERE;
-
-		Predicate voidedPredicate = cb.isFalse(personNameJoin.get("voided"));
-
-		Predicate givenNamePredicate = cb.like(cb.lower(personNameJoin.get("givenName")), mode.toLowerCasePattern(name));
-		Predicate middleNamePredicate = cb.like(cb.lower(personNameJoin.get("middleName")), mode.toLowerCasePattern(name));
-		Predicate familyNamePredicate = cb.like(cb.lower(personNameJoin.get("familyName")), mode.toLowerCasePattern(name));
-		Predicate familyName2Predicate = cb.like(cb.lower(personNameJoin.get("familyName2")), mode.toLowerCasePattern(name));
-
-		Predicate orPredicate = cb.or(givenNamePredicate, middleNamePredicate, familyNamePredicate, familyName2Predicate);
-
-		return cb.and(voidedPredicate, orPredicate);
+		
+		Conjunction and = Restrictions.conjunction();
+		and.add(Restrictions.eq("personName.voided", false));
+		
+		Disjunction or = Restrictions.disjunction();
+		and.add(or);
+		
+		or.add(Restrictions.ilike("personName.givenName", name, mode));
+		or.add(Restrictions.ilike("personName.middleName", name, mode));
+		or.add(Restrictions.ilike("personName.familyName", name, mode));
+		or.add(Restrictions.ilike("personName.familyName2", name, mode));
+		
+		return and;
 	}
-
+	
 	/**
 	 * @see org.openmrs.api.db.ProviderDAO#getCountOfProviders(String, boolean)
 	 */
 	@Override
 	public Long getCountOfProviders(String name, boolean includeRetired) {
-		Session session = sessionFactory.getCurrentSession();
-		CriteriaBuilder cb = session.getCriteriaBuilder();
-		CriteriaQuery<Long> cq = cb.createQuery(Long.class);
-		Root<Provider> root = cq.from(Provider.class);
-
-		List<Predicate> predicates = prepareProviderCriteria(cb, root, name, includeRetired);
-
-		cq.select(cb.countDistinct(root)).where(predicates.toArray(new Predicate[]{}));
-
-		return session.createQuery(cq).getSingleResult();
+		Criteria criteria = prepareProviderCriteria(name, includeRetired);
+		criteria.setProjection(Projections.countDistinct("providerId"));
+		return (Long) criteria.uniqueResult();
 	}
-
-
+	
 	/* (non-Javadoc)
 	 * @see org.openmrs.api.db.ProviderDAO#getAllProviderAttributeTypes(boolean)
 	 */
@@ -279,28 +250,23 @@ public class HibernateProviderDAO implements ProviderDAO {
 	public List<ProviderAttributeType> getAllProviderAttributeTypes(boolean includeRetired) {
 		return getAll(includeRetired, ProviderAttributeType.class);
 	}
-
+	
 	private <T> List<T> getAll(boolean includeRetired, Class<T> clazz) {
-		Session session = sessionFactory.getCurrentSession();
-		CriteriaBuilder cb = session.getCriteriaBuilder();
-		CriteriaQuery<T> cq = cb.createQuery(clazz);
-		Root<T> root = cq.from(clazz);
-
-		List<Order> orderList = new ArrayList<>();
+		Criteria criteria = getSession().createCriteria(clazz);
 		if (!includeRetired) {
-			cq.where(cb.isFalse(root.get("retired")));
+			criteria.add(Restrictions.eq("retired", false));
 		} else {
 			//push retired Provider to the end of the returned list
-			orderList.add(cb.asc(root.get("retired")));
+			criteria.addOrder(Order.asc("retired"));
 		}
-		orderList.add(cb.asc(root.get("name")));
-		cq.orderBy(orderList);
-
-		return session.createQuery(cq).getResultList();
+		criteria.addOrder(Order.asc("name"));
+		return criteria.list();
 	}
 	
 	private <T> T getByUuid(String uuid, Class<T> clazz) {
-		return HibernateUtil.getUniqueEntityByUUID(sessionFactory, clazz, uuid);
+		Criteria criteria = getSession().createCriteria(clazz);
+		criteria.add(Restrictions.eq("uuid", uuid));
+		return (T) criteria.uniqueResult();
 	}
 	
 	/* (non-Javadoc)
@@ -308,7 +274,7 @@ public class HibernateProviderDAO implements ProviderDAO {
 	 */
 	@Override
 	public ProviderAttributeType getProviderAttributeType(Integer providerAttributeTypeId) {
-		return getSession().get(ProviderAttributeType.class, providerAttributeTypeId);
+		return (ProviderAttributeType) getSession().load(ProviderAttributeType.class, providerAttributeTypeId);
 	}
 	
 	/* (non-Javadoc)
@@ -317,27 +283,6 @@ public class HibernateProviderDAO implements ProviderDAO {
 	@Override
 	public ProviderAttributeType getProviderAttributeTypeByUuid(String uuid) {
 		return getByUuid(uuid, ProviderAttributeType.class);
-	}
-	
-	/* (non-Javadoc)
-	 * @see org.openmrs.api.db.ProviderDAO#getProviderAttributeTypeByName(java.lang.String)
-	 */
-	@Override
-	public ProviderAttributeType getProviderAttributeTypeByName(String name) {
-		Session session = sessionFactory.getCurrentSession();
-		CriteriaBuilder cb = session.getCriteriaBuilder();
-		CriteriaQuery<ProviderAttributeType> cq = cb.createQuery(ProviderAttributeType.class);
-		Root<ProviderAttributeType> root = cq.from(ProviderAttributeType.class);
-
-		cq.where(cb.isFalse(root.get("retired")),
-				 cb.equal(root.get("name"), name));
-
-		List<ProviderAttributeType> list = session.createQuery(cq).getResultList();
-
-		if (list.isEmpty()) {
-			return null;
-		}
-		return list.get(0);
 	}
 	
 	/* (non-Javadoc)
@@ -361,22 +306,16 @@ public class HibernateProviderDAO implements ProviderDAO {
 	 * @see org.openmrs.api.db.ProviderDAO#getProviderByIdentifier(java.lang.String)
 	 */
 	@Override
-	public boolean isProviderIdentifierUnique(Provider provider) {
-		Session session = sessionFactory.getCurrentSession();
-		CriteriaBuilder cb = session.getCriteriaBuilder();
-		CriteriaQuery<Long> cq = cb.createQuery(Long.class);
-		Root<Provider> root = cq.from(Provider.class);
-
-		List<Predicate> predicates = new ArrayList<>();
-		predicates.add(cb.equal(root.get("identifier"), provider.getIdentifier()));
+	public boolean isProviderIdentifierUnique(Provider provider) throws DAOException {
+		
+		Criteria criteria = getSession().createCriteria(Provider.class);
+		criteria.add(Restrictions.eq("identifier", provider.getIdentifier()));
 		if (provider.getProviderId() != null) {
-			predicates.add(cb.notEqual(root.get("providerId"), provider.getProviderId()));
+			criteria.add(Restrictions.not(Restrictions.eq("providerId", provider.getProviderId())));
 		}
-
-		cq.select(cb.countDistinct(root.get("providerId")))
-			.where(predicates.toArray(new Predicate[]{}));
-
-		return session.createQuery(cq).uniqueResult() == 0L;
+		criteria.setProjection(Projections.countDistinct("providerId"));
+		
+		return (Long) criteria.uniqueResult() == 0L;
 	}
 	
 	/**
@@ -384,13 +323,8 @@ public class HibernateProviderDAO implements ProviderDAO {
 	 */
 	@Override
 	public Provider getProviderByIdentifier(String identifier) {
-		Session session = sessionFactory.getCurrentSession();
-		CriteriaBuilder cb = session.getCriteriaBuilder();
-		CriteriaQuery<Provider> cq = cb.createQuery(Provider.class);
-		Root<Provider> root = cq.from(Provider.class);
-		
-		cq.where(cb.equal(cb.lower(root.get("identifier")), MatchMode.EXACT.toLowerCasePattern(identifier)));
-
-		return session.createQuery(cq).uniqueResult();
+		Criteria criteria = sessionFactory.getCurrentSession().createCriteria(Provider.class);
+		criteria.add(Restrictions.ilike("identifier", identifier, MatchMode.EXACT));
+		return (Provider) criteria.uniqueResult();
 	}
 }

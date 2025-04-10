@@ -9,23 +9,21 @@
  */
 package org.openmrs.api.db.hibernate;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.hibernate.Criteria;
+import org.hibernate.SessionFactory;
+import org.hibernate.criterion.MatchMode;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.openmrs.Patient;
+import org.openmrs.PatientIdentifierType;
+import org.openmrs.api.context.Context;
+import org.openmrs.util.GlobalPropertiesTestHelper;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.util.OpenmrsConstants;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import org.hibernate.SessionFactory;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.openmrs.PatientIdentifierType;
-import org.openmrs.api.context.Context;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
-import org.openmrs.util.GlobalPropertiesTestHelper;
-import org.openmrs.util.OpenmrsConstants;
 
 public class PatientSearchCriteriaTest extends BaseContextSensitiveTest {
 	
@@ -33,101 +31,111 @@ public class PatientSearchCriteriaTest extends BaseContextSensitiveTest {
 	
 	private GlobalPropertiesTestHelper globalPropertiesTestHelper;
 	
-	@BeforeEach
+	@Before
 	public void setUp() {
 		SessionFactory sessionFactory = (SessionFactory) applicationContext.getBean("sessionFactory");
+		Criteria criteria = sessionFactory.getCurrentSession().createCriteria(Patient.class);
 		
-		patientSearchCriteria = new PatientSearchCriteria(sessionFactory);
+		patientSearchCriteria = new PatientSearchCriteria(sessionFactory, criteria);
 		globalPropertiesTestHelper = new GlobalPropertiesTestHelper(Context.getAdministrationService());
 	}
 	
 	/**
+	 * @verifies process simple space as separator
 	 * @see PatientSearchCriteria#getQueryParts(String)
 	 */
 	@Test
-	public void getQueryParts_shouldProcessSimpleSpaceAsSeparator() {
+	public void getQueryParts_shouldProcessSimpleSpaceAsSeparator() throws Exception {
 		String[] actual = patientSearchCriteria.getQueryParts("Anton Bert Charles");
 		String[] expected = { "Anton", "Bert", "Charles" };
 		
-		assertArrayEquals(expected, actual);
+		Assert.assertArrayEquals(expected, actual);
 	}
 	
 	/**
+	 * @verifies process comma as separator
 	 * @see PatientSearchCriteria#getQueryParts(String)
 	 */
 	@Test
-	public void getQueryParts_shouldProcessCommaAsSeparator() {
+	public void getQueryParts_shouldProcessCommaAsSeparator() throws Exception {
 		String[] actual = patientSearchCriteria.getQueryParts("Anton,Bert,Charles");
 		String[] expected = { "Anton", "Bert", "Charles" };
 		
-		assertArrayEquals(expected, actual);
+		Assert.assertArrayEquals(expected, actual);
 	}
 	
 	/**
+	 * @verifies process mixed separators
 	 * @see PatientSearchCriteria#getQueryParts(String)
 	 */
 	@Test
-	public void getQueryParts_shouldProcessMixedSeparators() {
+	public void getQueryParts_shouldProcessMixedSeparators() throws Exception {
 		String[] actual = patientSearchCriteria.getQueryParts("Anton,Bert, Charles Dorian  Ernie");
 		String[] expected = { "Anton", "Bert", "Charles", "Dorian", "Ernie" };
 		
-		assertArrayEquals(expected, actual);
+		Assert.assertArrayEquals(expected, actual);
 	}
 	
 	/**
+	 * @verifies not return empty name parts
 	 * @see PatientSearchCriteria#getQueryParts(String)
 	 */
 	@Test
-	public void getQueryParts_shouldNotReturnEmptyNameParts() {
+	public void getQueryParts_shouldNotReturnEmptyNameParts() throws Exception {
 		String[] actual = patientSearchCriteria.getQueryParts(" Anton  Bert   Charles ");
 		String[] expected = { "Anton", "Bert", "Charles" };
 		
-		assertArrayEquals(expected, actual);
+		Assert.assertArrayEquals(expected, actual);
 	}
 	
 	/**
+	 * @verifies reject null as name
 	 * @see PatientSearchCriteria#getQueryParts(String)
 	 */
-	@Test
-	public void getQueryParts_shouldRejectNullAsName() {
-		assertThrows(IllegalArgumentException.class, () -> patientSearchCriteria.getQueryParts(null));
+	@Test(expected = IllegalArgumentException.class)
+	public void getQueryParts_shouldRejectNullAsName() throws Exception {
+		patientSearchCriteria.getQueryParts(null);
 	}
 	
 	/**
+	 * @verifies recognise short name
 	 * @see PatientSearchCriteria#isShortName(String)
 	 */
 	@Test
-	public void isShortName_shouldRecogniseShortName() {
-		assertTrue(patientSearchCriteria.isShortName("J"));
+	public void isShortName_shouldRecogniseShortName() throws Exception {
+		Assert.assertTrue(patientSearchCriteria.isShortName("J"));
 	}
 	
 	/**
+	 * @verifies recognise long name
 	 * @see PatientSearchCriteria#isShortName(String)
 	 */
 	@Test
-	public void isShortName_shouldRecogniseLongName() {
-		assertFalse(patientSearchCriteria.isShortName("Jo"));
+	public void isShortName_shouldRecogniseLongName() throws Exception {
+		Assert.assertFalse(patientSearchCriteria.isShortName("Jo"));
 	}
 	
 	/**
+	 * @verifies return start as default match mode
 	 * @see PatientSearchCriteria#getMatchMode()
 	 */
 	@Test
-	public void getMatchMode_shouldReturnStartAsDefaultMatchMode() {
+	public void getMatchMode_shouldReturnStartAsDefaultMatchMode() throws Exception {
 		globalPropertiesTestHelper.purgeGlobalProperty(OpenmrsConstants.GLOBAL_PROPERTY_PATIENT_SEARCH_MATCH_MODE);
-		assertEquals(MatchMode.START, patientSearchCriteria.getMatchMode());
+		Assert.assertEquals(MatchMode.START, patientSearchCriteria.getMatchMode());
 	}
 	
 	/**
+	 * @verifies return start as configured match mode
 	 * @see PatientSearchCriteria#getMatchMode()
 	 */
 	@Test
-	public void getMatchMode_shouldReturnStartAsConfiguredMatchMode() {
+	public void getMatchMode_shouldReturnStartAsConfiguredMatchMode() throws Exception {
 		String oldPropertyValue = globalPropertiesTestHelper.setGlobalProperty(
 		    OpenmrsConstants.GLOBAL_PROPERTY_PATIENT_SEARCH_MATCH_MODE,
 		    OpenmrsConstants.GLOBAL_PROPERTY_PATIENT_SEARCH_MATCH_START);
 		
-		assertEquals(MatchMode.START, patientSearchCriteria.getMatchMode());
+		Assert.assertEquals(MatchMode.START, patientSearchCriteria.getMatchMode());
 		
 		if (oldPropertyValue != null) {
 			globalPropertiesTestHelper.setGlobalProperty(OpenmrsConstants.GLOBAL_PROPERTY_PATIENT_SEARCH_MATCH_MODE,
@@ -138,15 +146,16 @@ public class PatientSearchCriteriaTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies return anywhere as configured match mode
 	 * @see PatientSearchCriteria#getMatchMode()
 	 */
 	@Test
-	public void getMatchMode_shouldReturnAnywhereAsConfiguredMatchMode() {
+	public void getMatchMode_shouldReturnAnywhereAsConfiguredMatchMode() throws Exception {
 		String oldPropertyValue = globalPropertiesTestHelper.setGlobalProperty(
 		    OpenmrsConstants.GLOBAL_PROPERTY_PATIENT_SEARCH_MATCH_MODE,
 		    OpenmrsConstants.GLOBAL_PROPERTY_PATIENT_SEARCH_MATCH_ANYWHERE);
 		
-		assertEquals(MatchMode.ANYWHERE, patientSearchCriteria.getMatchMode());
+		Assert.assertEquals(MatchMode.ANYWHERE, patientSearchCriteria.getMatchMode());
 		
 		if (oldPropertyValue != null) {
 			globalPropertiesTestHelper.setGlobalProperty(OpenmrsConstants.GLOBAL_PROPERTY_PATIENT_SEARCH_MATCH_MODE,
@@ -157,215 +166,223 @@ public class PatientSearchCriteriaTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies identify search by name
 	 * @see PatientSearchCriteria#getSearchMode(String, String, java.util.List, boolean)
 	 */
 	@Test
-	public void getSearchMode_shouldIdentifySearchByName() {
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME, patientSearchCriteria.getSearchMode("name", null,
+	public void getSearchMode_shouldIdentifySearchByName() throws Exception {
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME, patientSearchCriteria.getSearchMode("name", null,
 		    null, false));
 		
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME, patientSearchCriteria.getSearchMode("name", "", null,
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME, patientSearchCriteria.getSearchMode("name", "", null,
 		    false));
 		
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME, patientSearchCriteria.getSearchMode("name", "  \n\t",
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME, patientSearchCriteria.getSearchMode("name", "  \n\t",
 		    null, false));
 		
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME, patientSearchCriteria.getSearchMode("name", null,
-				new ArrayList<>(), false));
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME, patientSearchCriteria.getSearchMode("name", null,
+		    new ArrayList<PatientIdentifierType>(), false));
 		
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME, patientSearchCriteria.getSearchMode("name", "",
-				new ArrayList<>(), false));
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME, patientSearchCriteria.getSearchMode("name", "",
+		    new ArrayList<PatientIdentifierType>(), false));
 	}
 	
 	/**
+	 * @verifies identify search by identifier
 	 * @see PatientSearchCriteria#getSearchMode(String, String, java.util.List, boolean)
 	 */
 	@Test
-	public void getSearchMode_shouldIdentifySearchByIdentifier() {
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode(null,
+	public void getSearchMode_shouldIdentifySearchByIdentifier() throws Exception {
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode(null,
 		    "identifier", null, false));
 		
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode("",
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode("",
 		    "identifier", null, false));
 		
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode("  \n\t",
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode("  \n\t",
 		    "identifier", null, false));
 	}
 	
 	/**
+	 * @verifies identify search by identifier type list
 	 * @see PatientSearchCriteria#getSearchMode(String, String, java.util.List, boolean)
 	 */
 	@Test
-	public void getSearchMode_shouldIdentifySearchByIdentifierTypeList() {
-		List<PatientIdentifierType> patientIdentifierTypeList = new ArrayList<>();
+	public void getSearchMode_shouldIdentifySearchByIdentifierTypeList() throws Exception {
+		List<PatientIdentifierType> patientIdentifierTypeList = new ArrayList<PatientIdentifierType>();
 		patientIdentifierTypeList.add(new PatientIdentifierType());
 		
 		// testing variations of empty or blank value for name
 		//
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode(null, null,
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode(null, null,
 		    patientIdentifierTypeList, false));
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode("", null,
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode("", null,
 		    patientIdentifierTypeList, false));
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode("  \n\t",
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode("  \n\t",
 		    null, patientIdentifierTypeList, false));
 		
 		// testing variations of empty or blank value for identifier
 		//
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode(null, "",
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode(null, "",
 		    patientIdentifierTypeList, false));
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode(null,
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode(null,
 		    "  \n\t", patientIdentifierTypeList, false));
 		
 		// testing variations of empty or blank values for name and identifier
 		//
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode("", "",
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode("", "",
 		    patientIdentifierTypeList, false));
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode("  \n\t",
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode("  \n\t",
 		    "", patientIdentifierTypeList, false));
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode("", "\n\t",
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode("", "\n\t",
 		    patientIdentifierTypeList, false));
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode("  \n\t",
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode("  \n\t",
 		    "  \n\t", patientIdentifierTypeList, false));
 	}
 	
 	/**
+	 * @verifies identify search by identifier and identifier type list
 	 * @see PatientSearchCriteria#getSearchMode(String, String, java.util.List, boolean)
 	 */
 	@Test
-	public void getSearchMode_shouldIdentifySearchByIdentifierAndIdentifierTypeList() {
-		List<PatientIdentifierType> patientIdentifierTypeList = new ArrayList<>();
+	public void getSearchMode_shouldIdentifySearchByIdentifierAndIdentifierTypeList() throws Exception {
+		List<PatientIdentifierType> patientIdentifierTypeList = new ArrayList<PatientIdentifierType>();
 		patientIdentifierTypeList.add(new PatientIdentifierType());
 		
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode(null,
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode(null,
 		    "identifier", patientIdentifierTypeList, false));
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode("",
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode("",
 		    "identifier", patientIdentifierTypeList, false));
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode("  \n\t",
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_IDENTIFIER, patientSearchCriteria.getSearchMode("  \n\t",
 		    "identifier", patientIdentifierTypeList, false));
 	}
 	
 	/**
+	 * @verifies identify search by name or identifier
 	 * @see PatientSearchCriteria#getSearchMode(String, String, java.util.List, boolean)
 	 */
 	@Test
-	public void getSearchMode_shouldIdentifySearchByNameOrIdentifier() {
-		List<PatientIdentifierType> patientIdentifierTypeList = new ArrayList<>();
+	public void getSearchMode_shouldIdentifySearchByNameOrIdentifier() throws Exception {
+		List<PatientIdentifierType> patientIdentifierTypeList = new ArrayList<PatientIdentifierType>();
 		patientIdentifierTypeList.add(new PatientIdentifierType());
 		
 		// test cases where "name" is the only parameter that is non-empty and non-blank
 		//
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
 		    "name", null, null, true));
 		
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
 		    "name", "", null, true));
 		
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
 		    "name", "  \n\t", null, true));
 		
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
-		    "name", null, new ArrayList<>(), true));
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
+		    "name", null, new ArrayList<PatientIdentifierType>(), true));
 		
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
-		    "name", "", new ArrayList<>(), true));
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
+		    "name", "", new ArrayList<PatientIdentifierType>(), true));
 		
 		// test cases where "identifier" is the only parameter that is non-empty and non-blank
 		//
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
 		    null, "identifier", null, true));
 		
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode("",
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode("",
 		    "identifier", null, true));
 		
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
 		    "  \n\t", "identifier", null, true));
 		
 		// test cases where 'patientIdentifierTypeList' is the only parameter that is non-empty and non-blank
 		//
 		//   testing variations of empty or blank value for name
 		//
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
 		    null, null, patientIdentifierTypeList, true));
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode("",
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode("",
 		    null, patientIdentifierTypeList, true));
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
 		    "  \n\t", null, patientIdentifierTypeList, true));
 		
 		//   testing variations of empty or blank value for identifier
 		//
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
 		    null, "", patientIdentifierTypeList, true));
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
 		    null, "  \n\t", patientIdentifierTypeList, true));
 		
 		//   testing variations of empty or blank values for name and identifier
 		//
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode("",
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode("",
 		    "", patientIdentifierTypeList, true));
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
 		    "  \n\t", "", patientIdentifierTypeList, true));
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode("",
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode("",
 		    "\n\t", patientIdentifierTypeList, true));
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
 		    "  \n\t", "  \n\t", patientIdentifierTypeList, true));
 		
 		// test cases where 'name' is the only parameter that is empty or blank
 		//
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
 		    null, "identifier", patientIdentifierTypeList, true));
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode("",
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode("",
 		    "identifier", patientIdentifierTypeList, true));
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_OR_IDENTIFIER, patientSearchCriteria.getSearchMode(
 		    "  \n\t", "identifier", patientIdentifierTypeList, true));
 	}
 	
 	/**
+	 * @verifies identify search by name and identifier
 	 * @see PatientSearchCriteria#getSearchMode(String, String, java.util.List, boolean)
 	 */
 	@Test
-	public void getSearchMode_shouldIdentifySearchByNameAndIdentifier() {
-		List<PatientIdentifierType> patientIdentifierTypeList = new ArrayList<>();
+	public void getSearchMode_shouldIdentifySearchByNameAndIdentifier() throws Exception {
+		List<PatientIdentifierType> patientIdentifierTypeList = new ArrayList<PatientIdentifierType>();
 		patientIdentifierTypeList.add(new PatientIdentifierType());
 		
 		// test cases where "name" and "identifier" are the only parameters that are non-empty and non-blank
 		//
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_AND_IDENTIFIER, patientSearchCriteria.getSearchMode(
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_AND_IDENTIFIER, patientSearchCriteria.getSearchMode(
 		    "name", "identifier", null, false));
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_AND_IDENTIFIER, patientSearchCriteria.getSearchMode(
-		    "name", "identifier", new ArrayList<>(), false));
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_AND_IDENTIFIER, patientSearchCriteria.getSearchMode(
+		    "name", "identifier", new ArrayList<PatientIdentifierType>(), false));
 		
 		// test cases where "name" and 'identifierTypeList' are the only parameters that are non-empty and non-blank
 		//
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_AND_IDENTIFIER, patientSearchCriteria.getSearchMode(
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_AND_IDENTIFIER, patientSearchCriteria.getSearchMode(
 		    "name", null, patientIdentifierTypeList, false));
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_AND_IDENTIFIER, patientSearchCriteria.getSearchMode(
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_AND_IDENTIFIER, patientSearchCriteria.getSearchMode(
 		    "name", "", patientIdentifierTypeList, false));
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_AND_IDENTIFIER, patientSearchCriteria.getSearchMode(
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_AND_IDENTIFIER, patientSearchCriteria.getSearchMode(
 		    "name", "  \n\t ", patientIdentifierTypeList, false));
 		
 		// test case where all parameters are non-empty and non-blank
-		assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_AND_IDENTIFIER, patientSearchCriteria.getSearchMode(
+		Assert.assertEquals(PatientSearchMode.PATIENT_SEARCH_BY_NAME_AND_IDENTIFIER, patientSearchCriteria.getSearchMode(
 		    "name", "identifier", patientIdentifierTypeList, false));
 	}
 	
 	/**
+	 * @verifies return source value when target is blank
 	 * @see PatientSearchCriteria#copySearchParameter(String, String)
 	 */
 	@Test
-	public void copySearchParameter_shouldReturnSourceValueWhenTargetIsBlank() {
-		assertEquals("source", patientSearchCriteria.copySearchParameter("source", null));
-		assertEquals("source", patientSearchCriteria.copySearchParameter("source", ""));
-		assertEquals("source", patientSearchCriteria.copySearchParameter("source", "   \n\t "));
+	public void copySearchParameter_shouldReturnSourceValueWhenTargetIsBlank() throws Exception {
+		Assert.assertEquals("source", patientSearchCriteria.copySearchParameter("source", null));
+		Assert.assertEquals("source", patientSearchCriteria.copySearchParameter("source", ""));
+		Assert.assertEquals("source", patientSearchCriteria.copySearchParameter("source", "   \n\t "));
 	}
 	
 	/**
+	 * @verifies return target value when target is non-blank
 	 * @see PatientSearchCriteria#copySearchParameter(String, String)
 	 */
 	@Test
-	public void copySearchParameter_shouldReturnTargetValueWhenTargetIsNonblank() {
-		assertEquals("target", patientSearchCriteria.copySearchParameter(null, "target"));
-		assertEquals("target", patientSearchCriteria.copySearchParameter("", "target"));
-		assertEquals("target", patientSearchCriteria.copySearchParameter("   \n\t ", "target"));
-		assertEquals("target", patientSearchCriteria.copySearchParameter("source", "target"));
+	public void copySearchParameter_shouldReturnTargetValueWhenTargetIsNonblank() throws Exception {
+		Assert.assertEquals("target", patientSearchCriteria.copySearchParameter(null, "target"));
+		Assert.assertEquals("target", patientSearchCriteria.copySearchParameter("", "target"));
+		Assert.assertEquals("target", patientSearchCriteria.copySearchParameter("   \n\t ", "target"));
+		Assert.assertEquals("target", patientSearchCriteria.copySearchParameter("source", "target"));
 	}
 }

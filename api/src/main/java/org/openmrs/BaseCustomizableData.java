@@ -24,9 +24,9 @@ import org.openmrs.customdatatype.Customizable;
  * @param <A> the type of attribute held
  * @since 1.9
  */
-public abstract class BaseCustomizableData<A extends Attribute> extends BaseChangeableOpenmrsData implements Customizable<A> {
+public abstract class BaseCustomizableData<A extends Attribute> extends BaseOpenmrsData implements Customizable<A> {
 	
-	private Set<A> attributes = new LinkedHashSet<>();
+	private Set<A> attributes = new LinkedHashSet<A>();
 	
 	/**
 	 * @see org.openmrs.customdatatype.Customizable#getAttributes()
@@ -48,10 +48,10 @@ public abstract class BaseCustomizableData<A extends Attribute> extends BaseChan
 	 */
 	@Override
 	public Collection<A> getActiveAttributes() {
-		List<A> ret = new ArrayList<>();
+		List<A> ret = new ArrayList<A>();
 		if (getAttributes() != null) {
 			for (A attr : getAttributes()) {
-				if (!attr.getVoided()) {
+				if (!attr.isVoided()) {
 					ret.add(attr);
 				}
 			}
@@ -64,10 +64,10 @@ public abstract class BaseCustomizableData<A extends Attribute> extends BaseChan
 	 */
 	@Override
 	public List<A> getActiveAttributes(CustomValueDescriptor ofType) {
-		List<A> ret = new ArrayList<>();
+		List<A> ret = new ArrayList<A>();
 		if (getAttributes() != null) {
 			for (A attr : getAttributes()) {
-				if (attr.getAttributeType().equals(ofType) && !attr.getVoided()) {
+				if (attr.getAttributeType().equals(ofType) && !attr.isVoided()) {
 					ret.add(attr);
 				}
 			}
@@ -81,7 +81,7 @@ public abstract class BaseCustomizableData<A extends Attribute> extends BaseChan
 	@Override
 	public void addAttribute(A attribute) {
 		if (getAttributes() == null) {
-			setAttributes(new LinkedHashSet<>());
+			setAttributes(new LinkedHashSet<A>());
 		}
 		getAttributes().add(attribute);
 		attribute.setOwner(this);
@@ -89,7 +89,7 @@ public abstract class BaseCustomizableData<A extends Attribute> extends BaseChan
 	
 	/**
 	 * Convenience method that voids all existing attributes of the given type, and sets this new one.
-	 * <strong>Should</strong> void the attribute if an attribute with same attribute type already exists and the maxOccurs is set to 1
+	 * @should void the attribute if an attribute with same attribute type already exists and the maxOccurs is set to 1
 	 *
 	 * @param attribute
 	 */
@@ -102,7 +102,9 @@ public abstract class BaseCustomizableData<A extends Attribute> extends BaseChan
 		
 		if (getActiveAttributes(attribute.getAttributeType()).size() == 1) {
 			A existing = getActiveAttributes(attribute.getAttributeType()).get(0);
-			if (!existing.getValue().equals(attribute.getValue())) {
+			if (existing.getValue().equals(attribute.getValue())) {
+				// do nothing, since the value is already as-specified
+			} else {
 				if (existing.getId() != null) {
 					existing.setVoided(true);
 				} else {
@@ -111,20 +113,20 @@ public abstract class BaseCustomizableData<A extends Attribute> extends BaseChan
 				getAttributes().add(attribute);
 				attribute.setOwner(this);
 			}
-			return;
-		}
-		
-		for (A existing : getActiveAttributes(attribute.getAttributeType())) {
-			if (existing.getAttributeType().equals(attribute.getAttributeType())) {
-				if (existing.getId() != null) {
-					existing.setVoided(true);
-				} else {
-					getAttributes().remove(existing);
+			
+		} else {
+			for (A existing : getActiveAttributes(attribute.getAttributeType())) {
+				if (existing.getAttributeType().equals(attribute.getAttributeType())) {
+					if (existing.getId() != null) {
+						existing.setVoided(true);
+					} else {
+						getAttributes().remove(existing);
+					}
 				}
 			}
+			getAttributes().add(attribute);
+			attribute.setOwner(this);
 		}
-		getAttributes().add(attribute);
-		attribute.setOwner(this);
 	}
 	
 }

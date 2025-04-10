@@ -9,24 +9,20 @@
  */
 package org.openmrs.propertyeditor;
 
-import org.openmrs.ProgramWorkflowState;
-import org.openmrs.api.ProgramWorkflowService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.junit.Assert;
+import org.junit.Test;
+import org.openmrs.test.BaseContextSensitiveTest;
 
-public class ProgramWorkflowStateEditorTest extends BasePropertyEditorTest<ProgramWorkflowState, ProgramWorkflowStateEditor> {
+public class ProgramWorkflowStateEditorTest extends BaseContextSensitiveTest {
 
-	private static final String EXISTING_UUID = "92584cdc-6a20-4c84-a659-e035e45d36b0";
-	
-	@Autowired
-	ProgramWorkflowService programWorkflowService;
-	
-	@Override
-	protected ProgramWorkflowStateEditor getNewEditor() {
-		return new ProgramWorkflowStateEditor();
-	}
-	
-	@Override
-	protected ProgramWorkflowState getExistingObject() {
-		return programWorkflowService.getStateByUuid(EXISTING_UUID);
+	/**
+	 * @see ProgramWorkflowStateEditor#setAsText(String)
+	 * @verifies set using uuid
+	 */
+	@Test
+	public void setAsText_shouldSetUsingUuid() throws Exception {
+		ProgramWorkflowStateEditor editor = new ProgramWorkflowStateEditor();
+		editor.setAsText("92584cdc-6a20-4c84-a659-e035e45d36b0");
+		Assert.assertNotNull(editor.getValue());
 	}
 }

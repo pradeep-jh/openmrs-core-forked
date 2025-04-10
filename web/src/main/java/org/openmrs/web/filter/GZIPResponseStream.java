@@ -15,7 +15,6 @@ import java.io.OutputStream;
 import java.util.zip.GZIPOutputStream;
 
 import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletResponse;
 
 /**
@@ -27,16 +26,16 @@ import javax.servlet.http.HttpServletResponse;
 public class GZIPResponseStream extends ServletOutputStream {
 	
 	// abstraction of the output stream used for compression
-	protected OutputStream bufferedOutput;
+	protected OutputStream bufferedOutput = null;
 	
 	// state keeping variable for if close() has been called
-	protected boolean closed;
+	protected boolean closed = false;
 	
 	// reference to original response
-	protected HttpServletResponse response;
+	protected HttpServletResponse response = null;
 	
 	// reference to the output stream to the client's browser
-	protected ServletOutputStream output;
+	protected ServletOutputStream output = null;
 	
 	// default size of the in-memory buffer
 	private int bufferSize = 50000;
@@ -49,7 +48,6 @@ public class GZIPResponseStream extends ServletOutputStream {
 		bufferedOutput = new ByteArrayOutputStream();
 	}
 	
-	@Override
 	public void close() throws IOException {
 		// verify the stream is yet to be closed
 		if (closed) {
@@ -94,7 +92,6 @@ public class GZIPResponseStream extends ServletOutputStream {
 		}
 	}
 	
-	@Override
 	public void flush() throws IOException {
 		if (closed) {
 			throw new IOException("Cannot flush a closed output stream");
@@ -103,7 +100,6 @@ public class GZIPResponseStream extends ServletOutputStream {
 		bufferedOutput.flush();
 	}
 	
-	@Override
 	public void write(int b) throws IOException {
 		if (closed) {
 			throw new IOException("Cannot write to a closed output stream");
@@ -138,12 +134,10 @@ public class GZIPResponseStream extends ServletOutputStream {
 		}
 	}
 	
-	@Override
 	public void write(byte[] b) throws IOException {
 		write(b, 0, b.length);
 	}
 	
-	@Override
 	public void write(byte[] b, int off, int len) throws IOException {
 		
 		if (closed) {
@@ -158,20 +152,10 @@ public class GZIPResponseStream extends ServletOutputStream {
 	}
 	
 	public boolean closed() {
-		return this.closed;
+		return (this.closed);
 	}
 	
 	public void reset() {
 		//noop
-	}
-
-	@Override
-	public boolean isReady() {
-		throw new UnsupportedOperationException("Asynchonous operation is not supported.");
-	}
-
-	@Override
-	public void setWriteListener(WriteListener writeListener) {
-		throw new UnsupportedOperationException("Asynchonous operation is not supported.");
 	}
 }

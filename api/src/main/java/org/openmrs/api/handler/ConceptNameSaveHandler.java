@@ -42,17 +42,16 @@ public class ConceptNameSaveHandler implements SaveHandler<ConceptName> {
 	 * 
 	 * @see org.openmrs.api.handler.RequiredDataHandler#handle(org.openmrs.OpenmrsObject,
 	 *      org.openmrs.User, java.util.Date, java.lang.String)
-	 * <strong>Should</strong> not fail if tags is null
-	 * <strong>Should</strong> replace tags without ids with database fetched tag
-	 * <strong>Should</strong> not replace tags without ids that are not in the database
-	 * <strong>Should</strong> not replace tags that have ids
+	 * @should not fail if tags is null
+	 * @should replace tags without ids with database fetched tag
+	 * @should not replace tags without ids that are not in the database
+	 * @should not replace tags that have ids
 	 */
-	@Override
 	public void handle(ConceptName conceptName, User currentUser, Date currentDate, String reason) {
 		
 		// put Integer conceptNameTagIds onto ConceptNameTags that are missing them
 		if (conceptName.getTags() != null) {
-			Collection<ConceptNameTag> replacementTags = new ArrayList<>();
+			Collection<ConceptNameTag> replacementTags = new ArrayList<ConceptNameTag>();
 			
 			Iterator<ConceptNameTag> tagsIt = conceptName.getTags().iterator();
 			while (tagsIt.hasNext()) {

@@ -9,7 +9,6 @@
  */
 package org.openmrs.util;
 
-import java.io.Serializable;
 import java.util.Comparator;
 
 import org.openmrs.User;
@@ -20,15 +19,12 @@ import org.openmrs.User;
  *
  * @since 1.8
  */
-public class UserByNameComparator implements Comparator<User>, Serializable {
-
-	private static final long serialVersionUID = 1L;
+public class UserByNameComparator implements Comparator<User> {
 	
 	/**
 	 * @see java.util.Comparator#compare(java.lang.Object, java.lang.Object)
-	 * <strong>Should</strong> sort users by personNames
+	 * @should sort users by personNames
 	 */
-	@Override
 	public int compare(User user1, User user2) {
 		
 		// test for null cases (sorting them to be last in a list)

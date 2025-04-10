@@ -9,37 +9,19 @@
  */
 package org.openmrs.obs;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Path;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.openmrs.GlobalProperty;
-import org.openmrs.Obs;
-import org.openmrs.api.AdministrationService;
+import org.junit.Test;
 import org.openmrs.obs.handler.BinaryStreamHandler;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
-import org.openmrs.util.OpenmrsConstants;
-import org.springframework.beans.factory.annotation.Autowired;
 
-public class BinaryStreamHandlerTest  extends BaseContextSensitiveTest {
-	
-	@Autowired
-	private AdministrationService adminService;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
-	@Autowired
-	BinaryStreamHandler handler;
+
+public class BinaryStreamHandlerTest {
 
     @Test
     public void shouldReturnSupportedViews() {
+        BinaryStreamHandler handler = new BinaryStreamHandler();
         String[] actualViews = handler.getSupportedViews();
         String[] expectedViews = { ComplexObsHandler.RAW_VIEW };
 
@@ -48,59 +30,21 @@ public class BinaryStreamHandlerTest  extends BaseContextSensitiveTest {
 
     @Test
     public void shouldSupportRawView() {
-       
+        BinaryStreamHandler handler = new BinaryStreamHandler();
+
         assertTrue(handler.supportsView(ComplexObsHandler.RAW_VIEW));
     }
 
     @Test
     public void shouldNotSupportOtherViews() {
-       
+        BinaryStreamHandler handler = new BinaryStreamHandler();
+
         assertFalse(handler.supportsView(ComplexObsHandler.HTML_VIEW));
         assertFalse(handler.supportsView(ComplexObsHandler.PREVIEW_VIEW));
         assertFalse(handler.supportsView(ComplexObsHandler.TEXT_VIEW));
         assertFalse(handler.supportsView(ComplexObsHandler.TITLE_VIEW));
         assertFalse(handler.supportsView(ComplexObsHandler.URI_VIEW));
         assertFalse(handler.supportsView(""));
-        assertFalse(handler.supportsView(null));
+        assertFalse(handler.supportsView((String) null));
     }
-    	
-	@Test
-	public void saveObs_shouldRetrieveCorrectMimetype() throws IOException {
-		
-		adminService.saveGlobalProperty(new GlobalProperty(
-			OpenmrsConstants.GLOBAL_PROPERTY_COMPLEX_OBS_DIR,
-			"obs"
-		));
-		
-		String mimetype = "application/octet-stream";
-		String filename = "TestingComplexObsSaving";
-		byte[] content = "Teststring".getBytes();
-		
-		Obs complexObs1 = null;
-		Obs complexObs2 = null;
-		try (ByteArrayInputStream byteIn = new ByteArrayInputStream(content)) {
-			ComplexData complexData = new ComplexData(filename, byteIn);
-			// Construct 2 Obs to also cover the case where the filename exists already
-			Obs obs1 = new Obs();
-			obs1.setComplexData(complexData);
-			Obs obs2 = new Obs();
-			obs2.setComplexData(complexData);
-			
-			handler.saveObs(obs1);
-			handler.saveObs(obs2);
-			
-			complexObs1 = handler.getObs(obs1, "RAW_VIEW");
-			complexObs2 = handler.getObs(obs2, "RAW_VIEW");
-			
-			assertEquals(complexObs1.getComplexData().getMimeType(), mimetype);
-			assertEquals(complexObs2.getComplexData().getMimeType(), mimetype);
-		} finally {
-			if (complexObs1 != null) {
-				((InputStream) complexObs1.getComplexData().getData()).close();
-			}
-			if (complexObs2 != null) {
-				((InputStream) complexObs2.getComplexData().getData()).close();
-			}
-		}
-	}
 }

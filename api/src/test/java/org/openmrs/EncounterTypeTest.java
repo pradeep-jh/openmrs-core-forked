@@ -9,9 +9,9 @@
  */
 package org.openmrs;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
+import org.openmrs.test.Verifies;
 
 /**
  * This class tests the all of the {@link EncounterType} non-trivial object methods.
@@ -26,8 +26,9 @@ public class EncounterTypeTest {
 	 * @see EncounterType#EncounterType(Integer)
 	 */
 	@Test
-	public void EncounterType_shouldSetEncounterTypeIdWithGivenParameter() {
+	@Verifies(value = "should set encounter type id with given parameter", method = "EncounterType(Integer)")
+	public void EncounterType_shouldSetEncounterTypeIdWithGivenParameter() throws Exception {
 		EncounterType encounterType = new EncounterType(123);
-		assertEquals(123, encounterType.getEncounterTypeId().intValue());
+		Assert.assertEquals(123, encounterType.getEncounterTypeId().intValue());
 	}
 }

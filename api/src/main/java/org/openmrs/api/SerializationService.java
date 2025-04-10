@@ -11,7 +11,6 @@ package org.openmrs.api;
 
 import java.util.List;
 
-import org.openmrs.annotation.Authorized;
 import org.openmrs.annotation.Logging;
 import org.openmrs.serialization.OpenmrsSerializer;
 import org.openmrs.serialization.SerializationException;
@@ -29,7 +28,7 @@ public interface SerializationService extends OpenmrsService {
 	 * objects without needing to know the underlying serialization implementation class.
 	 * 
 	 * @return {@link OpenmrsSerializer} the default configured serializer
-	 * <strong>Should</strong> return a serializer
+	 * @should return a serializer
 	 */
 	public OpenmrsSerializer getDefaultSerializer();
 	
@@ -38,7 +37,7 @@ public interface SerializationService extends OpenmrsService {
 	 * 
 	 * @param serializationClass - the serialization class to retrieve
 	 * @return {@link OpenmrsSerializer} that matches the passed class
-	 * <strong>Should</strong> return a serializer of the given class
+	 * @should return a serializer of the given class
 	 */
 	public OpenmrsSerializer getSerializer(Class<? extends OpenmrsSerializer> serializationClass);
 	
@@ -49,8 +48,8 @@ public interface SerializationService extends OpenmrsService {
 	 * @param o - the object to serialize
 	 * @param clazz - the {@link OpenmrsSerializer} class to use for serialization
 	 * @return String representing this object
-	 * <strong>Should</strong> Serialize And Deserialize Correctly
-	 * <strong>Should</strong> Serialize And Deserialize Hibernate Objects Correctly
+	 * @should Serialize And Deserialize Correctly
+	 * @should Serialize And Deserialize Hibernate Objects Correctly
 	 */
 	public String serialize(Object o, Class<? extends OpenmrsSerializer> clazz) throws SerializationException;
 	
@@ -65,8 +64,7 @@ public interface SerializationService extends OpenmrsService {
 	 * @return hydrated object of the appropriate type
 	 */
 	@Logging(ignoredArgumentIndexes = { 0 })
-    @Authorized
-	public <T> T deserialize(String serializedObject, Class<? extends T> objectClass,
+	public <T extends Object> T deserialize(String serializedObject, Class<? extends T> objectClass,
 	        Class<? extends OpenmrsSerializer> serializerClass) throws SerializationException;
 	
 	/**

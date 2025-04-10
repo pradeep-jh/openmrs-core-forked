@@ -14,6 +14,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.Location;
 import org.openmrs.Patient;
 import org.openmrs.PatientIdentifier;
@@ -24,8 +26,6 @@ import org.openmrs.api.PatientIdentifierException;
 import org.openmrs.api.context.Context;
 import org.openmrs.util.OpenmrsConstants;
 import org.openmrs.validator.PatientIdentifierValidator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import ca.uhn.hl7v2.HL7Exception;
 import ca.uhn.hl7v2.app.Application;
@@ -94,7 +94,7 @@ import ca.uhn.hl7v2.model.v25.segment.PID;
  */
 public class ADTA28Handler implements Application {
 	
-	private static final Logger log = LoggerFactory.getLogger(ADTA28Handler.class);
+	private Log log = LogFactory.getLog(ADTA28Handler.class);
 	
 	/**
 	 * Always returns true, assuming that the router calling this handler will only call this
@@ -102,7 +102,6 @@ public class ADTA28Handler implements Application {
 	 *
 	 * @return true
 	 */
-	@Override
 	public boolean canProcess(Message message) {
 		return message != null && "ADT_A28".equals(message.getName());
 	}
@@ -110,7 +109,6 @@ public class ADTA28Handler implements Application {
 	/**
 	 * Processes an ADT A28 event message
 	 */
-	@Override
 	public Message processMessage(Message message) throws ApplicationException {
 		
 		log.debug("Processing ADT_A28 message");
@@ -207,7 +205,7 @@ public class ADTA28Handler implements Application {
 			throw new HL7Exception("Missing patient identifier in PID segment");
 		}
 		
-		List<PatientIdentifier> goodIdentifiers = new ArrayList<>();
+		List<PatientIdentifier> goodIdentifiers = new ArrayList<PatientIdentifier>();
 		for (CX id : idList) {
 			
 			String assigningAuthority = id.getAssigningAuthority().getNamespaceID().getValue();
@@ -253,6 +251,7 @@ public class ADTA28Handler implements Application {
 				}
 			} else {
 				log.error("PID contains identifier with no assigning authority");
+				continue;
 			}
 		}
 		if (goodIdentifiers.isEmpty()) {
@@ -282,7 +281,7 @@ public class ADTA28Handler implements Application {
 			throw new HL7Exception("Missing gender in the PID segment");
 		}
 		gender = gender.toUpperCase();
-		if (!OpenmrsConstants.GENDERS.contains(gender)) {
+		if (!OpenmrsConstants.GENDER().containsKey(gender)) {
 			throw new HL7Exception("Unrecognized gender: " + gender);
 		}
 		patient.setGender(gender);
@@ -311,7 +310,7 @@ public class ADTA28Handler implements Application {
 	// TODO:  Move these to hl7 handler utilities
 	// Check version, etc.
 	private void validate(Message message) throws HL7Exception {
-		message.getVersion();
+		message.getVersion().toString();
 	}
 	
 	private MSH getMSH(ADT_A05 adt) {

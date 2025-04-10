@@ -9,24 +9,31 @@
  */
 package org.openmrs.propertyeditor;
 
-import org.openmrs.Location;
-import org.openmrs.api.LocationService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.junit.Assert;
+import org.junit.Test;
+import org.openmrs.test.BaseContextSensitiveTest;
 
-public class LocationEditorTest extends BasePropertyEditorTest<Location, LocationEditor> {
-
-	private static final Integer EXISTING_ID = 1;
-
-	@Autowired
-	private LocationService locationService;
+public class LocationEditorTest extends BaseContextSensitiveTest {
 	
-	@Override
-	protected LocationEditor getNewEditor() {
-		return new LocationEditor();
+	/**
+	 * @see LocationEditor#setAsText(String)
+	 * @verifies set using id
+	 */
+	@Test
+	public void setAsText_shouldSetUsingId() throws Exception {
+		LocationEditor editor = new LocationEditor();
+		editor.setAsText("1");
+		Assert.assertNotNull(editor.getValue());
 	}
 	
-	@Override
-	protected Location getExistingObject() {
-		return locationService.getLocation(EXISTING_ID);
+	/**
+	 * @see LocationEditor#setAsText(String)
+	 * @verifies set using uuid
+	 */
+	@Test
+	public void setAsText_shouldSetUsingUuid() throws Exception {
+		LocationEditor editor = new LocationEditor();
+		editor.setAsText("8d6c993e-c2cc-11de-8d13-0010c6dffd0f");
+		Assert.assertNotNull(editor.getValue());
 	}
 }

@@ -9,15 +9,12 @@
  */
 package org.openmrs;
 
-import org.hibernate.envers.Audited;
-
 /**
  * Privilege
  * 
  * @version 1.0
  */
-@Audited
-public class Privilege extends BaseChangeableOpenmrsMetadata {
+public class Privilege extends BaseOpenmrsMetadata {
 	
 	public static final long serialVersionUID = 312L;
 	
@@ -57,7 +54,6 @@ public class Privilege extends BaseChangeableOpenmrsMetadata {
 		this.privilege = privilege;
 	}
 	
-	@Override
 	public String getName() {
 		return this.getPrivilege();
 	}
@@ -65,7 +61,6 @@ public class Privilege extends BaseChangeableOpenmrsMetadata {
 	/**
 	 * @see java.lang.Object#toString()
 	 */
-	@Override
 	public String toString() {
 		return this.privilege;
 	}
@@ -74,7 +69,6 @@ public class Privilege extends BaseChangeableOpenmrsMetadata {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		throw new UnsupportedOperationException();
 		
@@ -84,7 +78,6 @@ public class Privilege extends BaseChangeableOpenmrsMetadata {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		throw new UnsupportedOperationException();
 		

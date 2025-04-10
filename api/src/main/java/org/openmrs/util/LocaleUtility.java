@@ -15,12 +15,11 @@ import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.Set;
 
-import org.apache.commons.lang3.LocaleUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.GlobalProperty;
 import org.openmrs.api.GlobalPropertyListener;
 import org.openmrs.api.context.Context;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
 /**
@@ -28,13 +27,13 @@ import org.springframework.util.StringUtils;
  */
 public class LocaleUtility implements GlobalPropertyListener {
 	
-	private static final Logger log = LoggerFactory.getLogger(LocaleUtility.class);
+	private static Log log = LogFactory.getLog(LocaleUtility.class);
 	
 	/**
 	 * Cached version of the default locale. This is cached so that we don't have to look it up in
 	 * the global property table every page load
 	 */
-	private static volatile Locale defaultLocaleCache = null;
+	private static Locale defaultLocaleCache = null;
 	
 	/**
 	 * Cached version of the localeAllowedList. This is cached so that we don't have to look it up
@@ -47,48 +46,44 @@ public class LocaleUtility implements GlobalPropertyListener {
 	 *
 	 * @return default locale object.
 	 * @since 1.5
-	 * <strong>Should</strong> not return null if global property does not exist
-	 * <strong>Should</strong> not fail with empty global property value
-	 * <strong>Should</strong> not fail with bogus global property value
-	 * <strong>Should</strong> return locale object for global property
-	 * <strong>Should</strong> not cache locale when session is not open
+	 * @should not return null if global property does not exist
+	 * @should not fail with empty global property value
+	 * @should not fail with bogus global property value
+	 * @should return locale object for global property
+	 * @should not cache locale when session is not open
 	 */
 	public static Locale getDefaultLocale() {
 		if (defaultLocaleCache == null) {
-			synchronized (LocaleUtility.class) {
-				if (defaultLocaleCache == null) {
-					if (Context.isSessionOpen()) {
+			if (Context.isSessionOpen()) {
+				try {
+					String locale = Context.getAdministrationService().getGlobalProperty(
+					    OpenmrsConstants.GLOBAL_PROPERTY_DEFAULT_LOCALE);
+					
+					if (StringUtils.hasLength(locale)) {
 						try {
-							Context.addProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
-							String locale = Context.getAdministrationService().getGlobalProperty(
-								OpenmrsConstants.GLOBAL_PROPERTY_DEFAULT_LOCALE);
-
-							if (StringUtils.hasLength(locale)) {
-								try {
-									defaultLocaleCache = fromSpecification(locale);
-								} catch (Exception t) {
-									log.warn("Unable to parse default locale global property value: {}", locale, t);
-								}
-							}
-						} catch (Exception e) {
-							// don't print the full stack-trace by default
-							log.warn("Unable to get locale global property value. {}", e.getMessage());
-							log.debug("Exception caught while capturing locale global property value.", e);
-						} finally {
-							Context.removeProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
+							defaultLocaleCache = fromSpecification(locale);
 						}
-
-						// if we weren't able to load the locale from the global property,
-						// use the default one
-						if (defaultLocaleCache == null) {
-							defaultLocaleCache = fromSpecification(OpenmrsConstants.GLOBAL_PROPERTY_DEFAULT_LOCALE_DEFAULT_VALUE);
+						catch (Exception t) {
+							log.warn("Unable to parse default locale global property value: " + locale, t);
 						}
-					} else {
-						// if session is not open, return the default locale without caching
-						return fromSpecification(OpenmrsConstants.GLOBAL_PROPERTY_DEFAULT_LOCALE_DEFAULT_VALUE);
 					}
 				}
+				catch (Exception e) {
+					// swallow most of the stack trace for most users
+					log.warn("Unable to get locale global property value. " + e.getMessage());
+					log.trace("Unable to get locale global property value", e);
+				}
+				
+				// if we weren't able to load the locale from the global property,
+				// use the default one
+				if (defaultLocaleCache == null) {
+					defaultLocaleCache = fromSpecification(OpenmrsConstants.GLOBAL_PROPERTY_DEFAULT_LOCALE_DEFAULT_VALUE);
+				}
+			} else {
+				// if session is not open, return the default locale without caching
+				return fromSpecification(OpenmrsConstants.GLOBAL_PROPERTY_DEFAULT_LOCALE_DEFAULT_VALUE);
 			}
+			
 		}
 		
 		return defaultLocaleCache;
@@ -102,16 +97,22 @@ public class LocaleUtility implements GlobalPropertyListener {
 	 * @param lhs left hand side Locale
 	 * @param rhs right hand side Locale
 	 * @return true if the two locales are compatible, false otherwise
-	 * <strong>Should</strong> confirm different language missing country as compatible
-	 * <strong>Should</strong> confirm same language missing country as compatible
-	 * <strong>Should</strong> not confirm different country as compatible
-	 * <strong>Should</strong> confirm matching country as compatible
-	 * <strong>Should</strong> not confirm different language as compatible
-	 * <strong>Should</strong> confirm matching language as compatible
+	 * @should confirm different language missing country as compatible
+	 * @should confirm same language missing country as compatible
+	 * @should not confirm different country as compatible
+	 * @should confirm matching country as compatible
+	 * @should not confirm different language as compatible
+	 * @should confirm matching language as compatible
 	 */
 	public static boolean areCompatible(Locale lhs, Locale rhs) {
-		return lhs.equals(rhs) || (("".equals(lhs.getCountry())) || ("".equals(rhs.getCountry()))) && lhs.getLanguage()
-				.equals(rhs.getLanguage());
+		if (lhs.equals(rhs)) {
+			return true;
+		} else if ((("".equals(lhs.getCountry())) || ("".equals(rhs.getCountry())))
+		        && lhs.getLanguage().equals(rhs.getLanguage())) {
+			// no country specified, so language match is good enough
+			return true;
+		}
+		return false;
 	}
 	
 	/**
@@ -127,30 +128,14 @@ public class LocaleUtility implements GlobalPropertyListener {
 	 *
 	 * @param localeSpecification encoded locale specification
 	 * @return the representative Locale, or null if the specification is invalid
-	 * <strong>Should</strong> get locale from two character language code
-	 * <strong>Should</strong> get locale from language code and country code
-	 * <strong>Should</strong> get locale from language code country code and variant
+	 * @should get locale from two character language code
+	 * @should get locale from language code and country code
+	 * @should get locale from language code country code and variant
 	 */
 	public static Locale fromSpecification(String localeSpecification) {
-		Locale createdLocale;
+		Locale createdLocale = null;
 		
 		localeSpecification = localeSpecification.trim();
-		
-		try {
-			createdLocale = LocaleUtils.toLocale(localeSpecification);
-		} catch (IllegalArgumentException e) {
-			if (localeSpecification.matches("[a-zA-Z]{2}[-_][a-zA-Z]{2,}")) {
-				return null;
-			} else {
-				createdLocale = generateLocaleFromLegacyFormat(localeSpecification);
-			}
-		}
-		
-		return createdLocale;
-	}
-	
-	private static Locale generateLocaleFromLegacyFormat(String localeSpecification) {
-		Locale createdLocale = null;
 		
 		String[] localeComponents = localeSpecification.split("_");
 		if (localeComponents.length == 1) {
@@ -158,7 +143,8 @@ public class LocaleUtility implements GlobalPropertyListener {
 		} else if (localeComponents.length == 2) {
 			createdLocale = new Locale(localeComponents[0], localeComponents[1]);
 		} else if (localeComponents.length > 2) {
-			String variant = localeSpecification.substring(localeSpecification.indexOf(localeComponents[2]));
+			String variant = localeSpecification.substring(localeSpecification.indexOf(localeComponents[2])); // gets everything after the
+			// second underscore
 			createdLocale = new Locale(localeComponents[0], localeComponents[1], variant);
 		}
 		
@@ -172,17 +158,17 @@ public class LocaleUtility implements GlobalPropertyListener {
 	 * very end of the set if it isn't yet among them.
 	 *
 	 * @return a collection of all specified and allowed locales with no duplicates.
-	 * <strong>Should</strong> return a set of locales with a predictable order
-	 * <strong>Should</strong> return a set of locales with no duplicates
-	 * <strong>Should</strong> have default locale as the first element if user has no preferred locale
-	 * <strong>Should</strong> have default locale as the second element if user has a preferred locale
-	 * <strong>Should</strong> always have english included in the returned collection
-	 * <strong>Should</strong> always have default locale default value included in the returned collection
+	 * @should return a set of locales with a predictable order
+	 * @should return a set of locales with no duplicates
+	 * @should have default locale as the first element if user has no preferred locale
+	 * @should have default locale as the second element if user has a preferred locale
+	 * @should always have english included in the returned collection
+	 * @should always have default locale default value included in the returned collection
 	 * @since 1.7
 	 */
 	public static Set<Locale> getLocalesInOrder() {
 		
-		Set<Locale> locales = new LinkedHashSet<>();
+		Set<Locale> locales = new LinkedHashSet<Locale>();
 		locales.add(Context.getLocale());
 		locales.add(getDefaultLocale());
 		if (localesAllowedListCache == null) {

@@ -9,32 +9,31 @@
  */
 package org.openmrs.propertyeditor;
 
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.openmrs.Provider;
-import org.openmrs.api.ProviderService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.junit.Assert;
+import org.junit.Test;
+import org.openmrs.test.BaseContextSensitiveTest;
 
-public class ProviderEditorTest extends BasePropertyEditorTest<Provider, ProviderEditor> {
+public class ProviderEditorTest extends BaseContextSensitiveTest {
 	
-	private static final Integer EXISTING_ID = 1;
-	
-	@Autowired
-	private ProviderService providerService;
-	
-	@Override
-	protected ProviderEditor getNewEditor() {
-		return new ProviderEditor();
-	}
-	
-	@Override
-	protected Provider getExistingObject() {
-		return providerService.getProvider(EXISTING_ID);
-	}
-	
-	@Override
+	/**
+	 * @see ProviderEditor#setAsText(String)
+	 * @verifies set using id
+	 */
 	@Test
-	@Disabled("see TRUNK-5153 that ProviderDAO throws different exception")
-	public void shouldSetTheEditorValueToNullIfGivenIdDoesNotExist() {
+	public void setAsText_shouldSetUsingId() throws Exception {
+		ProviderEditor editor = new ProviderEditor();
+		editor.setAsText("1");
+		Assert.assertNotNull(editor.getValue());
+	}
+	
+	/**
+	 * @see ProviderEditor#setAsText(String)
+	 * @verifies set using uuid
+	 */
+	@Test
+	public void setAsText_shouldSetUsingUuid() throws Exception {
+		ProviderEditor editor = new ProviderEditor();
+		editor.setAsText("c2299800-cca9-11e0-9572-0800200c9a66");
+		Assert.assertNotNull(editor.getValue());
 	}
 }

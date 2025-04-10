@@ -2,39 +2,26 @@
 
 [![Build Status](https://travis-ci.org/openmrs/openmrs-core.svg?branch=master)](https://travis-ci.org/openmrs/openmrs-core) [![Coverage Status](https://coveralls.io/repos/github/openmrs/openmrs-core/badge.svg?branch=master)](https://coveralls.io/github/openmrs/openmrs-core?branch=master) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/a51303ee46c34775a7c31c8d6016da6b)](https://www.codacy.com/app/openmrs/openmrs-core?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=openmrs/openmrs-core&amp;utm_campaign=Badge_Grade)
 
-api: [![API](https://snyk.io/test/github/openmrs/openmrs-core/badge.svg?targetFile=api%2Fpom.xml)](https://snyk.io/test/github/openmrs/openmrs-core?targetFile=api%2Fpom.xml)
-test: [![test](https://snyk.io/test/github/openmrs/openmrs-core/badge.svg?targetFile=test%2Fpom.xml)](https://snyk.io/test/github/openmrs/openmrs-core?targetFile=test%2Fpom.xml)
-tools: [![tools](https://snyk.io/test/github/openmrs/openmrs-core/badge.svg?targetFile=tools%2Fpom.xml)](https://snyk.io/test/github/openmrs/openmrs-core?targetFile=tools%2Fpom.xml)
-web: [![web](https://snyk.io/test/github/openmrs/openmrs-core/badge.svg?targetFile=web%2Fpom.xml)](https://snyk.io/test/github/openmrs/openmrs-core?targetFile=web%2Fpom.xml)
-webapp: [![webapp](https://snyk.io/test/github/openmrs/openmrs-core/badge.svg?targetFile=webapp%2Fpom.xml)](https://snyk.io/test/github/openmrs/openmrs-core?targetFile=webapp%2Fpom.xml)
-DPGA: [![DPG Badge](https://img.shields.io/badge/Verified-DPG-3333AB?logo=data:image/svg%2bxml;base64,PHN2ZyB3aWR0aD0iMzEiIGhlaWdodD0iMzMiIHZpZXdCb3g9IjAgMCAzMSAzMyIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE0LjIwMDggMjEuMzY3OEwxMC4xNzM2IDE4LjAxMjRMMTEuNTIxOSAxNi40MDAzTDEzLjk5MjggMTguNDU5TDE5LjYyNjkgMTIuMjExMUwyMS4xOTA5IDEzLjYxNkwxNC4yMDA4IDIxLjM2NzhaTTI0LjYyNDEgOS4zNTEyN0wyNC44MDcxIDMuMDcyOTdMMTguODgxIDUuMTg2NjJMMTUuMzMxNCAtMi4zMzA4MmUtMDVMMTEuNzgyMSA1LjE4NjYyTDUuODU2MDEgMy4wNzI5N0w2LjAzOTA2IDkuMzUxMjdMMCAxMS4xMTc3TDMuODQ1MjEgMTYuMDg5NUwwIDIxLjA2MTJMNi4wMzkwNiAyMi44Mjc3TDUuODU2MDEgMjkuMTA2TDExLjc4MjEgMjYuOTkyM0wxNS4zMzE0IDMyLjE3OUwxOC44ODEgMjYuOTkyM0wyNC44MDcxIDI5LjEwNkwyNC42MjQxIDIyLjgyNzdMMzAuNjYzMSAyMS4wNjEyTDI2LjgxNzYgMTYuMDg5NUwzMC42NjMxIDExLjExNzdMMjQuNjI0MSA5LjM1MTI3WiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+Cg==)](https://digitalpublicgoods.net/r/openmrs)
-
 OpenMRS is a patient-based medical record system focusing on giving providers a free customizable electronic medical record system (EMR).
 
 The mission of OpenMRS is to improve health care delivery in resource-constrained environments by coordinating a global community that creates a robust, scalable, user-driven, open source medical record system platform.
 
-#### Table of Contents
+####Table of Contents
 
 1. [Build](#build)
-   1. [Prerequisites](#prerequisites)
-   2. [Build Command](#build-command)
-   3. [Deploy](#deploy)
-2. [Docker build](#docker-build)
-3. [Navigating the repository](#navigating-the-repository)
-4. [Software Development Kit](#software-development-kit)
-5. [Extending OpenMRS with Modules](#extending-openmrs-with-modules)
-6. [Documentation](#documentation)
-   1. [Developer guides](#developer-guides)
-   2. [Wiki](#wiki)
-   3. [Website](#website)
-7. [Contributing](#contributing)
-   1. [Code](#code)
-   2. [Code Reviews](#code-reviews)
-   3. [Translation](#translation)
-8. [Issues](#issues)
-9. [Community](#community)
-10. [Support](#support)
-11. [License](#license)
+2. [Navigating the repository](#navigating-the-repository)
+3. [Software Development Kit](#software-development-kit)
+4. [Documentation](#documentation)
+  * [Developer guides](#developer-guides)
+  * [Wiki](#wiki)
+  * [Website](#website)
+5. [Contributing](#contributing)
+  * [Code](#code)
+  * [Translation](#translation)
+6. [Issues](#issues)
+7. [Community](#community)
+8. [Support](#support)
+9. [License](#license)
 
 ## Build
 
@@ -68,7 +55,7 @@ Install the version control tool [git](https://git-scm.com/) and clone this repo
 git clone https://github.com/openmrs/openmrs-core.git
 ```
 
-### Build Command
+### Command
 
 After you have taken care of the [Prerequisites](#prerequisites)
 
@@ -80,73 +67,6 @@ mvn clean package
 ```
 
 This will generate the OpenMRS application in `webapp/target/openmrs.war` which you will have to deploy into an application server like for example [tomcat](https://tomcat.apache.org/) or [jetty](http://www.eclipse.org/jetty/).
-
-### Deploy
-
-For development purposes you can simply deploy the `openmrs.war` into the application server jetty via
-
-```bash
-cd openmrs-core/webapp
-mvn jetty:run
-```
-
-If all goes well (check the console output) you can access the OpenMRS application at `localhost:8080/openmrs`.
-
-Refer to [Getting Started as a Developer - Maven](https://wiki.openmrs.org/display/docs/Maven) for some more information
-on useful Maven commands and build options.
-
-## Docker build
-
-Docker builds are still work in progress. We appreciate any feedback and improvements to the process.
-
-The only prerequisite needed is Docker. 
-
-In order to build a development version run:
-```bash 
-docker-compose build
-```
-It calls `mvn install` by default. If you would like to customize mvn build arguments you can do so by running:
-```bash
-docker-compose build --build-arg MVN_ARGS='install -DskipTests'
-```
-It is also possible to use the built dev image to run jetty:
-```bash
-docker-compose up
-```
-
-In order to build a production version run:
-```bash
-docker-compose -f docker-compose.yml build
-```
-It first builds the dev image and then an image with Tomcat and openmrs.war. 
-It has no dev dependencies.
-
-The production version can be run with:
-```bash
-docker-compose -f docker-compose.yml up
-```
-If you want to debug, you need to run a development version and connect your debugger to port 8000, which is exposed by default.
-
-Unfortunately, at this point any code changes require full restart and rebuild of the docker container. To speed up the process,
-please use:
-```bash
-docker-compose build --build-arg MVN_ARGS='install -DskipTests'
-docker-compose up
-```
-We are working towards providing support for Spring Boot auto-reload feature, which will be documented here once ready.
-
-It is also possible to deploy an image built by our CI, which is published at 
-https://hub.docker.com/r/openmrs/openmrs-core
-
-You can run any tag available with:
-```bash
-TAG=nightly docker-compose -f docker-compose.yml up
-```
-It is also possible to run a development version of an image with:
-```bash
-TAG=dev docker-compose up
-```
-All development versions contain dev suffix. The cache suffix is for use by our CI.
 
 ## Navigating the repository
 
@@ -169,6 +89,18 @@ The project tree is set up as follows:
   <td>webapp/</td>
   <td>files used in building the war file (contains JSP files on older versions).</td>
  </tr>
+ <tr> 
+  <td>build.properties</td>
+  <td>(deprecated) Default properties used by the deprecated ANT build.xml file.</td>
+ </tr>
+ <tr>
+  <td>build.xml</td>
+  <td>(deprecated) ANT build file containing convenience methods into the maven build.</td>
+ </tr>
+ <tr>
+  <td>liquibase.build.xml</td>
+  <td>ANT build file containing convenience methods to run liquibase actions.</td>
+ </tr>
  <tr>
   <td>pom.xml</td>
   <td>The main maven file used to build and package OpenMRS.</td>
@@ -182,22 +114,14 @@ awesome SDK at
 
 https://wiki.openmrs.org/display/docs/OpenMRS+SDK
 
-## Extending OpenMRS with Modules
-
-OpenMRS has a modular architecture that allows developers to extend the OpenMRS core functionality by creating modules that can easily be added or removed to meet the needs of a specific implementation.
-
-Before creating your own module go to the [OpenMRS Module Repository](https://addons.openmrs.org/) and see if there is already a module for your specific use case. If so deploy and try it and if a functionality is missing join the developers of the module to add a feature.
-
-If you haven't found what you were looking for refer to the [Module - wiki](https://wiki.openmrs.org/display/docs/Modules) to learn how you can create a new module.
-
 ## Documentation
 
 ### Developer guides
 
 If you want to contribute please refer to these resources
 
-* [Getting Started as a Developer](https://wiki.openmrs.org/display/docs/Get+Started+as+a+Developer)
-* [How To Configure Your IDE](https://wiki.openmrs.org/display/docs/How-To+Setup+And+Use+Your+IDE)
+* [Getting Started as a Developer](https://wiki.openmrs.org/display/docs/Getting+Started+as+a+Developer)
+* [How To Configure Your IDE](https://wiki.openmrs.org/display/docs/Coding+Conventions#CodingConventions-IDE-configHowToConfigureYourIDE)
 * [How To Make a Pull Request](https://wiki.openmrs.org/display/docs/Pull+Request+Tips)
 
 ### Wiki
@@ -218,28 +142,11 @@ http://openmrs.org
 
 Contributions are very welcome, we can definitely use your help!
 
-OpenMRS organizes the privileges of its contributors in developer stages which
-are documented [here](https://wiki.openmrs.org/display/RES/OpenMRS+Developer+Stages).
-
-Read the following sections to find out where you could help.
-
 ### Code
 
 Check out our [contributing guidelines](CONTRIBUTING.md), read through the [Developer guides](#developer-guides).
 
-After you've read up :eyeglasses: [grab an introductory issue](https://wiki.openmrs.org/display/docs/Contribute+as+a+Developer#ContributeasaDeveloper-Workonanissue) that is `Ready For Work`.
-
-### Code Reviews
-
-You might not have the time to develop yourself but enough experience with
-OpenMRS and/or reviewing code, your help on code reviews will be much
-appreciated!
-
-Read
-
-https://wiki.openmrs.org/display/docs/Code+Review
-
-and get started with re-:eyes: pull requests!
+After you've read up :eyeglasses: [grab an introductory issue](https://wiki.openmrs.org/display/docs/Getting+Started+as+a+Developer) that is `Ready For Work`.
 
 ### Translation
 

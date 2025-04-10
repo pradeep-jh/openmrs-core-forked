@@ -9,12 +9,10 @@
  */
 package org.openmrs.scheduler.tasks;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.scheduler.Task;
 import org.openmrs.scheduler.TaskDefinition;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.ExecutionException;
 
 /**
  * Base class for all other task classes.
@@ -22,7 +20,7 @@ import java.util.concurrent.ExecutionException;
 public abstract class AbstractTask implements Task {
 	
 	// Logger
-	private static final Logger log = LoggerFactory.getLogger(AbstractTask.class);
+	private static final Log log = LogFactory.getLog(AbstractTask.class);
 	
 	// Indicates whether the task is currently running
 	protected boolean isExecuting = false;
@@ -49,13 +47,11 @@ public abstract class AbstractTask implements Task {
 	/**
 	 * @see org.openmrs.scheduler.Task#execute()
 	 */
-	@Override
-	public abstract void execute() throws InterruptedException, ExecutionException;
+	public abstract void execute();
 	
 	/**
 	 * @see org.openmrs.scheduler.Task#isExecuting()
 	 */
-	@Override
 	public boolean isExecuting() {
 		return isExecuting;
 	}
@@ -63,7 +59,6 @@ public abstract class AbstractTask implements Task {
 	/**
 	 * @see org.openmrs.scheduler.Task#initialize(TaskDefinition)
 	 */
-	@Override
 	public void initialize(final TaskDefinition definition) {
 		this.taskDefinition = definition;
 	}
@@ -71,7 +66,6 @@ public abstract class AbstractTask implements Task {
 	/**
 	 * @see org.openmrs.scheduler.Task#getTaskDefinition()
 	 */
-	@Override
 	public TaskDefinition getTaskDefinition() {
 		return this.taskDefinition;
 	}
@@ -79,7 +73,6 @@ public abstract class AbstractTask implements Task {
 	/**
 	 * @see org.openmrs.scheduler.Task#shutdown()
 	 */
-	@Override
 	public void shutdown() {
 		taskDefinition = null;
 	}

@@ -9,12 +9,12 @@
  */
 package org.openmrs;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import java.util.Date;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import org.openmrs.order.OrderUtilTest;
 
 /**
@@ -23,7 +23,7 @@ import org.openmrs.order.OrderUtilTest;
 public class TestOrderTest {
 	
 	/**
-	 * @throws Exception
+	 * @verifies copy all test order fields
 	 * @see TestOrder#copy()
 	 */
 	@Test
@@ -32,7 +32,7 @@ public class TestOrderTest {
 	}
 	
 	/**
-	 * @throws Exception
+	 * @verifies set all the relevant fields
 	 * @see TestOrder#cloneForRevision()
 	 */
 	@Test
@@ -50,10 +50,11 @@ public class TestOrderTest {
 	}
 	
 	/**
+	 * @verifies set all the relevant fields
 	 * @see TestOrder#cloneForDiscontinuing()
 	 */
 	@Test
-	public void cloneForDiscontinuing_shouldSetAllTheRelevantFields() {
+	public void cloneForDiscontinuing_shouldSetAllTheRelevantFields() throws Exception {
 		TestOrder anOrder = new TestOrder();
 		anOrder.setPatient(new Patient());
 		anOrder.setCareSetting(new CareSetting());
@@ -66,9 +67,10 @@ public class TestOrderTest {
 		
 		assertEquals(anOrder.getConcept(), orderThatCanDiscontinueTheOrder.getConcept());
 		
-		assertEquals(anOrder, orderThatCanDiscontinueTheOrder.getPreviousOrder(), "should set previous order to anOrder");
+		assertEquals("should set previous order to anOrder", anOrder, orderThatCanDiscontinueTheOrder.getPreviousOrder());
 		
-		assertEquals(orderThatCanDiscontinueTheOrder.getAction(), Order.Action.DISCONTINUE, "should set new order action to new");
+		assertEquals("should set new order action to new", orderThatCanDiscontinueTheOrder.getAction(),
+		    Order.Action.DISCONTINUE);
 		
 		assertEquals(anOrder.getCareSetting(), orderThatCanDiscontinueTheOrder.getCareSetting());
 		
@@ -76,10 +78,11 @@ public class TestOrderTest {
 	}
 	
 	/**
+	 * @verifies set the relevant fields for a DC order
 	 * @see TestOrder#cloneForRevision()
 	 */
 	@Test
-	public void cloneForRevision_shouldSetTheRelevantFieldsForADCOrder() {
+	public void cloneForRevision_shouldSetTheRelevantFieldsForADCOrder() throws Exception {
 		Order order = new TestOrder();
 		order.setAction(Order.Action.DISCONTINUE);
 		Date date = new Date();

@@ -9,11 +9,10 @@
  */
 package org.openmrs.validator;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.EncounterRole;
+import org.openmrs.test.Verifies;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 
@@ -26,37 +25,39 @@ public class RequireNameValidatorTest {
 	 * @see RequireNameValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfNameIsNullOrEmptyOrWhitespace() {
+	@Verifies(value = "should fail validation if name is null or empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfNameIsNullOrEmptyOrWhitespace() throws Exception {
 		EncounterRole role = new EncounterRole();
 		role.setName(null);
 		role.setDescription(":(");
 		
 		Errors errors = new BindException(role, "type");
 		new RequireNameValidator().validate(role, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 		
 		role.setName("");
 		errors = new BindException(role, "type");
 		new RequireNameValidator().validate(role, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 		
 		role.setName(" ");
 		errors = new BindException(role, "type");
 		new RequireNameValidator().validate(role, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 	}
 	
 	/**
 	 * @see RequireNameValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfNameHasProperValue() {
+	@Verifies(value = "should pass validation if name has proper value", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfNameHasProperValue() throws Exception {
 		EncounterRole role = new EncounterRole();
 		role.setName("restraining");
 		
 		Errors errors = new BindException(role, "type");
 		new RequireNameValidator().validate(role, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 }

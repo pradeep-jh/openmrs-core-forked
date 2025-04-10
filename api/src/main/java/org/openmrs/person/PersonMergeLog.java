@@ -9,8 +9,7 @@
  */
 package org.openmrs.person;
 
-import org.hibernate.envers.Audited;
-import org.openmrs.BaseChangeableOpenmrsData;
+import org.openmrs.BaseOpenmrsData;
 import org.openmrs.Person;
 import org.openmrs.api.PersonService;
 
@@ -26,10 +25,7 @@ import org.openmrs.api.PersonService;
  * @see PersonService#savePersonMergeLog(PersonMergeLog)
  * @since 1.9
  */
-@Audited
-public class PersonMergeLog extends BaseChangeableOpenmrsData {
-	
-	private static final long serialVersionUID = 1L;
+public class PersonMergeLog extends BaseOpenmrsData {
 	
 	/**
 	 * The unique identifier of the person merge log entity
@@ -97,12 +93,10 @@ public class PersonMergeLog extends BaseChangeableOpenmrsData {
 		this.personMergeLogData = personMergeLogData;
 	}
 	
-	@Override
 	public void setId(Integer id) {
 		setPersonMergeLogId(id);
 	}
 	
-	@Override
 	public Integer getId() {
 		return getPersonMergeLogId();
 	}

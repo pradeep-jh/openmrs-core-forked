@@ -9,11 +9,11 @@
  */
 package org.openmrs;
 
-import static org.apache.commons.lang3.time.DateUtils.addHours;
-import static org.apache.commons.lang3.time.DateUtils.addMinutes;
-import static org.apache.commons.lang3.time.DateUtils.addMonths;
-import static org.apache.commons.lang3.time.DateUtils.addWeeks;
-import static org.apache.commons.lang3.time.DateUtils.addYears;
+import static org.apache.commons.lang.time.DateUtils.addHours;
+import static org.apache.commons.lang.time.DateUtils.addMinutes;
+import static org.apache.commons.lang.time.DateUtils.addMonths;
+import static org.apache.commons.lang.time.DateUtils.addWeeks;
+import static org.apache.commons.lang.time.DateUtils.addYears;
 import static org.apache.commons.lang3.time.DateUtils.addDays;
 import static org.apache.commons.lang3.time.DateUtils.addSeconds;
 
@@ -96,9 +96,8 @@ public class Duration {
 			return addYears(startDate, this.duration);
 		}
 		if (SNOMED_CT_RECURRING_INTERVAL_CODE.equals(code)) {
-			if (frequency == null) {
+			if (frequency == null)
 				throw new APIException("Duration.error.frequency.null", (Object[]) null);
-			}
 			return addSeconds(startDate, (int) (this.duration * SECONDS_PER_DAY / frequency.getFrequencyPerDay()));
 		} else {
 			throw new APIException("Duration.unknown.code", new Object[] { code });
@@ -110,8 +109,8 @@ public class Duration {
 	 * 
 	 * @param durationUnits
 	 * @return a string which is reference term code
-	 * <strong>Should</strong> return null if the concept has no mapping to the SNOMED CT source
-	 * <strong>Should</strong> return the code for the term of the mapping to the SNOMED CT source
+	 * @should return null if the concept has no mapping to the SNOMED CT source
+	 * @should return the code for the term of the mapping to the SNOMED CT source
 	 */
 	public static String getCode(Concept durationUnits) {
 		for (ConceptMap conceptMapping : durationUnits.getConceptMappings()) {

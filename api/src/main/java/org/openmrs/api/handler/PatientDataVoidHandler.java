@@ -9,9 +9,6 @@
  */
 package org.openmrs.api.handler;
 
-import java.util.Date;
-import java.util.List;
-
 import org.apache.commons.collections.CollectionUtils;
 import org.openmrs.Encounter;
 import org.openmrs.Patient;
@@ -21,6 +18,9 @@ import org.openmrs.aop.RequiredDataAdvice;
 import org.openmrs.api.EncounterService;
 import org.openmrs.api.context.Context;
 import org.openmrs.util.PrivilegeConstants;
+
+import java.util.Date;
+import java.util.List;
 
 /**
  * This class deals with {@link Patient} objects when they are voided via a void* method in an
@@ -40,7 +40,7 @@ public class PatientDataVoidHandler implements VoidHandler<Patient> {
 	/**
 	 * @see org.openmrs.api.handler.VoidHandler#handle(org.openmrs.Voidable, org.openmrs.User,
 	 *      java.util.Date, java.lang.String)
-	 * <strong>Should</strong> void the orders encounters and observations associated with the patient
+	 * @should void the orders encounters and observations associated with the patient
 	 */
 	@Override
 	public void handle(Patient patient, User voidingUser, Date voidedDate, String voidReason) {
@@ -49,7 +49,7 @@ public class PatientDataVoidHandler implements VoidHandler<Patient> {
 		List<Encounter> encounters = es.getEncountersByPatient(patient);
 		if (CollectionUtils.isNotEmpty(encounters)) {
 			for (Encounter encounter : encounters) {
-				if (!encounter.getVoided()) {
+				if (!encounter.isVoided()) {
 					// EncounterServiceImpl.voidEncounter and the requiredDataAdvice will set dateVoided to current date 
 					//if it is null, we need to set it now to match the patient's date voided so that the unvoid 
 					//handler's logic doesn't fail when comparing dates while unvoiding encounters that were voided 

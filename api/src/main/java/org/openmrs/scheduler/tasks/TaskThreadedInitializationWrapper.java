@@ -9,16 +9,14 @@
  */
 package org.openmrs.scheduler.tasks;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.scheduler.Task;
 import org.openmrs.scheduler.TaskDefinition;
-import org.openmrs.util.OpenmrsThreadPoolHolder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This class executes the Task.initialize method in a new thread. Extend this class if you want
@@ -28,9 +26,9 @@ import org.slf4j.LoggerFactory;
 public class TaskThreadedInitializationWrapper implements Task {
 	
 	// Logger 
-	private static final Logger log = LoggerFactory.getLogger(TaskThreadedInitializationWrapper.class);
+	private Log log = LogFactory.getLog(TaskThreadedInitializationWrapper.class);
 	
-	private final Task task;
+	private Task task;
 	
 	private boolean initialized = false;
 	
@@ -51,7 +49,6 @@ public class TaskThreadedInitializationWrapper implements Task {
 	 * @see org.openmrs.scheduler.Task#execute() Executes the task defined in the task definition
 	 *      but waits until the initialize method has finished
 	 */
-	@Override
 	public void execute() {
 		lock.lock();
 		try {
@@ -66,12 +63,8 @@ public class TaskThreadedInitializationWrapper implements Task {
 		finally {
 			lock.unlock();
 		}
-
-		try {
-			task.execute();
-		} catch (InterruptedException | ExecutionException e) {
-			log.error("Exception occurred while executing task.", e);
-		}
+		
+		task.execute();
 	}
 	
 	/**
@@ -79,25 +72,28 @@ public class TaskThreadedInitializationWrapper implements Task {
 	 *      the task and sets the task definition. This method is non-blocking by executing in a new
 	 *      thread.
 	 */
-	@Override
 	public void initialize(final TaskDefinition config) {
-		OpenmrsThreadPoolHolder.threadExecutor.submit(() -> {
-			lock.lock();
-			try {
-				task.initialize(config);
-				initialized = true;
-				initializedCond.signalAll();
+		Runnable r = new Runnable() {
+			
+			public void run() {
+				lock.lock();
+				try {
+					task.initialize(config);
+					initialized = true;
+					initializedCond.signalAll();
+				}
+				finally {
+					lock.unlock();
+				}
 			}
-			finally {
-				lock.unlock();
-			}
-		});
+		};
+		
+		new Thread(r).start();
 	}
 	
 	/**
 	 * @see org.openmrs.scheduler.Task#getTaskDefinition()
 	 */
-	@Override
 	public TaskDefinition getTaskDefinition() {
 		return task != null ? task.getTaskDefinition() : null;
 	}
@@ -105,7 +101,6 @@ public class TaskThreadedInitializationWrapper implements Task {
 	/**
 	 * @see org.openmrs.scheduler.Task#isExecuting()
 	 */
-	@Override
 	public boolean isExecuting() {
 		return task.isExecuting();
 	}
@@ -113,7 +108,6 @@ public class TaskThreadedInitializationWrapper implements Task {
 	/**
 	 * @see org.openmrs.scheduler.Task#shutdown()
 	 */
-	@Override
 	public void shutdown() {
 		task.shutdown();
 	}

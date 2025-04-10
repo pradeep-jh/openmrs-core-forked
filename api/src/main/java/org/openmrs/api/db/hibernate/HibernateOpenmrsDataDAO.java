@@ -11,14 +11,9 @@ package org.openmrs.api.db.hibernate;
 
 import java.util.List;
 
-import javax.persistence.Query;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
-
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
+import org.hibernate.Criteria;
+import org.hibernate.Query;
+import org.hibernate.criterion.Restrictions;
 import org.openmrs.BaseOpenmrsData;
 import org.openmrs.api.db.OpenmrsDataDAO;
 
@@ -39,48 +34,35 @@ public class HibernateOpenmrsDataDAO<T extends BaseOpenmrsData> extends Hibernat
 	/**
 	 * @see org.openmrs.api.db.OpenmrsDataDAO#getAll(boolean)
 	 */
-	@Override
 	public List<T> getAll(boolean includeVoided) {
-		Session session = sessionFactory.getCurrentSession();
-		CriteriaBuilder cb = session.getCriteriaBuilder();
-		CriteriaQuery<T> cq = cb.createQuery(mappedClass);
-		Root<T> root = cq.from(mappedClass);
-
+		Criteria crit = sessionFactory.getCurrentSession().createCriteria(mappedClass);
+		
 		if (!includeVoided) {
-			cq.where(cb.isFalse(root.get("voided")));
+			crit.add(Restrictions.eq("voided", false));
 		}
-
-		return session.createQuery(cq).getResultList();
+		
+		return crit.list();
 	}
 	
 	/**
 	 * @see org.openmrs.api.db.OpenmrsDataDAO#getAll(boolean, java.lang.Integer, java.lang.Integer)
 	 */
-	@Override
 	public List<T> getAll(boolean includeVoided, Integer firstResult, Integer maxResults) {
-		Session session = sessionFactory.getCurrentSession();
-		CriteriaBuilder cb = session.getCriteriaBuilder();
-		CriteriaQuery<T> cq = cb.createQuery(mappedClass);
-		Root<T> root = cq.from(mappedClass);
-
+		Criteria crit = sessionFactory.getCurrentSession().createCriteria(mappedClass);
+		
 		if (!includeVoided) {
-			cq.where(cb.isFalse(root.get("voided")));
+			crit.add(Restrictions.eq("voided", false));
 		}
-
-		TypedQuery<T> query = session.createQuery(cq);
-		if (firstResult != null) {
-			query.setFirstResult(firstResult);
-		}
-		if (maxResults != null) {
-			query.setMaxResults(maxResults);
-		}
-		return query.getResultList();
+		crit.setFirstResult(firstResult);
+		crit.setMaxResults(maxResults);
+		
+		return crit.list();
+		
 	}
 	
 	/**
 	 * @see org.openmrs.api.db.OpenmrsDataDAO#getAllCount(boolean)
 	 */
-	@Override
 	public int getAllCount(boolean includeVoided) {
 		
 		String hql = "select count(*)" + " from " + mappedClass;
@@ -90,8 +72,9 @@ public class HibernateOpenmrsDataDAO<T extends BaseOpenmrsData> extends Hibernat
 		}
 		Query query = sessionFactory.getCurrentSession().createQuery(hql);
 		
-		Number count = JpaUtils.getSingleResultOrNull(query);
+		Number count = (Number) query.uniqueResult();
 		
 		return count == null ? 0 : count.intValue();
 	}
+	
 }

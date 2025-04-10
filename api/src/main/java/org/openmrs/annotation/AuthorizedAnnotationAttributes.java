@@ -13,7 +13,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -54,9 +53,8 @@ import java.util.Set;
  * 
  * @see org.openmrs.annotation.Authorized
  */
+@SuppressWarnings("unchecked")
 public class AuthorizedAnnotationAttributes {
-	
-	private static final String UNSUPPORTED_OPERATION = "Unsupported operation";
 	
 	/**
 	 * Get the <code>Secured</code> attributes for a given target class.
@@ -64,13 +62,15 @@ public class AuthorizedAnnotationAttributes {
 	 * @param target The target method
 	 * @return Collection of <code>SecurityConfig</code>
 	 */
-	public Collection<String> getAttributes(Class<?> target) {
-		Set<String> attributes = new HashSet<>();
+	public Collection getAttributes(Class target) {
+		Set<String> attributes = new HashSet<String>();
 		for (Annotation annotation : target.getAnnotations()) {
 			// check for Secured annotations
 			if (annotation instanceof Authorized) {
 				Authorized attr = (Authorized) annotation;
-				Collections.addAll(attributes, attr.value());
+				for (String privilege : attr.value()) {
+					attributes.add(privilege);
+				}
 				break;
 			}
 		}
@@ -83,14 +83,16 @@ public class AuthorizedAnnotationAttributes {
 	 * @param method The target method
 	 * @return Collection of <code>SecurityConfig</code>
 	 */
-	public Collection<String> getAttributes(Method method) {
-		Set<String> attributes = new HashSet<>();
+	public Collection getAttributes(Method method) {
+		Set<String> attributes = new HashSet<String>();
 		
 		for (Annotation annotation : method.getAnnotations()) {
 			// check for Secured annotations
 			if (annotation instanceof Authorized) {
 				Authorized attr = (Authorized) annotation;
-				Collections.addAll(attributes, attr.value());
+				for (String privilege : attr.value()) {
+					attributes.add(privilege);
+				}
 				break;
 			}
 		}
@@ -105,7 +107,7 @@ public class AuthorizedAnnotationAttributes {
 	 * @return boolean true/false whether to "and" privileges together
 	 * @see org.openmrs.annotation.Authorized#requireAll()
 	 */
-	public boolean getRequireAll(Class<?> target) {
+	public boolean getRequireAll(Class target) {
 		for (Annotation annotation : target.getAnnotations()) {
 			// check for Secured annotations
 			if (annotation instanceof Authorized) {
@@ -152,20 +154,20 @@ public class AuthorizedAnnotationAttributes {
 		return false;
 	}
 	
-	public Collection<?> getAttributes(Class<?> clazz, Class<?> filter) {
-		throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
+	public Collection getAttributes(Class clazz, Class filter) {
+		throw new UnsupportedOperationException("Unsupported operation");
 	}
 	
-	public Collection<?> getAttributes(Method method, Class<?> clazz) {
-		throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
+	public Collection getAttributes(Method method, Class clazz) {
+		throw new UnsupportedOperationException("Unsupported operation");
 	}
 	
-	public Collection<?> getAttributes(Field field) {
-		throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
+	public Collection getAttributes(Field field) {
+		throw new UnsupportedOperationException("Unsupported operation");
 	}
 	
-	public Collection<?> getAttributes(Field field, Class<?> clazz) {
-		throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
+	public Collection getAttributes(Field field, Class clazz) {
+		throw new UnsupportedOperationException("Unsupported operation");
 	}
 	
 }

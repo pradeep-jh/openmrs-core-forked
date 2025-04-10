@@ -9,7 +9,7 @@
  */
 package org.openmrs.customdatatype.datatype;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.openmrs.Program;
 import org.openmrs.api.context.Context;
 import org.springframework.stereotype.Component;
@@ -24,10 +24,9 @@ public class ProgramDatatype extends BaseMetadataDatatype<Program> {
 	
 	/**
 	 * @see org.openmrs.customdatatype.SerializingCustomDatatype#deserialize(java.lang.String)
-	 * <strong>Should</strong> return the object by given uuid string
+	 * @should return the object by given uuid string
 	 * @override
 	 */
-	@Override
 	public Program deserialize(String uuid) {
 		if (StringUtils.isBlank(uuid)) {
 			return null;

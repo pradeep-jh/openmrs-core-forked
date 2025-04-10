@@ -25,43 +25,33 @@ public abstract class BaseHyphenatedIdentifierValidator implements IdentifierVal
 	/**
 	 * @see org.openmrs.patient.IdentifierValidator#getAllowedCharacters()
 	 */
-	@Override
 	public abstract String getAllowedCharacters();
 	
 	/**
 	 * @see org.openmrs.patient.IdentifierValidator#getName()
 	 */
-	@Override
 	public abstract String getName();
 	
 	/**
 	 * @see org.openmrs.patient.IdentifierValidator#getValidIdentifier(java.lang.String)
 	 */
-	@Override
 	public String getValidIdentifier(String undecoratedIdentifier) throws UnallowedIdentifierException {
 		
 		checkAllowedIdentifier(undecoratedIdentifier);
 		
 		char checkLetter = convertCheckDigitToChar(getCheckDigit(undecoratedIdentifier));
-
-		return undecoratedIdentifier + "-" + checkLetter;
+		
+		String result = undecoratedIdentifier + "-" + checkLetter;
+		return result;
 	}
 	
 	/**
 	 * @see org.openmrs.patient.IdentifierValidator#isValid(java.lang.String)
 	 */
-	@Override
 	public boolean isValid(String identifier) throws UnallowedIdentifierException {
 		
 		if (identifier.indexOf("-") < 1) {
-			throw new UnallowedIdentifierException(
-					"Identifier \"" + identifier + "\" must contain a hyphen followed by a check digit character (A-J).");
-		}
-		if (identifier.endsWith("-")) {
-			throw new UnallowedIdentifierException(
-					"Identifier \""
-							+ identifier
-							+ "\" must not end with a hyphen - a check digit character (A-J) must follow.");
+			throw new UnallowedIdentifierException("Identifier must contain something besides the check digit.");
 		}
 		
 		String idWithoutCheckDigit = identifier.substring(0, identifier.indexOf("-"));
@@ -70,7 +60,7 @@ public abstract class BaseHyphenatedIdentifierValidator implements IdentifierVal
 		
 		int computedCheckDigit = getCheckDigit(idWithoutCheckDigit);
 		
-		String checkDigit = identifier.substring(identifier.indexOf("-") + 1);
+		String checkDigit = identifier.substring(identifier.indexOf("-") + 1, identifier.length());
 		
 		if (checkDigit.length() != 1) {
 			throw new UnallowedIdentifierException("Identifier must have a check digit of length 1.");
@@ -107,7 +97,7 @@ public abstract class BaseHyphenatedIdentifierValidator implements IdentifierVal
 			checkDigit = "9";
 		}
 		
-		int givenCheckDigit;
+		int givenCheckDigit = 10;
 		
 		try {
 			givenCheckDigit = Integer.valueOf(checkDigit);

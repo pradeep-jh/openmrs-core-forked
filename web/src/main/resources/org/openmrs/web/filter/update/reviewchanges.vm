@@ -1,4 +1,4 @@
-#parse($HEADER_TEMPLATE)
+#parse($headerTemplate)
 
 <script>
 	var lastIndex = 0;
@@ -193,4 +193,4 @@
 	</div>
 </form>
 <!-- div id="log">Used for debugging</div -->
-#parse($FOOTER_TEMPLATE)
+#parse($footerTemplate)

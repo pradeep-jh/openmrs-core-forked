@@ -9,15 +9,12 @@
  */
 package org.openmrs.validator;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.ConceptNameTag;
 import org.openmrs.api.context.Context;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 
@@ -28,53 +25,57 @@ import org.springframework.validation.Errors;
  */
 public class ConceptNameTagValidatorTest extends BaseContextSensitiveTest {
 	
-	@Test
-	public void validate_shouldFailValidationIfConceptNameTagIsNull() {
+	@Test(expected = IllegalArgumentException.class)
+	@Verifies(value = "fail validation if conceptNameTag is null", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfConceptNameTagIsNull() throws Exception {
 		Errors errors = new BindException(new ConceptNameTag(), "cnt");
-		assertThrows(IllegalArgumentException.class, () -> new ConceptNameTagValidator().validate(null, errors));
+		new ConceptNameTagValidator().validate(null, errors);
 	}
 	
 	/**
 	 * @see ConceptNameTagValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfTagIsNullOrEmptyOrWhitespace() {
+	@Verifies(value = "fail validation if tag is null or empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfTagIsNullOrEmptyOrWhitespace() throws Exception {
 		ConceptNameTag cnt = new ConceptNameTag();
 		
 		Errors errors = new BindException(cnt, "cnt");
 		new ConceptNameTagValidator().validate(cnt, errors);
-		assertTrue(errors.hasFieldErrors("tag"));
+		Assert.assertTrue(errors.hasFieldErrors("tag"));
 		
 		cnt.setTag("");
 		errors = new BindException(cnt, "cnt");
 		new ConceptNameTagValidator().validate(cnt, errors);
-		assertTrue(errors.hasFieldErrors("tag"));
+		Assert.assertTrue(errors.hasFieldErrors("tag"));
 		
 		cnt.setTag(" ");
 		errors = new BindException(cnt, "cnt");
 		new ConceptNameTagValidator().validate(cnt, errors);
-		assertTrue(errors.hasFieldErrors("tag"));
+		Assert.assertTrue(errors.hasFieldErrors("tag"));
 	}
 	
 	/**
 	 * @see ConceptNameTagValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfAllRequiredFieldsHaveProperValues() {
+	@Verifies(value = "pass validation if tag does not exist and is not null or empty", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfAllRequiredFieldsHaveProperValues() throws Exception {
 		ConceptNameTag cnt = new ConceptNameTag();
 		
 		cnt.setTag("tag");
 		
 		Errors errors = new BindException(cnt, "cnt");
 		new ConceptNameTagValidator().validate(cnt, errors);
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see ConceptNameTagValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailIfTheConceptNameTagIsADuplicate() {
+	@Verifies(value = "should fail if the concept name tag is a duplicate", method = "validate(Object,Errors)")
+	public void validate_shouldFailIfTheConceptNameTagIsADuplicate() throws Exception {
 		String objectName = "duplicate concept name tag";
 		
 		ConceptNameTag existing = Context.getConceptService().getConceptNameTag(1);
@@ -84,15 +85,16 @@ public class ConceptNameTagValidatorTest extends BaseContextSensitiveTest {
 		
 		Errors errors = new BindException(cnt, objectName);
 		new ConceptNameTagValidator().validate(cnt, errors);
-		assertTrue(errors.hasErrors());
-		assertTrue(errors.hasFieldErrors("tag"));
+		Assert.assertTrue(errors.hasErrors());
+		Assert.assertEquals(true, errors.hasFieldErrors("tag"));
 	}
 	
 	/**
 	 * @see ConceptNameTagValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() {
+	@Verifies(value = "should pass validation if field lengths are correct", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() throws Exception {
 		ConceptNameTag cnt = new ConceptNameTag();
 		
 		cnt.setTag("tag");
@@ -100,14 +102,15 @@ public class ConceptNameTagValidatorTest extends BaseContextSensitiveTest {
 		
 		Errors errors = new BindException(cnt, "cnt");
 		new ConceptNameTagValidator().validate(cnt, errors);
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see ConceptNameTagValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() {
+	@Verifies(value = "should fail validation if field lengths are not correct", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() throws Exception {
 		ConceptNameTag cnt = new ConceptNameTag();
 		
 		cnt
@@ -117,19 +120,22 @@ public class ConceptNameTagValidatorTest extends BaseContextSensitiveTest {
 		
 		Errors errors = new BindException(cnt, "cnt");
 		new ConceptNameTagValidator().validate(cnt, errors);
-		assertTrue(errors.hasFieldErrors("tag"));
-		assertTrue(errors.hasFieldErrors("voidReason"));
+		Assert.assertEquals(true, errors.hasFieldErrors("tag"));
+		Assert.assertEquals(true, errors.hasFieldErrors("voidReason"));
 	}
 	
 	@Test
-	public void validate_shouldNotFailIfTheConceptNameTagIsTheSame() {
+	@Verifies(value = "pass validation if the concept name tag being validated is the same as the test one", method = "validate(Object,Errors)")
+	public void validate_shouldNotFailIfTheConceptNameTagIsTheSame() throws Exception {
 		String objectName = "duplicate concept name tag";
-
-		ConceptNameTag cnt = Context.getConceptService().getConceptNameTag(1);
-
+		
+		ConceptNameTag existing = Context.getConceptService().getConceptNameTag(1);
+		
+		ConceptNameTag cnt = existing;
+		
 		Errors errors = new BindException(cnt, objectName);
 		new ConceptNameTagValidator().validate(cnt, errors);
-		assertFalse(errors.hasErrors());
-		assertFalse(errors.hasFieldErrors("tag"));
+		Assert.assertFalse(errors.hasErrors());
+		Assert.assertEquals(false, errors.hasFieldErrors("tag"));
 	}
 }

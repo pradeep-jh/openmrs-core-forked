@@ -25,14 +25,12 @@ public abstract class BaseOpenmrsService implements OpenmrsService {
 	/**
 	 * @see org.openmrs.api.OpenmrsService#onShutdown()
 	 */
-	@Override
 	public void onShutdown() {
 	}
 	
 	/**
 	 * @see org.openmrs.api.OpenmrsService#onStartup()
 	 */
-	@Override
 	public void onStartup() {
 	}
 	

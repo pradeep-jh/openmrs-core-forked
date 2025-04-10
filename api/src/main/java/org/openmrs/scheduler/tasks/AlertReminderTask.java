@@ -12,14 +12,14 @@ package org.openmrs.scheduler.tasks;
 import java.util.Collection;
 import java.util.HashSet;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.User;
 import org.openmrs.api.context.Context;
 import org.openmrs.notification.Alert;
 import org.openmrs.notification.AlertRecipient;
 import org.openmrs.notification.Message;
 import org.openmrs.notification.MessageException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Sample implementation of task that shows how to send emails to users/roles via message service.
@@ -27,12 +27,11 @@ import org.slf4j.LoggerFactory;
 public class AlertReminderTask extends AbstractTask {
 	
 	// Logger 
-	private static final Logger log = LoggerFactory.getLogger(AlertReminderTask.class);
+	private Log log = LogFactory.getLog(AlertReminderTask.class);
 	
 	/**
 	 * Send alert reminder email to user(s) associated with the alert.
 	 */
-	@Override
 	public void execute() {
 		try {
 			// Get all unread alerts
@@ -44,7 +43,7 @@ public class AlertReminderTask extends AbstractTask {
 			
 		}
 		catch (Exception e) {
-			log.error("Failed to send alert notifications", e);
+			log.error(e);
 		}
 	}
 	
@@ -52,6 +51,7 @@ public class AlertReminderTask extends AbstractTask {
 	 * Send alerts
 	 * 
 	 * @param alerts the unread alerts
+	 * @param users the users who have not read the alerts
 	 */
 	private void sendAlertNotifications(Collection<Alert> alerts) {
 		
@@ -68,7 +68,7 @@ public class AlertReminderTask extends AbstractTask {
 			
 		}
 		catch (MessageException e) {
-			log.error("Failed to send message", e);
+			log.error(e);
 		}
 	}
 	
@@ -76,10 +76,10 @@ public class AlertReminderTask extends AbstractTask {
 	 * Get the recipients of all unread alerts.
 	 * 
 	 * @param alerts
-	 * @return the users who have not read the alerts
+	 * @return
 	 */
 	private Collection<User> getRecipients(Collection<Alert> alerts) {
-		Collection<User> users = new HashSet<>();
+		Collection<User> users = new HashSet<User>();
 		for (Alert alert : alerts) {
 			log.debug("Send email to alert recipient(s) ...");
 			if (!alert.isAlertRead() && alert.getRecipients() != null) {

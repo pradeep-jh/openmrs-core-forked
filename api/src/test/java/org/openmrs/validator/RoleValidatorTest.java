@@ -9,13 +9,11 @@
  */
 package org.openmrs.validator;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.Role;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 
@@ -28,7 +26,8 @@ public class RoleValidatorTest extends BaseContextSensitiveTest {
 	 * @see RoleValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfRoleIsNullOrEmptyOrWhitespace() {
+	@Verifies(value = "should fail validation if role is null or empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfRoleIsNullOrEmptyOrWhitespace() throws Exception {
 		Role role = new Role();
 		role.setRole(null);
 		role.setDescription("some text");
@@ -40,64 +39,67 @@ public class RoleValidatorTest extends BaseContextSensitiveTest {
 		role.setRole("");
 		errors = new BindException(role, "role");
 		new RoleValidator().validate(role, errors);
-		assertTrue(errors.hasFieldErrors("role"));
+		Assert.assertTrue(errors.hasFieldErrors("role"));
 		
 		role.setRole(" ");
 		errors = new BindException(role, "role");
 		new RoleValidator().validate(role, errors);
-		assertTrue(errors.hasFieldErrors("role"));
+		Assert.assertTrue(errors.hasFieldErrors("role"));
 	}
 	
 	/**
 	 * @see RoleValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfDescriptionIsNullOrEmptyOrWhitespace() {
+	@Verifies(value = "should pass validation if description is null or empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfDescriptionIsNullOrEmptyOrWhitespace() throws Exception {
 		Role role = new Role();
 		role.setRole("Bowling race car driver");
 		role.setDescription(null);
 		
 		Errors errors = new BindException(role, "type");
 		new RoleValidator().validate(role, errors);
-		assertFalse(errors.hasFieldErrors("description"));
+		Assert.assertFalse(errors.hasFieldErrors("description"));
 		
 		role.setDescription("");
 		errors = new BindException(role, "role");
 		new RoleValidator().validate(role, errors);
-		assertFalse(errors.hasFieldErrors("description"));
+		Assert.assertFalse(errors.hasFieldErrors("description"));
 		
 		role.setDescription(" ");
 		errors = new BindException(role, "role");
 		new RoleValidator().validate(role, errors);
-		assertFalse(errors.hasFieldErrors("description"));
+		Assert.assertFalse(errors.hasFieldErrors("description"));
 	}
 	
 	/**
 	 * @see RoleValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfRoleHasLeadingOrTrailingSpace() {
+	@Verifies(value = "should fail validation if role has leading or trailing space", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfRoleHasLeadingOrTrailingSpace() throws Exception {
 		Role role = new Role();
 		role.setDescription("some text");
 		role.setRole(" Bowling race car driver");
 		
 		Errors errors = new BindException(role, "type");
 		new RoleValidator().validate(role, errors);
-		assertTrue(errors.hasFieldErrors("role"));
-		assertEquals("error.trailingSpaces", errors.getFieldError("role").getCode());
+		Assert.assertTrue(errors.hasFieldErrors("role"));
+		Assert.assertEquals("error.trailingSpaces", errors.getFieldError("role").getCode());
 		
 		role.setRole("Bowling race car driver ");
 		errors = new BindException(role, "role");
 		new RoleValidator().validate(role, errors);
-		assertTrue(errors.hasFieldErrors("role"));
-		assertEquals("error.trailingSpaces", errors.getFieldError("role").getCode());
+		Assert.assertTrue(errors.hasFieldErrors("role"));
+		Assert.assertEquals("error.trailingSpaces", errors.getFieldError("role").getCode());
 	}
 	
 	/**
 	 * @see RoleValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfAllRequiredFieldsHaveProperValues() {
+	@Verifies(value = "should pass validation if all required fields have proper values", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfAllRequiredFieldsHaveProperValues() throws Exception {
 		Role role = new Role();
 		role.setRole("Bowling race car driver");
 		role.setDescription("You don't bowl or race fast cars");
@@ -105,14 +107,15 @@ public class RoleValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(role, "type");
 		new RoleValidator().validate(role, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see RoleValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() {
+	@Verifies(value = "should pass validation if field lengths are correct", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() throws Exception {
 		Role role = new Role();
 		role.setRole("Bowling race car driver");
 		role.setDescription("description");
@@ -120,14 +123,15 @@ public class RoleValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(role, "type");
 		new RoleValidator().validate(role, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see RoleValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() {
+	@Verifies(value = "should fail validation if field lengths are not correct", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() throws Exception {
 		Role role = new Role();
 		role
 		        .setRole("too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text");
@@ -137,6 +141,6 @@ public class RoleValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(role, "type");
 		new RoleValidator().validate(role, errors);
 		
-		assertTrue(errors.hasFieldErrors("role"));
+		Assert.assertTrue(errors.hasFieldErrors("role"));
 	}
 }

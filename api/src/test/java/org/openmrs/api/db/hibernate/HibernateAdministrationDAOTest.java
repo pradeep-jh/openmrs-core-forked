@@ -9,15 +9,13 @@
  */
 package org.openmrs.api.db.hibernate;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import org.hibernate.SessionFactory;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import org.openmrs.Location;
 import org.openmrs.Role;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
@@ -30,16 +28,17 @@ public class HibernateAdministrationDAOTest extends BaseContextSensitiveTest {
 	
 	private SessionFactory sessionFactory;
 	
-	@BeforeEach
-	public void getSessionFactory() {
+	@Before
+	public void getSessionFactory() throws Exception {
 		sessionFactory = (SessionFactory) applicationContext.getBean("sessionFactory");
 	}
 	
 	/**
 	 * @see HibernateAdministrationDAO#validate(Object,Errors)
+	 * @verifies Fail validation for location class if field lengths are not correct
 	 */
 	@Test
-	public void validate_shouldFailValidationForLocationClassIfFieldLengthsAreNotCorrect() {
+	public void validate_shouldFailValidationForLocationClassIfFieldLengthsAreNotCorrect() throws Exception {
 		Location location = new Location();
 		String longString = "too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text";
 		
@@ -81,16 +80,17 @@ public class HibernateAdministrationDAOTest extends BaseContextSensitiveTest {
 		
 		for (String feilds : LocationFields) {
 			FieldError fielderror = errors.getFieldError(feilds);
-			assertTrue(errorCode.equals(fielderror.getCode()));
+			Assert.assertTrue(errorCode.equals(fielderror.getCode()));
 		}
 		
 	}
 	
 	/**
 	 * @see HibernateAdministrationDAO#validate(Object,Errors)
+	 * @verifies Fail validation if field lengths are not correct
 	 */
 	@Test
-	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() {
+	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() throws Exception {
 		String errorCode = "error.exceededMaxLengthOfField";
 		String[] RoleFeilds = new String[] { "role", "description" };
 		Role role = new Role();
@@ -101,16 +101,17 @@ public class HibernateAdministrationDAOTest extends BaseContextSensitiveTest {
 		
 		for (String feilds : RoleFeilds) {
 			FieldError fielderror = errors.getFieldError(feilds);
-			assertTrue(errorCode.equals(fielderror.getCode()));
+			Assert.assertTrue(errorCode.equals(fielderror.getCode()));
 		}
 		
 	}
 	
 	/**
 	 * @see HibernateAdministrationDAO#validate(Object,Errors)
+	 * @verifies Pass validation for location class if field lengths are correct
 	 */
 	@Test
-	public void validate_shouldPassValidationForLocationClassIfFieldLengthsAreCorrect() {
+	public void validate_shouldPassValidationForLocationClassIfFieldLengthsAreCorrect() throws Exception {
 		Location location = new Location();
 		location.setName("name");
 		location.setDescription("description");
@@ -132,20 +133,21 @@ public class HibernateAdministrationDAOTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(location, "location");
 		dao.validate(location, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 		
 	}
 	
 	/**
 	 * @see HibernateAdministrationDAO#validate(Object,Errors)
+	 * @verifies Pass validation if field lengths are correct
 	 */
 	@Test
-	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() {
+	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() throws Exception {
 		Role role = new Role();
 		role.setRole("Bowling race car driver");
 		role.setDescription("description");
 		Errors errors = new BindException(role, "type");
 		dao.validate(role, errors);
-		assertFalse(errors.hasFieldErrors("role"));
+		Assert.assertFalse(errors.hasFieldErrors("role"));
 	}
 }

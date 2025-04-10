@@ -9,37 +9,34 @@
  */
 package org.openmrs.obs.handler;
 
-import javax.activation.MimetypesFileTypeMap;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.OutputStream;
 
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.Obs;
 import org.openmrs.api.APIException;
-import org.openmrs.api.storage.ObjectMetadata;
 import org.openmrs.obs.ComplexData;
 import org.openmrs.obs.ComplexObsHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
+import org.openmrs.util.OpenmrsUtil;
 
 /**
  * Handler for storing audio and video for complex obs to the file system. The mime type used is
- * probed from the file if possible. Media are stored in the location specified by the global
- * property: "obs.complex_obs_dir"
+ * taken from the file name. Media are stored in the location specified by the global property: "obs.complex_obs_dir"
  *
  * @see org.openmrs.util.OpenmrsConstants#GLOBAL_PROPERTY_COMPLEX_OBS_DIR
  * @since 1.12
  */
-@Component
 public class MediaHandler extends AbstractHandler implements ComplexObsHandler {
 	
 	/** Views supported by this handler */
 	private static final String[] supportedViews = { ComplexObsHandler.RAW_VIEW, };
 	
-	private static final Logger log = LoggerFactory.getLogger(MediaHandler.class);
-
-	private final MimetypesFileTypeMap mimetypes = new MimetypesFileTypeMap();
+	public static final Log log = LogFactory.getLog(MediaHandler.class);
 	
 	public MediaHandler() {
 		super();
@@ -48,31 +45,29 @@ public class MediaHandler extends AbstractHandler implements ComplexObsHandler {
 	/**
 	 * Currently supports all views and puts the media file data into the ComplexData object
 	 *
-	 * @see org.openmrs.obs.ComplexObsHandler#getObs(org.openmrs.Obs, java.lang.String)§
+	 * @see org.openmrs.obs.ComplexObsHandler#getObs(org.openmrs.Obs, java.lang.String)
 	 */
-	@Override
 	public Obs getObs(Obs obs, String view) {
-		String key = parseDataKey(obs);
+		File file = getComplexDataFile(obs);
 		
 		// Raw media
 		if (ComplexObsHandler.RAW_VIEW.equals(view)) {
 			try {
 				String[] names = obs.getValueComplex().split("\\|");
 				String originalFilename = names[0];
-				originalFilename = originalFilename.replace(",", "")
-					.replace(" ", "");
-
-				InputStream in = storageService.getData(key);
-				ComplexData complexData = new ComplexData(originalFilename, in);
+				originalFilename = originalFilename.replace(",", "").replace(" ", "");
 				
-				complexData.setMimeType(mimetypes.getContentType(originalFilename));
+				FileInputStream mediaStream = new FileInputStream(file);
+				ComplexData complexData = new ComplexData(originalFilename, mediaStream);
 				
-				// Get the Mime Type and set it
-				injectMissingMetadata(key, complexData);
+				complexData.setMimeType(OpenmrsUtil.getFileMimeType(file));
+				
+				complexData.setLength(file.length());
+				
 				obs.setComplexData(complexData);
 			}
-			catch (IOException e) {
-				log.error("Trying to create media file stream from {}", key, e);
+			catch (FileNotFoundException e) {
+				log.error("Trying to create media file stream from " + file.getAbsolutePath(), e);
 			}
 		}
 		// No other view supported
@@ -95,17 +90,22 @@ public class MediaHandler extends AbstractHandler implements ComplexObsHandler {
 	/**
 	 * @see org.openmrs.obs.ComplexObsHandler#saveObs(org.openmrs.Obs)
 	 */
-	@Override
 	public Obs saveObs(Obs obs) throws APIException {
+		
 		try {
-			String filename = obs.getComplexData().getTitle();
-			String key = storageService.saveData(outputStream -> {
-				IOUtils.copy((InputStream) obs.getComplexData().getData(), outputStream);
-				outputStream.flush();
-			}, ObjectMetadata.builder().setFilename(filename).build(), getObsDir());
+			// Write the File to the File System
+			String fileName = obs.getComplexData().getTitle();
+			File outfile = getOutputFileToWrite(obs);
+			OutputStream out = new FileOutputStream(outfile, false);
+			FileInputStream mediaStream = (FileInputStream) obs.getComplexData().getData();
+			OpenmrsUtil.copyFile(mediaStream, out);
 			
+			// Store the filename in the Obs
 			obs.setComplexData(null);
-			obs.setValueComplex(filename + "|" + key);
+			obs.setValueComplex(fileName + "|" + outfile.getName());
+			
+			// close the stream
+			out.close();
 		}
 		catch (IOException ioe) {
 			throw new APIException("Obs.error.trying.write.complex", null, ioe);

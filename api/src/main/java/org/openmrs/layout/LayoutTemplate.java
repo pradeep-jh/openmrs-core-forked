@@ -10,10 +10,11 @@
 package org.openmrs.layout;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Vector;
 
 /**
  * Generic class used by AddressTemplate and NameTemplate layouts
@@ -61,7 +62,7 @@ public abstract class LayoutTemplate {
 	 *            first template line
 	 */
 	public LayoutTemplate(String simpleTemplate) {
-		setLineByLineFormat(Collections.singletonList(simpleTemplate));
+		setLineByLineFormat(Arrays.asList(simpleTemplate));
 	}
 	
 	public abstract String getLayoutToken();
@@ -72,7 +73,7 @@ public abstract class LayoutTemplate {
 		LayoutSupport<?> as = getLayoutSupportInstance();
 		List<String> specialTokens = nonUniqueStringsGoLast(as.getSpecialTokens());
 		for (String token : specialTokens) {
-			line = line.replaceAll(token, LAYOUT_TOKEN);
+			line = line.replaceAll(token, this.LAYOUT_TOKEN);
 		}
 		return line;
 	}
@@ -89,17 +90,18 @@ public abstract class LayoutTemplate {
 				}
 				
 				if (ret == null) {
-					ret = new ArrayList<>();
+					ret = new Vector<Map<String, String>>();
 				}
 				
 				if (i == 0 && idxCurr > 0) {
 					// this means there is a token at the beginning - we'll have to grab it
-					Map<String, String> currToken = new HashMap<>();
+					Map<String, String> currToken = new HashMap<String, String>();
 					currToken.put("isToken", getLayoutToken());
 					String realToken = line.substring(0, idxCurr);
 					currToken.put("displayText", this.getNameMappings().get(realToken));
 					currToken.put("displaySize", this.getSizeMappings().get(realToken));
 					currToken.put("codeName", realToken);
+					//numTokens++;
 					ret.add(currToken);
 				}
 				
@@ -107,34 +109,38 @@ public abstract class LayoutTemplate {
 					// this means we are still not at the last non-token, so let's add this non-token AND this token
 					int idxNext = line.indexOf(nonTokens[i + 1], idxCurr + 1);
 					
-					Map<String, String> currNonToken = new HashMap<>();
+					Map<String, String> currNonToken = new HashMap<String, String>();
 					currNonToken.put("isToken", getNonLayoutToken());
 					currNonToken.put("displayText", nonToken);
 					
-					Map<String, String> currToken = new HashMap<>();
+					Map<String, String> currToken = new HashMap<String, String>();
 					currToken.put("isToken", getLayoutToken());
 					//HERE:  real Token is wrong...
 					String realToken = line.substring(idxCurr + nonToken.length(), idxNext);
 					currToken.put("displayText", this.getNameMappings().get(realToken));
 					currToken.put("displaySize", this.getSizeMappings().get(realToken));
 					currToken.put("codeName", realToken);
+					//numTokens++;
 					ret.add(currNonToken);
 					ret.add(currToken);
 				} else {
 					// we are on the last non-token, so check if it is the end
-					Map<String, String> currNonToken = new HashMap<>();
+					Map<String, String> currNonToken = new HashMap<String, String>();
 					currNonToken.put("isToken", getNonLayoutToken());
 					currNonToken.put("displayText", nonToken);
 					
 					ret.add(currNonToken);
-					if (idxCurr + nonToken.length() < line.length()) {
+					if (idxCurr + nonToken.length() >= line.length()) {
+						// we are at the end, so we are done
+					} else {
 						// we need to add one last token at the end
-						Map<String, String> currToken = new HashMap<>();
+						Map<String, String> currToken = new HashMap<String, String>();
 						currToken.put("isToken", getLayoutToken());
 						String realToken = line.substring(idxCurr + nonToken.length());
 						currToken.put("displayText", this.getNameMappings().get(realToken));
 						currToken.put("displaySize", this.getSizeMappings().get(realToken));
 						currToken.put("codeName", realToken);
+						//numTokens++;
 						ret.add(currToken);
 					}
 				}
@@ -142,20 +148,22 @@ public abstract class LayoutTemplate {
 		} else if (line != null && line.length() > 0) {
 			// looks like we have a single token on a line by itself
 			if (ret == null) {
-				ret = new ArrayList<>();
+				ret = new Vector<Map<String, String>>();
 			}
-			Map<String, String> currToken = new HashMap<>();
+			Map<String, String> currToken = new HashMap<String, String>();
 			
 			// adding a nontoken to match the code that does "more than a single token on a line"
-			Map<String, String> currNonToken = new HashMap<>();
+			Map<String, String> currNonToken = new HashMap<String, String>();
 			currNonToken.put("isToken", getNonLayoutToken());
 			currNonToken.put("displayText", "");
 			ret.add(currNonToken);
 			
 			currToken.put("isToken", getLayoutToken());
-			currToken.put("displayText", this.getNameMappings().get(line));
-			currToken.put("displaySize", this.getSizeMappings().get(line));
-			currToken.put("codeName", line);
+			String realToken = line;
+			currToken.put("displayText", this.getNameMappings().get(realToken));
+			currToken.put("displaySize", this.getSizeMappings().get(realToken));
+			currToken.put("codeName", realToken);
+			//numTokens++;
 			
 			ret.add(currToken);
 		}
@@ -173,10 +181,10 @@ public abstract class LayoutTemplate {
 		if (this.lineByLineFormat != null) {
 			for (String line : this.lineByLineFormat) {
 				if (ret == null) {
-					ret = new ArrayList<>();
+					ret = new Vector<List<Map<String, String>>>();
 				}
 				String tokenizedLine = replaceTokens(line);
-				String[] nonTokens = tokenizedLine.split(LAYOUT_TOKEN);
+				String[] nonTokens = tokenizedLine.split(this.LAYOUT_TOKEN);
 				List<Map<String, String>> lineTokens = convertToTokens(line, nonTokens);
 				ret.add(lineTokens);
 			}
@@ -361,12 +369,12 @@ public abstract class LayoutTemplate {
 	public abstract LayoutSupport<?> getLayoutSupportInstance();
 	
 	public List<String> nonUniqueStringsGoLast(List<String> strListArg) {
-		List<String> dup = new ArrayList<>();
+		List<String> dup = new ArrayList<String>();
 		// copy the list so we don't get concurrentmodification exceptions
-		List<String> strList = new ArrayList<>(strListArg);
+		List<String> strList = new ArrayList(strListArg);
 		for (String s : strList) {
 			for (String sInner : strList) {
-				if (sInner.contains(s) && s.length() < sInner.length() && !dup.contains(s)) {
+				if (sInner.indexOf(s) != -1 && s.length() < sInner.length() && !dup.contains(s)) {
 					dup.add(s);
 				}
 			}

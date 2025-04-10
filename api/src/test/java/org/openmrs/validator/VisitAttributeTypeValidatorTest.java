@@ -9,13 +9,12 @@
  */
 package org.openmrs.validator;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.VisitAttributeType;
 import org.openmrs.customdatatype.datatype.RegexValidatedTextDatatype;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 
@@ -25,7 +24,8 @@ public class VisitAttributeTypeValidatorTest extends BaseContextSensitiveTest {
 	 * @see VisitAttributeTypeValidator#validate(Object, org.springframework.validation.Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() {
+	@Verifies(value = "should pass validation if field lengths are correct", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() throws Exception {
 		VisitAttributeType visitAttributeType = new VisitAttributeType();
 		visitAttributeType.setName("name");
 		visitAttributeType.setMinOccurs(1);
@@ -37,14 +37,15 @@ public class VisitAttributeTypeValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(visitAttributeType, "visitAttributeType");
 		new VisitAttributeTypeValidator().validate(visitAttributeType, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see VisitAttributeTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() {
+	@Verifies(value = "should fail validation if field lengths are not correct", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() throws Exception {
 		VisitAttributeType visitAttributeType = new VisitAttributeType();
 		visitAttributeType
 		        .setName("too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text");
@@ -61,10 +62,10 @@ public class VisitAttributeTypeValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(visitAttributeType, "visitAttributeType");
 		new VisitAttributeTypeValidator().validate(visitAttributeType, errors);
 		
-		assertTrue(errors.hasFieldErrors("name"));
-		assertTrue(errors.hasFieldErrors("description"));
-		assertTrue(errors.hasFieldErrors("datatypeClassname"));
-		assertTrue(errors.hasFieldErrors("preferredHandlerClassname"));
-		assertTrue(errors.hasFieldErrors("retireReason"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("description"));
+		Assert.assertTrue(errors.hasFieldErrors("datatypeClassname"));
+		Assert.assertTrue(errors.hasFieldErrors("preferredHandlerClassname"));
+		Assert.assertTrue(errors.hasFieldErrors("retireReason"));
 	}
 }

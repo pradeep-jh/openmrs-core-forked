@@ -14,11 +14,11 @@ import java.util.Properties;
 
 import org.hibernate.HibernateException;
 import org.hibernate.MappingException;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.dialect.Dialect;
+import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.id.Configurable;
 import org.hibernate.id.IdentityGenerator;
 import org.hibernate.persister.entity.EntityPersister;
-import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
 
 /**
@@ -38,7 +38,7 @@ public class NativeIfNotAssignedIdentityGenerator extends IdentityGenerator impl
 	private String entityName;
 	
 	@Override
-	public Serializable generate(SharedSessionContractImplementor session, Object entity) throws HibernateException {
+	public Serializable generate(SessionImplementor session, Object entity) throws HibernateException {
 		Serializable id;
 		EntityPersister persister = session.getEntityPersister(entityName, entity);
 		// Determine if an ID has been assigned.
@@ -48,12 +48,16 @@ public class NativeIfNotAssignedIdentityGenerator extends IdentityGenerator impl
 		}
 		return id;
 	}
-
-	@Override
-	public void configure(Type type, Properties params, ServiceRegistry serviceRegistry) throws MappingException {
+	
+	/**
+	 * @see org.hibernate.id.Configurable#configure(org.hibernate.type.Type, java.util.Properties,
+	 *      org.hibernate.dialect.Dialect)
+	 */
+	public void configure(Type type, Properties params, Dialect dialect) throws MappingException {
 		this.entityName = params.getProperty(ENTITY_NAME);
 		if (entityName == null) {
 			throw new MappingException("no entity name");
 		}
 	}
+	
 }

@@ -13,6 +13,8 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.PatientProgram;
 import org.openmrs.PatientState;
 import org.openmrs.ProgramWorkflow;
@@ -20,8 +22,6 @@ import org.openmrs.annotation.Handler;
 import org.openmrs.api.context.Context;
 import org.openmrs.messagesource.MessageSourceService;
 import org.openmrs.util.OpenmrsUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.validation.Errors;
 import org.springframework.validation.ValidationUtils;
 import org.springframework.validation.Validator;
@@ -34,7 +34,7 @@ import org.springframework.validation.Validator;
 @Handler(supports = { PatientProgram.class }, order = 50)
 public class PatientProgramValidator implements Validator {
 	
-	private static final Logger log = LoggerFactory.getLogger(PatientProgramValidator.class);
+	private static final Log log = LogFactory.getLog(PatientProgramValidator.class);
 	
 	/**
 	 * @see org.springframework.validation.Validator#supports(java.lang.Class)
@@ -51,29 +51,31 @@ public class PatientProgramValidator implements Validator {
 	 * @param errors Errors
 	 * @see org.springframework.validation.Validator#validate(java.lang.Object,
 	 *      org.springframework.validation.Errors)
-	 * <strong>Should</strong> fail validation if obj is null
-	 * <strong>Should</strong> fail if the patient field is blank
-	 * <strong>Should</strong> fail if there is more than one patientState with the same states and startDates
-	 * <strong>Should</strong> fail if there is more than one state with a null start date in the same workflow
-	 * <strong>Should</strong> pass if the start date of the first patient state in the work flow is null
-	 * <strong>Should</strong> fail if any patient state has an end date before its start date
-	 * <strong>Should</strong> fail if the program property is null
-	 * <strong>Should</strong> fail if any patient states overlap each other in the same work flow
-	 * <strong>Should</strong> fail if a patientState has an invalid work flow state
-	 * <strong>Should</strong> fail if a patient program has duplicate states in the same work flow
-	 * <strong>Should</strong> fail if a patient is in multiple states in the same work flow
-	 * <strong>Should</strong> fail if a enrolled date is in future at the date it set
-	 * <strong>Should</strong> fail if a completion date is in future at the date it set
-	 * <strong>Should</strong> fail if a patient program has an enroll date after its completion
-	 * <strong>Should</strong> pass if a patient is in multiple states in different work flows
-	 * <strong>Should</strong> pass for a valid program
-	 * <strong>Should</strong> pass for patient states that have the same start dates in the same work flow
-	 * <strong>Should</strong> pass validation if field lengths are correct
-	 * <strong>Should</strong> fail validation if field lengths are not correct
+	 * @should fail validation if obj is null
+	 * @should fail if the patient field is blank
+	 * @should fail if there is more than one patientState with the same states and startDates
+	 * @should fail if there is more than one state with a null start date in the same workflow
+	 * @should pass if the start date of the first patient state in the work flow is null
+	 * @should fail if any patient state has an end date before its start date
+	 * @should fail if the program property is null
+	 * @should fail if any patient states overlap each other in the same work flow
+	 * @should fail if a patientState has an invalid work flow state
+	 * @should fail if a patient program has duplicate states in the same work flow
+	 * @should fail if a patient is in multiple states in the same work flow
+	 * @should fail if a enrolled date is in future at the date it set
+	 * @should fail if a completion date is in future at the date it set
+	 * @should fail if a patient program has an enroll date after its completion
+	 * @should pass if a patient is in multiple states in different work flows
+	 * @should pass for a valid program
+	 * @should pass for patient states that have the same start dates in the same work flow
+	 * @should pass validation if field lengths are correct
+	 * @should fail validation if field lengths are not correct
 	 */
 	@Override
 	public void validate(Object obj, Errors errors) {
-		log.debug("{}.validate...", this.getClass().getName());
+		if (log.isDebugEnabled()) {
+			log.debug(this.getClass().getName() + ".validate...");
+		}
 		
 		if (obj == null) {
 			throw new IllegalArgumentException("The parameter obj should not be null");

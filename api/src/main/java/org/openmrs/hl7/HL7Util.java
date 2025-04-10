@@ -15,13 +15,13 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
 import org.openmrs.util.OpenmrsConstants;
 import org.openmrs.util.OpenmrsUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import ca.uhn.hl7v2.HL7Exception;
 
@@ -32,10 +32,7 @@ import ca.uhn.hl7v2.HL7Exception;
  */
 public class HL7Util {
 	
-	private HL7Util() {
-	}
-	
-	private static final Logger log = LoggerFactory.getLogger(HL7Util.class);
+	private static Log log = LogFactory.getLog(HL7Util.class);
 	
 	// Date and time format parsers
 	private static final String TIMESTAMP_FORMAT = "yyyyMMddHHmmss.SSSZ";
@@ -53,26 +50,26 @@ public class HL7Util {
 	 * @param s HL7 timestamp to be parsed
 	 * @return Date object
 	 * @throws HL7Exception
-	 * <strong>Should</strong> fail on 78
-	 * <strong>Should</strong> handle 1978
-	 * <strong>Should</strong> fail on 19784
-	 * <strong>Should</strong> handle 197804
-	 * <strong>Should</strong> fail on 197841
-	 * <strong>Should</strong> handle 19780411
-	 * <strong>Should</strong> fail on 197804116
-	 * <strong>Should</strong> handle 1978041106
-	 * <strong>Should</strong> fail on 19780411065
-	 * <strong>Should</strong> handle 197804110615
-	 * <strong>Should</strong> fail on 1978041106153
-	 * <strong>Should</strong> handle 19780411061538
-	 * <strong>Should</strong> handle 19780411061538.1
-	 * <strong>Should</strong> handle 19780411061538.12
-	 * <strong>Should</strong> handle 19780411061538.123
-	 * <strong>Should</strong> handle 19780411061538.1234
-	 * <strong>Should</strong> fail on 197804110615-5
-	 * <strong>Should</strong> handle 197804110615-05
-	 * <strong>Should</strong> handle 197804110615-0200
-	 * <strong>Should</strong> not flub dst with 20091225123000
+	 * @should fail on 78
+	 * @should handle 1978
+	 * @should fail on 19784
+	 * @should handle 197804
+	 * @should fail on 197841
+	 * @should handle 19780411
+	 * @should fail on 197804116
+	 * @should handle 1978041106
+	 * @should fail on 19780411065
+	 * @should handle 197804110615
+	 * @should fail on 1978041106153
+	 * @should handle 19780411061538
+	 * @should handle 19780411061538.1
+	 * @should handle 19780411061538.12
+	 * @should handle 19780411061538.123
+	 * @should handle 19780411061538.1234
+	 * @should fail on 197804110615-5
+	 * @should handle 197804110615-05
+	 * @should handle 197804110615-0200
+	 * @should not flub dst with 20091225123000
 	 */
 	public static Date parseHL7Timestamp(String s) throws HL7Exception {
 		
@@ -164,8 +161,8 @@ public class HL7Util {
 	 * @param fullString the hl7 string being parsed
 	 * @param givenDate the date that should be used if no timezone exists on the fullString
 	 * @return a string like +0500 or -0500 for the timezone
-	 * <strong>Should</strong> return timezone string if exists in given string
-	 * <strong>Should</strong> return timezone for givenDate and not the current date
+	 * @should return timezone string if exists in given string
+	 * @should return timezone for givenDate and not the current date
 	 */
 	protected static String getTimeZoneOffset(String fullString, Date givenDate) {
 		// Parse timezone (optional in HL7 format)
@@ -214,14 +211,14 @@ public class HL7Util {
 	 * @param s HL7 time to be converted
 	 * @return Date object set to time specified by HL7
 	 * @throws HL7Exception
-	 * <strong>Should</strong> fail on 197804110615
-	 * <strong>Should</strong> handle 0615
-	 * <strong>Should</strong> handle 061538
-	 * <strong>Should</strong> handle 061538.1
-	 * <strong>Should</strong> handle 061538.12
-	 * <strong>Should</strong> handle 061538.123
-	 * <strong>Should</strong> handle 061538.1234
-	 * <strong>Should</strong> handle 061538-0300
+	 * @should fail on 197804110615
+	 * @should handle 0615
+	 * @should handle 061538
+	 * @should handle 061538.1
+	 * @should handle 061538.12
+	 * @should handle 061538.123
+	 * @should handle 061538.1234
+	 * @should handle 061538-0300
 	 */
 	public static Date parseHL7Time(String s) throws HL7Exception {
 		

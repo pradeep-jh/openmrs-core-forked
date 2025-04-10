@@ -9,16 +9,13 @@
  */
 package org.openmrs;
 
-import org.hibernate.envers.Audited;
-
 /**
  * An LocationTag allows categorization of {@link Location}s
  * 
  * @see Location
  * @since 1.5
  */
-@Audited
-public class LocationTag extends BaseChangeableOpenmrsMetadata {
+public class LocationTag extends BaseOpenmrsMetadata {
 	
 	public static final long serialVersionUID = 7654L;
 	
@@ -63,7 +60,6 @@ public class LocationTag extends BaseChangeableOpenmrsMetadata {
 		this.locationTagId = locationTagId;
 	}
 	
-	@Override
 	public String toString() {
 		return getName();
 	}
@@ -71,7 +67,6 @@ public class LocationTag extends BaseChangeableOpenmrsMetadata {
 	/**
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		return getLocationTagId();
 	}
@@ -79,7 +74,6 @@ public class LocationTag extends BaseChangeableOpenmrsMetadata {
 	/**
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setLocationTagId(id);
 		

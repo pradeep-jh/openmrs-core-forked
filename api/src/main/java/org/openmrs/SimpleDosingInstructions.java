@@ -9,16 +9,18 @@
  */
 package org.openmrs;
 
+import static org.apache.commons.lang3.time.DateUtils.addSeconds;
+import java.util.Date;
+import java.util.Locale;
+
 import org.openmrs.api.APIException;
 import org.springframework.validation.Errors;
 import org.springframework.validation.ValidationUtils;
 
-import java.util.Locale;
-
 /**
  * @since 1.10
  */
-public class SimpleDosingInstructions extends BaseDosingInstructions {
+public class SimpleDosingInstructions implements DosingInstructions {
 	
 	private Double dose;
 	
@@ -115,7 +117,7 @@ public class SimpleDosingInstructions extends BaseDosingInstructions {
 	 * @see DosingInstructions#validate(DrugOrder, org.springframework.validation.Errors)
 	 * @param order
 	 * @param errors
-	 * <strong>Should</strong> reject a duration unit with a mapping of an invalid type
+	 * @should reject a duration unit with a mapping of an invalid type
 	 */
 	@Override
 	public void validate(DrugOrder order, Errors errors) {
@@ -127,6 +129,25 @@ public class SimpleDosingInstructions extends BaseDosingInstructions {
 		        && Duration.getCode(order.getDurationUnits()) == null) {
 			errors.rejectValue("durationUnits", "DrugOrder.error.durationUnitsNotMappedToSnomedCtDurationCode");
 		}
+	}
+	
+	/**
+	 * @see DosingInstructions#getAutoExpireDate(DrugOrder)
+	 */
+	@Override
+	public Date getAutoExpireDate(DrugOrder drugOrder) {
+		if (drugOrder.getDuration() == null || drugOrder.getDurationUnits() == null) {
+			return null;
+		}
+		if (drugOrder.getNumRefills() != null && drugOrder.getNumRefills() > 0) {
+			return null;
+		}
+		String durationCode = Duration.getCode(drugOrder.getDurationUnits());
+		if (durationCode == null) {
+			return null;
+		}
+		Duration duration = new Duration(drugOrder.getDuration(), durationCode);
+		return aMomentBefore(duration.addToDate(drugOrder.getEffectiveStartDate(), drugOrder.getFrequency()));
 	}
 	
 	public Double getDose() {
@@ -200,4 +221,9 @@ public class SimpleDosingInstructions extends BaseDosingInstructions {
 	public void setAdministrationInstructions(String administrationInstructions) {
 		this.administrationInstructions = administrationInstructions;
 	}
+	
+	private Date aMomentBefore(Date date) {
+		return addSeconds(date, -1);
+	}
+	
 }

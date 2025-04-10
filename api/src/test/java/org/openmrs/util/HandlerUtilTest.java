@@ -9,23 +9,25 @@
  */
 package org.openmrs.util;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.Assert.assertThat;
 
 import java.util.List;
+import java.util.regex.Matcher;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.openmrs.DrugOrder;
 import org.openmrs.Order;
 import org.openmrs.Patient;
 import org.openmrs.Person;
 import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.openmrs.validator.DrugOrderValidator;
 import org.openmrs.validator.OrderValidator;
 import org.openmrs.validator.PatientValidator;
@@ -37,57 +39,66 @@ import org.springframework.validation.Validator;
  */
 public class HandlerUtilTest extends BaseContextSensitiveTest {
 	
+	@Rule
+	public ExpectedException thrown = ExpectedException.none();
 	
 	/**
 	 * @see HandlerUtil#getHandlerForType(Class, Class)
 	 */
 	@Test
-	public void getHandlersForType_shouldReturnAListOfAllClassesThatCanHandleThePassedType() {
+	@Verifies(value = "should return a list of all classes that can handle the passed type", method = "getHandlersForType(Class, Class)")
+	public void getHandlersForType_shouldReturnAListOfAllClassesThatCanHandleThePassedType() throws Exception {
 		List<Validator> l = HandlerUtil.getHandlersForType(Validator.class, Order.class);
-		assertEquals(1, l.size());
-		assertEquals(OrderValidator.class, l.iterator().next().getClass());
+		Assert.assertEquals(1, l.size());
+		Assert.assertEquals(OrderValidator.class, l.iterator().next().getClass());
 		l = HandlerUtil.getHandlersForType(Validator.class, DrugOrder.class);
-		assertEquals(2, l.size());
+		Assert.assertEquals(2, l.size());
 	}
 
 	/**
 	 * @see HandlerUtil#getHandlerForType(Class, Class)
 	 */
 	@Test
-	public void getHandlersForType_shouldReturnAnEmptyListIfNoClassesCanHandleThePassedType() {
+	@Verifies(value = "should return an empty list if no classes can handle the passed type", method = "getHandlersForType(Class, Class)")
+	public void getHandlersForType_shouldReturnAnEmptyListIfNoClassesCanHandleThePassedType() throws Exception {
 		List<Validator> l = HandlerUtil.getHandlersForType(Validator.class, PatientValidator.class);
-		assertNotNull(l);
-		assertEquals(0, l.size());
+		Assert.assertNotNull(l);
+		Assert.assertEquals(0, l.size());
 	}
 	
 	/**
 	 * @see HandlerUtil#getPreferredHandler(Class, Class)
 	 */
 	@Test
-	public void getPreferredHandler_shouldReturnThePreferredHandlerForThePassedHandlerAndType() {
+	@Verifies(value = "should return the preferred handler for the passed handlerType and type", method = "getPreferredHandler(Class, Class)")
+	public void getPreferredHandler_shouldReturnThePreferredHandlerForThePassedHandlerAndType() throws Exception {
 		Validator v = HandlerUtil.getPreferredHandler(Validator.class, DrugOrder.class);
-		assertEquals(DrugOrderValidator.class, v.getClass());
+		Assert.assertEquals(DrugOrderValidator.class, v.getClass());
 	}
 	
 	/**
 	 * @see HandlerUtil#getPreferredHandler(Class, Class)
 	 */
 	@Test
-	public void getPreferredHandler_shouldThrowAAPIExceptionExceptionIfNoHandlerIsFound() { 
+	@Verifies(value = "should throw a APIException if no handler is found", method = "getPreferredHandler(Class, Class)")
+	public void getPreferredHandler_shouldThrowAAPIExceptionExceptionIfNoHandlerIsFound() throws Exception {
+		thrown.expect(APIException.class);
+		thrown.expectMessage(Context.getMessageSourceService().getMessage("handler.type.not.found", new Object[] { Validator.class.toString(), Integer.class }, null));
 		
-		APIException exception = assertThrows(APIException.class, () -> HandlerUtil.getPreferredHandler(Validator.class, Integer.class));
-		assertThat(exception.getMessage(), is(Context.getMessageSourceService().getMessage("handler.type.not.found", new Object[] { Validator.class.toString(), Integer.class }, null)));
+		HandlerUtil.getPreferredHandler(Validator.class, Integer.class);
 	}
 	
 	@Test
-	public void getPreferredHandler_shouldReturnPatientValidatorForPatient() {
+	@Verifies(value = "should return patient validator for patient", method = "getPreferredHandler(Class, Class)")
+	public void getPreferredHandler_shouldReturnPatientValidatorForPatient() throws Exception {
 		Validator handler = HandlerUtil.getPreferredHandler(Validator.class, Patient.class);
 		
 		assertThat(handler, is(instanceOf(PatientValidator.class)));
 	}
 	
 	@Test
-	public void getPreferredHandler_shouldReturnPersonValidatorForPerson() {
+	@Verifies(value = "should return person validator for person", method = "getPreferredHandler(Class, Class)")
+	public void getPreferredHandler_shouldReturnPersonValidatorForPerson() throws Exception {
 		Validator handler = HandlerUtil.getPreferredHandler(Validator.class, Person.class);
 		
 		assertThat(handler, is(instanceOf(PersonValidator.class)));

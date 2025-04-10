@@ -29,6 +29,8 @@ import org.apache.commons.fileupload.RequestContext;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.fileupload.servlet.ServletRequestContext;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.ModuleUtil;
 import org.openmrs.module.OpenmrsCoreModuleException;
@@ -42,6 +44,8 @@ import org.openmrs.web.filter.StartupFilter;
  */
 public class StartupErrorFilter extends StartupFilter {
 	
+	protected final Log log = LogFactory.getLog(getClass());
+	
 	/**
 	 * The velocity macro page to redirect to if an error occurs or on initial startup
 	 */
@@ -53,14 +57,13 @@ public class StartupErrorFilter extends StartupFilter {
 	 * @param httpRequest
 	 * @param httpResponse
 	 */
-	@Override
-	protected void doGet(HttpServletRequest httpRequest, HttpServletResponse httpResponse)
-	        throws IOException, ServletException {
+	protected void doGet(HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException,
+	        ServletException {
 		
-		if (getUpdateFilterModel().errorAtStartup instanceof OpenmrsCoreModuleException) {
-			renderTemplate("coremoduleerror.vm", new HashMap<>(), httpResponse);
+		if (getModel().errorAtStartup instanceof OpenmrsCoreModuleException) {
+			renderTemplate("coremoduleerror.vm", new HashMap<String, Object>(), httpResponse);
 		} else {
-			renderTemplate(DEFAULT_PAGE, new HashMap<>(), httpResponse);
+			renderTemplate(DEFAULT_PAGE, new HashMap<String, Object>(), httpResponse);
 		}
 	}
 	
@@ -69,10 +72,10 @@ public class StartupErrorFilter extends StartupFilter {
 	 *      javax.servlet.http.HttpServletResponse)
 	 */
 	@Override
-	protected void doPost(HttpServletRequest httpRequest, HttpServletResponse httpResponse)
-	        throws IOException, ServletException {
+	protected void doPost(HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException,
+	        ServletException {
 		// if they are uploading modules
-		if (getUpdateFilterModel().errorAtStartup instanceof OpenmrsCoreModuleException) {
+		if (getModel().errorAtStartup instanceof OpenmrsCoreModuleException) {
 			RequestContext requestContext = new ServletRequestContext(httpRequest);
 			if (!ServletFileUpload.isMultipartContent(requestContext)) {
 				throw new ServletException("The request is not a valid multipart/form-data upload request");
@@ -95,7 +98,7 @@ public class StartupErrorFilter extends StartupFilter {
 				Context.closeSession();
 			}
 			
-			Map<String, Object> map = new HashMap<>();
+			Map<String, Object> map = new HashMap<String, Object>();
 			map.put("success", Boolean.TRUE);
 			renderTemplate("coremoduleerror.vm", map, httpResponse);
 			
@@ -104,10 +107,9 @@ public class StartupErrorFilter extends StartupFilter {
 	}
 	
 	/**
-	 * @see org.openmrs.web.filter.StartupFilter#getUpdateFilterModel()
+	 * @see org.openmrs.web.filter.StartupFilter#getModel()
 	 */
-	@Override
-	protected StartupErrorFilterModel getUpdateFilterModel() {
+	protected StartupErrorFilterModel getModel() {
 		// this object was initialized in the #init(FilterConfig) method
 		return new StartupErrorFilterModel(Listener.getErrorAtStartup());
 	}
@@ -115,7 +117,6 @@ public class StartupErrorFilter extends StartupFilter {
 	/**
 	 * @see org.openmrs.web.filter.StartupFilter#skipFilter(HttpServletRequest)
 	 */
-	@Override
 	public boolean skipFilter(HttpServletRequest request) {
 		return !Listener.errorOccurredAtStartup();
 	}
@@ -123,7 +124,6 @@ public class StartupErrorFilter extends StartupFilter {
 	/**
 	 * @see org.openmrs.web.filter.StartupFilter#getTemplatePrefix()
 	 */
-	@Override
 	protected String getTemplatePrefix() {
 		return "org/openmrs/web/filter/startuperror/";
 	}

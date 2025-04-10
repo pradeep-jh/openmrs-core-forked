@@ -12,12 +12,10 @@ package org.openmrs;
 import java.util.Date;
 
 import org.codehaus.jackson.annotate.JsonIgnore;
-import org.hibernate.envers.Audited;
 
 /**
  * ConceptNameTag is a textual tag which can be applied to a ConceptName.
  */
-@Audited
 public class ConceptNameTag extends BaseOpenmrsObject implements Auditable, Voidable, java.io.Serializable {
 	
 	public static final long serialVersionUID = 33226787L;
@@ -105,7 +103,6 @@ public class ConceptNameTag extends BaseOpenmrsObject implements Auditable, Void
 	/**
 	 * @return Returns the creator.
 	 */
-	@Override
 	public User getCreator() {
 		return creator;
 	}
@@ -113,7 +110,6 @@ public class ConceptNameTag extends BaseOpenmrsObject implements Auditable, Void
 	/**
 	 * @param creator The creator to set.
 	 */
-	@Override
 	public void setCreator(User creator) {
 		this.creator = creator;
 	}
@@ -121,7 +117,6 @@ public class ConceptNameTag extends BaseOpenmrsObject implements Auditable, Void
 	/**
 	 * @return Returns the dateCreated.
 	 */
-	@Override
 	public Date getDateCreated() {
 		return dateCreated;
 	}
@@ -129,7 +124,6 @@ public class ConceptNameTag extends BaseOpenmrsObject implements Auditable, Void
 	/**
 	 * @param dateCreated The dateCreated to set.
 	 */
-	@Override
 	public void setDateCreated(Date dateCreated) {
 		this.dateCreated = dateCreated;
 	}
@@ -141,7 +135,6 @@ public class ConceptNameTag extends BaseOpenmrsObject implements Auditable, Void
 	 * 
 	 * @deprecated as of 2.0, use {@link #getVoided()}
 	 */
-	@Override
 	@Deprecated
 	@JsonIgnore
 	public Boolean isVoided() {
@@ -153,7 +146,6 @@ public class ConceptNameTag extends BaseOpenmrsObject implements Auditable, Void
 	 * 
 	 * @return true if the ConceptName has been voided, false otherwise.
 	 */
-	@Override
 	public Boolean getVoided() {
 		return voided;
 	}
@@ -163,7 +155,6 @@ public class ConceptNameTag extends BaseOpenmrsObject implements Auditable, Void
 	 * 
 	 * @param voided the voided status to set.
 	 */
-	@Override
 	public void setVoided(Boolean voided) {
 		this.voided = voided;
 	}
@@ -173,7 +164,6 @@ public class ConceptNameTag extends BaseOpenmrsObject implements Auditable, Void
 	 * 
 	 * @return the User who voided this ConceptName, or null if not set
 	 */
-	@Override
 	public User getVoidedBy() {
 		return voidedBy;
 	}
@@ -183,7 +173,6 @@ public class ConceptNameTag extends BaseOpenmrsObject implements Auditable, Void
 	 * 
 	 * @param voidedBy the user who voided this ConceptName.
 	 */
-	@Override
 	public void setVoidedBy(User voidedBy) {
 		this.voidedBy = voidedBy;
 	}
@@ -193,7 +182,6 @@ public class ConceptNameTag extends BaseOpenmrsObject implements Auditable, Void
 	 * 
 	 * @return the Date this ConceptName was voided.
 	 */
-	@Override
 	public Date getDateVoided() {
 		return dateVoided;
 	}
@@ -203,7 +191,6 @@ public class ConceptNameTag extends BaseOpenmrsObject implements Auditable, Void
 	 * 
 	 * @param dateVoided the date the ConceptName was voided.
 	 */
-	@Override
 	public void setDateVoided(Date dateVoided) {
 		this.dateVoided = dateVoided;
 	}
@@ -213,7 +200,6 @@ public class ConceptNameTag extends BaseOpenmrsObject implements Auditable, Void
 	 * 
 	 * @return the reason this ConceptName was voided
 	 */
-	@Override
 	public String getVoidReason() {
 		return voidReason;
 	}
@@ -223,12 +209,10 @@ public class ConceptNameTag extends BaseOpenmrsObject implements Auditable, Void
 	 * 
 	 * @param voidReason the reason this ConceptName was voided
 	 */
-	@Override
 	public void setVoidReason(String voidReason) {
 		this.voidReason = voidReason;
 	}
 	
-	@Override
 	public String toString() {
 		return this.tag;
 	}
@@ -251,7 +235,6 @@ public class ConceptNameTag extends BaseOpenmrsObject implements Auditable, Void
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		return getConceptNameTagId();
 	}
@@ -260,7 +243,6 @@ public class ConceptNameTag extends BaseOpenmrsObject implements Auditable, Void
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setConceptNameTagId(id);
 	}
@@ -268,7 +250,6 @@ public class ConceptNameTag extends BaseOpenmrsObject implements Auditable, Void
 	/**
 	 * @return Returns the changedBy.
 	 */
-	@Override
 	public User getChangedBy() {
 		return changedBy;
 	}
@@ -276,7 +257,6 @@ public class ConceptNameTag extends BaseOpenmrsObject implements Auditable, Void
 	/**
 	 * @param changedBy The user that changed this object
 	 */
-	@Override
 	public void setChangedBy(User changedBy) {
 		this.changedBy = changedBy;
 	}
@@ -284,7 +264,6 @@ public class ConceptNameTag extends BaseOpenmrsObject implements Auditable, Void
 	/**
 	 * @return Returns the date this object was changed
 	 */
-	@Override
 	public Date getDateChanged() {
 		return dateChanged;
 	}
@@ -292,7 +271,6 @@ public class ConceptNameTag extends BaseOpenmrsObject implements Auditable, Void
 	/**
 	 * @param dateChanged The date this object was changed
 	 */
-	@Override
 	public void setDateChanged(Date dateChanged) {
 		this.dateChanged = dateChanged;
 	}

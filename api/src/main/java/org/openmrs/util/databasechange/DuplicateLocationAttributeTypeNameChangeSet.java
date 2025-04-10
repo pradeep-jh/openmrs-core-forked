@@ -20,13 +20,9 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import org.openmrs.util.DatabaseUpdater;
-import org.openmrs.util.DatabaseUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import liquibase.change.custom.CustomTaskChange;
 import liquibase.database.Database;
@@ -37,6 +33,11 @@ import liquibase.exception.SetupException;
 import liquibase.exception.ValidationErrors;
 import liquibase.resource.ResourceAccessor;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.openmrs.util.DatabaseUpdater;
+import org.openmrs.util.DatabaseUtil;
+
 /**
  * Liquibase custom changeset used to identify and resolve duplicate LocationAttributeType names. If a
  * duplicate LocationAttributeType name is identified, it will be edited to include a suffix term which
@@ -45,7 +46,7 @@ import liquibase.resource.ResourceAccessor;
 
 public class DuplicateLocationAttributeTypeNameChangeSet implements CustomTaskChange {
 	
-	private static final Logger log = LoggerFactory.getLogger(DuplicateLocationAttributeTypeNameChangeSet.class);
+	private static final Log log = LogFactory.getLog(DuplicateLocationAttributeTypeNameChangeSet.class);
 	
 	@Override
 	public String getConfirmationMessage() {
@@ -73,7 +74,7 @@ public class DuplicateLocationAttributeTypeNameChangeSet implements CustomTaskCh
 	@Override
 	public void execute(Database database) throws CustomChangeException {
 		JdbcConnection connection = (JdbcConnection) database.getConnection();
-		Map<String, HashSet<Integer>> duplicates = new HashMap<>();
+		Map<String, HashSet<Integer>> duplicates = new HashMap<String, HashSet<Integer>>();
 		Statement stmt = null;
 		PreparedStatement pStmt = null;
 		ResultSet rs = null;
@@ -86,14 +87,14 @@ public class DuplicateLocationAttributeTypeNameChangeSet implements CustomTaskCh
 			rs = stmt.executeQuery("SELECT * FROM location_attribute_type "
 			        + "INNER JOIN (SELECT name FROM location_attribute_type GROUP BY name HAVING count(name) > 1) "
 			        + "dup ON location_attribute_type.name = dup.name");
-			Integer id;
-			String name;
+			Integer id = null;
+			String name = null;
 			
 			while (rs.next()) {
 				id = rs.getInt("location_attribute_type_id");
 				name = rs.getString("name");
 				if (duplicates.get(name) == null) {
-					HashSet<Integer> results = new HashSet<>();
+					HashSet<Integer> results = new HashSet<Integer>();
 					results.add(id);
 					duplicates.put(name, results);
 				} else {
@@ -101,16 +102,17 @@ public class DuplicateLocationAttributeTypeNameChangeSet implements CustomTaskCh
 					results.add(id);
 				}
 			}
-
-			for (Object o : duplicates.entrySet()) {
-				Map.Entry pairs = (Map.Entry) o;
-				HashSet<Integer> values = (HashSet<Integer>) pairs.getValue();
+			
+			Iterator it2 = duplicates.entrySet().iterator();
+			while (it2.hasNext()) {
+				Map.Entry pairs = (Map.Entry) it2.next();
+				HashSet values = (HashSet) pairs.getValue();
 				List<Integer> duplicateNames = new ArrayList<Integer>(values);
 				int duplicateNameId = 1;
 				for (int i = 1; i < duplicateNames.size(); i++) {
 					String newName = pairs.getKey() + "_" + duplicateNameId;
-					List<List<Object>> duplicateResult;
-					boolean duplicateName;
+					List<List<Object>> duplicateResult = null;
+					boolean duplicateName = false;
 					Connection con = DatabaseUpdater.getConnection();
 					do {
 						String sqlValidatorString = "select * from location_attribute_type where name = '" + newName + "'";
@@ -124,21 +126,20 @@ public class DuplicateLocationAttributeTypeNameChangeSet implements CustomTaskCh
 						}
 					} while (duplicateName);
 					pStmt = connection
-							.prepareStatement(
-									"update location_attribute_type set name = ?, changed_by = ?, date_changed = ? where location_attribute_type_id = ?");
+					        .prepareStatement("update location_attribute_type set name = ?, changed_by = ?, date_changed = ? where location_attribute_type_id = ?");
 					if (!duplicateResult.isEmpty()) {
 						pStmt.setString(1, newName);
 					}
 					pStmt.setString(1, newName);
 					pStmt.setInt(2, DatabaseUpdater.getAuthenticatedUserId());
-
+					
 					Calendar cal = Calendar.getInstance();
 					Date date = new Date(cal.getTimeInMillis());
-
+					
 					pStmt.setDate(3, date);
 					pStmt.setInt(4, duplicateNames.get(i));
 					duplicateNameId += 1;
-
+					
 					pStmt.executeUpdate();
 				}
 			}

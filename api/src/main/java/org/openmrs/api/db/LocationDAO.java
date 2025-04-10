@@ -9,15 +9,15 @@
  */
 package org.openmrs.api.db;
 
-import java.util.List;
-import java.util.Map;
-
 import org.hibernate.SessionFactory;
 import org.openmrs.Location;
 import org.openmrs.LocationAttribute;
 import org.openmrs.LocationAttributeType;
 import org.openmrs.LocationTag;
 import org.openmrs.api.LocationService;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Location-related database functions
@@ -196,9 +196,9 @@ public interface LocationDAO {
 	 *
 	 * @param locationTagIdList
 	 * @return list of locations
-	 * <strong>Should</strong> get locations having all tags
-	 * <strong>Should</strong> return empty list when no location has the given tags
-	 * <strong>Should</strong> ignore null values in location tag list
+	 * @should get locations having all tags
+	 * @should return empty list when no location has the given tags
+	 * @should ignore null values in location tag list
 	 */
 	List<Location> getLocationsHavingAllTags(List<LocationTag> locationTagIdList);
 }

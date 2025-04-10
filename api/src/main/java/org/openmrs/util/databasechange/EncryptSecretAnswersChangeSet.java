@@ -9,15 +9,6 @@
  */
 package org.openmrs.util.databasechange;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-
-import org.openmrs.util.Security;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import liquibase.change.custom.CustomTaskChange;
 import liquibase.database.Database;
 import liquibase.database.jvm.JdbcConnection;
@@ -26,13 +17,21 @@ import liquibase.exception.DatabaseException;
 import liquibase.exception.SetupException;
 import liquibase.exception.ValidationErrors;
 import liquibase.resource.ResourceAccessor;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.openmrs.util.Security;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 /**
  * This change set is run to encrypt the users.secret_answer column
  */
 public class EncryptSecretAnswersChangeSet implements CustomTaskChange {
 	
-	private static final Logger log = LoggerFactory.getLogger(EncryptSecretAnswersChangeSet.class);
+	private final static Log log = LogFactory.getLog(EncryptSecretAnswersChangeSet.class);
 	
 	/**
 	 * @see CustomTaskChange#execute(Database)
@@ -59,7 +58,10 @@ public class EncryptSecretAnswersChangeSet implements CustomTaskChange {
 			}
 			pStmt.executeBatch();
 		}
-		catch (DatabaseException | SQLException e) {
+		catch (DatabaseException e) {
+			throw new CustomChangeException("Failed to update secret answers: " + e);
+		}
+		catch (SQLException e) {
 			throw new CustomChangeException("Failed to update secret answers: " + e);
 		}
 		finally {

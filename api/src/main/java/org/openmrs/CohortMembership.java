@@ -10,19 +10,20 @@
 package org.openmrs;
 
 import java.util.Date;
-import java.util.Objects;
 
-import org.hibernate.envers.Audited;
 import org.openmrs.util.OpenmrsUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @since 2.1.0
  */
-@Audited
-public class CohortMembership extends BaseChangeableOpenmrsData implements Comparable<CohortMembership> {
+public class CohortMembership extends BaseOpenmrsData implements Comparable<CohortMembership> {
 	
 	public static final long serialVersionUID = 0L;
-
+	
+	protected static final Logger log = LoggerFactory.getLogger(CohortMembership.class);
+	
 	private Integer cohortMemberId;
 	
 	private Cohort cohort;
@@ -54,7 +55,7 @@ public class CohortMembership extends BaseChangeableOpenmrsData implements Compa
 	public boolean isActive(Date asOfDate) {
 		Date date = asOfDate == null ? new Date() : asOfDate;
 		return !this.getVoided() && OpenmrsUtil.compare(startDate, date) <= 0
-			&& OpenmrsUtil.compareWithNullAsLatest(date, endDate) <= 0;
+				&& OpenmrsUtil.compareWithNullAsLatest(date, endDate) <= 0;
 	}
 	
 	public boolean isActive() {
@@ -96,15 +97,15 @@ public class CohortMembership extends BaseChangeableOpenmrsData implements Compa
 	}
 	
 	public Date getStartDate() {
-		return startDate != null ? (Date) startDate.clone() : null;
+		return startDate;
 	}
 	
 	public void setStartDate(Date startDate) {
-		 this.startDate = startDate != null ? new Date(startDate.getTime()) : null;
+		this.startDate = startDate;
 	}
 	
 	public Date getEndDate() {
-		return endDate != null ? (Date) endDate.clone() : null;
+		return endDate;
 	}
 	
 	/**
@@ -114,9 +115,8 @@ public class CohortMembership extends BaseChangeableOpenmrsData implements Compa
 	 * @param endDate
 	 */
 	public void setEndDate(Date endDate) {
-		this.endDate = endDate != null ? new Date(endDate.getTime()) : null;
+		this.endDate = endDate;
 	}
-	
 	
 	/**
 	 * Sorts by following fields, in order:
@@ -129,21 +129,7 @@ public class CohortMembership extends BaseChangeableOpenmrsData implements Compa
 	 * </ol>
 	 *
 	 * @param o other membership to compare this to
-	 * @return value greater than <code>0</code> if this is not voided and o is voided; or value less
-	 *         than <code>0</code> if this is voided and o is not voided; if both is voided or not then
-	 *         value greater than <code>0</code> if o.getEndDate() return null; or value less than
-	 *         <code>0</code> if this.getEndDate() return null; if both are null or not then value
-	 *         greater than <code>0</code> if this.getEndDate() is before o.getEndDate(); or value less
-	 *         than <code>0</code> if this.getEndDate() is after o.getEndDate(); if are equal then value
-	 *         greater than <code>0</code> if this.getStartDate() return null; or value less than
-	 *         <code>0</code> if o.getStartDate() return null; if both are null or not then value greater
-	 *         than <code>0</code> if this.getStartDate() is before o.getStartDate(); or value less than
-	 *         <code>0</code> if this.getStartDate() is after o.getStartDate(); if are equal then value
-	 *         greater than <code>0</code> if o.getPatientId() is greater than this.getPatientId(); or
-	 *         value less than <code>0</code> if o.getPatientId() is less than this.getPatientId(); if
-	 *         are equal then value greater than <code>0</code> if o.getUuid() is greater than
-	 *         this.getUuid(); or value less than <code>0</code> if o.getUuid() is less than
-	 *         this.getUuid(); or <code>0</code> if are equal
+	 * @return
 	 */
 	@Override
 	public int compareTo(CohortMembership o) {
@@ -161,39 +147,5 @@ public class CohortMembership extends BaseChangeableOpenmrsData implements Compa
 			ret = this.getUuid().compareTo(o.getUuid());
 		}
 		return ret;
-	}
-	
-	/**
-	 * @since 2.3.0
-	 * Indicates if a given cohortMembership object is equal to this one
-	 * 
-	 * @param otherCohortMembershipObject is a CohortMembership object that should be checked for equality with this object
-	 * @return true if both objects are logically equal. This is the case when endDate, startDate and patientId are equal  
-	 */
-	@Override
-	public boolean equals(Object otherCohortMembershipObject) {
-		if(otherCohortMembershipObject == null || !(otherCohortMembershipObject instanceof CohortMembership)){
-			return false;
-		}
-		CohortMembership otherCohortMembership = (CohortMembership)otherCohortMembershipObject;
-		if(this == otherCohortMembership){
-			return true;
-		} 
-		
-		
-		return ((endDate != null ) ? endDate.equals(otherCohortMembership.getEndDate()) : otherCohortMembership.getEndDate() == null)
-			&&
-			((startDate !=null) ? startDate.equals(otherCohortMembership.getStartDate())  : otherCohortMembership.getStartDate() == null)
-			&& 
-			((patientId != null) ? patientId.equals(otherCohortMembership.getPatientId()) : otherCohortMembership.getPatientId() == null);
-	}
-	/**
-	 * @since 2.3.0
-	 * 
-	 * Creates a hash code of this object
-    */
-	@Override
-	public int hashCode() {
-		return Objects.hash(patientId, endDate, startDate);
 	}
 }

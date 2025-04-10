@@ -12,16 +12,16 @@ package org.openmrs.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Vector;
 
-import liquibase.GlobalConfiguration;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.GlobalProperty;
 import org.openmrs.api.handler.ExistingVisitAssignmentHandler;
 import org.openmrs.customdatatype.datatype.BooleanDatatype;
@@ -31,10 +31,6 @@ import org.openmrs.module.ModuleConstants;
 import org.openmrs.module.ModuleFactory;
 import org.openmrs.patient.impl.LuhnIdentifierValidator;
 import org.openmrs.scheduler.SchedulerConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static java.util.Arrays.asList;
 
 /**
  * Constants used in OpenMRS. Contents built from build properties (version, version_short, and
@@ -44,7 +40,7 @@ import static java.util.Arrays.asList;
  */
 public final class OpenmrsConstants {
 	
-	private static final Logger log = LoggerFactory.getLogger(OpenmrsConstants.class);
+	private static final Log log = LogFactory.getLog(OpenmrsConstants.class);
 	
 	public static String KEY_OPENMRS_APPLICATION_DATA_DIRECTORY = "OPENMRS_APPLICATION_DATA_DIRECTORY";
 	
@@ -128,7 +124,7 @@ public final class OpenmrsConstants {
 		
 		return null;
 	}
-	
+		
 	public static String DATABASE_NAME = "openmrs";
 	
 	public static String DATABASE_BUSINESS_NAME = "openmrs";
@@ -158,32 +154,31 @@ public final class OpenmrsConstants {
 	 * @see #APPLICATION_DATA_DIRECTORY_RUNTIME_PROPERTY
 	 * @see OpenmrsUtil#getApplicationDataDirectory()
 	 */
-	public static final String APPLICATION_DATA_DIRECTORY_FALLBACK_UNIX = "/var/lib";
+	public static String APPLICATION_DATA_DIRECTORY_FALLBACK_UNIX = "/var/lib";
 	
-	public static final String APPLICATION_DATA_DIRECTORY_FALLBACK_WIN = System.getenv("appdata");
+	public static String APPLICATION_DATA_DIRECTORY_FALLBACK_WIN = System.getenv("appdata");
 	
 	/**
 	 * The name of the runtime property that a user can set that will specify where openmrs's
 	 * application directory is
 	 * 
-	 * @see OpenmrsUtil#getApplicationDataDirectory()
-	 * @see OpenmrsUtil#startup(java.util.Properties)
+	 * @see #APPLICATION_DATA_DIRECTORY
 	 */
-	public static final String APPLICATION_DATA_DIRECTORY_RUNTIME_PROPERTY = "application_data_directory";
+	public static String APPLICATION_DATA_DIRECTORY_RUNTIME_PROPERTY = "application_data_directory";
 	
 	/**
 	 * The name of the runtime property that a user can set that will specify whether the database
 	 * is automatically updated on startup
 	 */
-	public static final String AUTO_UPDATE_DATABASE_RUNTIME_PROPERTY = "auto_update_database";
+	public static String AUTO_UPDATE_DATABASE_RUNTIME_PROPERTY = "auto_update_database";
 	
 	/**
 	 * These words are ignored in concept and patient searches
-	 *
+	 * 
 	 * @return Collection&lt;String&gt; of words that are ignored
 	 */
 	public static final Collection<String> STOP_WORDS() {
-		List<String> stopWords = new ArrayList<>();
+		List<String> stopWords = new Vector<String>();
 		stopWords.add("A");
 		stopWords.add("AND");
 		stopWords.add("AT");
@@ -201,31 +196,23 @@ public final class OpenmrsConstants {
 	/**
 	 * A gender character to gender name map<br>
 	 * TODO issues with localization. How should this be handled?
-	 * @deprecated As of 2.2, replaced by {@link #GENDERS}
-	 *
+	 * 
 	 * @return Map&lt;String, String&gt; of gender character to gender name
 	 */
-	@Deprecated
-	@SuppressWarnings("squid:S00100")
 	public static final Map<String, String> GENDER() {
-		Map<String, String> genders = new LinkedHashMap<>();
+		Map<String, String> genders = new LinkedHashMap<String, String>();
 		genders.put("M", "Male");
 		genders.put("F", "Female");
 		return genders;
 	}
-	
-	/**
-	 * A list of 1-letter strings representing genders
-	 */
-	public static final List<String> GENDERS = Collections.unmodifiableList(asList("M", "F"));
-	
+		
 	/**
 	 * These roles are given to a user automatically and cannot be assigned
-	 *
+	 * 
 	 * @return <code>Collection&lt;String&gt;</code> of the auto-assigned roles
 	 */
 	public static final Collection<String> AUTO_ROLES() {
-		List<String> roles = new ArrayList<>();
+		List<String> roles = new Vector<String>();
 		
 		roles.add(RoleConstants.ANONYMOUS);
 		roles.add(RoleConstants.AUTHENTICATED);
@@ -331,17 +318,11 @@ public final class OpenmrsConstants {
 	
 	public static final String GLOBAL_PROPERTY_DEFAULT_WEEK_START_DAY_DEFAULT_VALUE = "0";
 	
-	public static final String GLOBAL_PROPERTY_PATIENT_IDENTIFIER_SEARCH_MATCH_MODE = "patientIdentifierSearch.matchMode";
-	
 	public static final String GLOBAL_PROPERTY_PATIENT_SEARCH_MATCH_MODE = "patientSearch.matchMode";
-	
-	public static final String GLOBAL_PROPERTY_PATIENT_SEARCH_MATCH_EXACT = "EXACT";
 	
 	public static final String GLOBAL_PROPERTY_PATIENT_SEARCH_MATCH_ANYWHERE = "ANYWHERE";
 	
 	public static final String GLOBAL_PROPERTY_PATIENT_SEARCH_MATCH_START = "START";
-	
-	public static final String GLOBAL_PROPERTY_PATIENT_SEARCH_MATCH_SOUNDEX = "SOUNDEX";
 	
 	public static final String GLOBAL_PROPERTY_PROVIDER_SEARCH_MATCH_MODE = "providerSearch.matchMode";
 	
@@ -363,8 +344,6 @@ public final class OpenmrsConstants {
 	
 	public static final String GLOBAL_PROPERTY_LAYOUT_NAME_FORMAT = "layout.name.format";
 	
-	public static final String GLOBAL_PROPERTY_LAYOUT_NAME_TEMPLATE = "layout.name.template";
-	
 	public static final String GLOBAL_PROPERTY_ENCOUNTER_TYPES_LOCKED = "EncounterType.encounterTypes.locked";
 	
 	public static final String GLOBAL_PROPERTY_FORMS_LOCKED = "forms.locked";
@@ -374,8 +353,6 @@ public final class OpenmrsConstants {
 	public static final String GLOBAL_PROPERTY_PATIENT_IDENTIFIER_TYPES_LOCKED = "patientIdentifierTypes.locked";
 	
 	public static final String GLOBAL_PROPERTY_DRUG_ORDER_REQUIRE_DRUG = "drugOrder.requireDrug";
-
-	public static final String GLOBAL_PROPERTY_DRUG_ORDER_REQUIRE_OUTPATIENT_QUANTITY = "drugOrder.requireOutpatientQuantity";
 	
 	public static final String DEFAULT_ADDRESS_TEMPLATE = "<org.openmrs.layout.address.AddressTemplate>\n"
 	        + "    <nameMappings class=\"properties\">\n"
@@ -398,42 +375,37 @@ public final class OpenmrsConstants {
 	 * Global property name that allows specification of whether user passwords must contain both
 	 * upper and lower case characters. Allowable values are "true", "false", and null
 	 */
-	public static final String GP_PASSWORD_REQUIRES_UPPER_AND_LOWER_CASE = "security.passwordRequiresUpperAndLowerCase";
+	public static String GP_PASSWORD_REQUIRES_UPPER_AND_LOWER_CASE = "security.passwordRequiresUpperAndLowerCase";
 	
 	/**
 	 * Global property name that allows specification of whether user passwords require non-digits.
 	 * Allowable values are "true", "false", and null
 	 */
-	public static final String GP_PASSWORD_REQUIRES_NON_DIGIT = "security.passwordRequiresNonDigit";
+	public static String GP_PASSWORD_REQUIRES_NON_DIGIT = "security.passwordRequiresNonDigit";
 	
 	/**
 	 * Global property name that allows specification of whether user passwords must contain digits.
 	 * Allowable values are "true", "false", and null
 	 */
-	public static final String GP_PASSWORD_REQUIRES_DIGIT = "security.passwordRequiresDigit";
+	public static String GP_PASSWORD_REQUIRES_DIGIT = "security.passwordRequiresDigit";
 	
 	/**
 	 * Global property name that allows specification of whether user passwords can match username
 	 * or system id. Allowable values are "true", "false", and null
 	 */
-	public static final String GP_PASSWORD_CANNOT_MATCH_USERNAME_OR_SYSTEMID = "security.passwordCannotMatchUsername";
+	public static String GP_PASSWORD_CANNOT_MATCH_USERNAME_OR_SYSTEMID = "security.passwordCannotMatchUsername";
 	
 	/**
 	 * Global property name that allows specification of whether user passwords have a minimum
 	 * length requirement Allowable values are any integer
 	 */
-	public static final String GP_PASSWORD_MINIMUM_LENGTH = "security.passwordMinimumLength";
-	
-	/**
-	 * Global property that stores the duration for which the password reset token is valid
-	 */
-	public static final String GP_PASSWORD_RESET_VALIDTIME = "security.validTime";
+	public static String GP_PASSWORD_MINIMUM_LENGTH = "security.passwordMinimumLength";
 	
 	/**
 	 * Global property name that allows specification of a regular expression that passwords must
 	 * adhere to
 	 */
-	public static final String GP_PASSWORD_CUSTOM_REGEX = "security.passwordCustomRegex";
+	public static String GP_PASSWORD_CUSTOM_REGEX = "security.passwordCustomRegex";
 	
 	/**
 	 * Global property name for absolute color for patient graphs.
@@ -570,8 +542,6 @@ public final class OpenmrsConstants {
 	public static final String AUTO_CLOSE_VISITS_TASK_NAME = "Auto Close Visits Task";
 	
 	public static final String GP_ALLOWED_FAILED_LOGINS_BEFORE_LOCKOUT = "security.allowedFailedLoginsBeforeLockout";
-
-	public static final String GP_UNLOCK_ACCOUNT_WAITING_TIME  = "security.unlockAccountWaitingTime";
 	
 	/**
 	 * @since 1.9.9, 1.10.2, 1.11
@@ -608,7 +578,7 @@ public final class OpenmrsConstants {
 	
 	/**
 	 * Indicates the version of the search index. The index will be rebuilt, if the version changes.
-	 *
+	 * 
 	 * @since 1.11
 	 */
 	public static final Integer SEARCH_INDEX_VERSION = 7;
@@ -625,30 +595,13 @@ public final class OpenmrsConstants {
 	public static final String GP_DRUG_ORDER_DRUG_OTHER = "drugOrder.drugOther";
 
 	/**
-	 * Global property that stores the base url for the application.
-	 * @deprecated as of 2.6.0, replaced by {@link #GP_PASSWORD_RESET_URL}
-	 */
-	@Deprecated
-	public static final String GP_HOST_URL = "host.url";
-	
-	/**
-	 * Global property that stores the base url for the password reset.
-	 */
-	public static final String GP_PASSWORD_RESET_URL = "security.passwordResetUrl";
-
-	/**
-	 * Global property that stores the number of days for users to be deactivated.
-	 */
-	public static final String GP_NUMBER_OF_DAYS_TO_AUTO_RETIRE_USERS = "users.numberOfDaysToRetire";
-	
-	/**
 	 * At OpenMRS startup these global properties/default values/descriptions are inserted into the
 	 * database if they do not exist yet.
-	 *
+	 * 
 	 * @return List&lt;GlobalProperty&gt; of the core global properties
 	 */
 	public static final List<GlobalProperty> CORE_GLOBAL_PROPERTIES() {
-		List<GlobalProperty> props = new ArrayList<>();
+		List<GlobalProperty> props = new Vector<GlobalProperty>();
 		
 		props.add(new GlobalProperty("use_patient_attribute.healthCenter", "false",
 		        "Indicates whether or not the 'health center' attribute is shown when viewing/searching for patients",
@@ -663,6 +616,9 @@ public final class OpenmrsConstants {
 		
 		props.add(new GlobalProperty("dashboard.overview.showConcepts", "",
 		        "Comma delimited list of concepts ids to show on the patient dashboard overview tab"));
+		
+		props.add(new GlobalProperty(GP_DASHBOARD_CONCEPTS, "5497",
+		        "Comma delimited list of concepts ids to show on the patient header overview"));
 		
 		props
 		        .add(new GlobalProperty("dashboard.encounters.showEmptyFields", "true",
@@ -722,9 +678,13 @@ public final class OpenmrsConstants {
 		
 		props.add(new GlobalProperty(GP_MAIL_SMTP_STARTTLS_ENABLE, "false",
 		        "Set to true to enable TLS encryption, else set to false"));
+		
+		props.add(new GlobalProperty("concept.weight", "5089", "Concept id of the concept defining the WEIGHT concept"));
+		props.add(new GlobalProperty("concept.height", "5090", "Concept id of the concept defining the HEIGHT concept"));
 
-		props.add(new GlobalProperty(GP_PASSWORD_RESET_URL, "",
-		        "The URL to redirect to after requesting for a password reset. Always provide a place holder in this url with name {activationKey}, it will get substituted by the actual activation key."));
+		props.add(new GlobalProperty("concept.none", "1107", "Concept id of the concept defining the NONE concept"));
+		props.add(new GlobalProperty("concept.otherNonCoded", "5622",
+		        "Concept id of the concept defining the OTHER NON-CODED concept"));
 		
 		props.add(new GlobalProperty("mail.transport_protocol", "smtp",
 		        "Transport protocol for the messaging engine. Valid values: smtp"));
@@ -743,7 +703,7 @@ public final class OpenmrsConstants {
 		        ModuleConstants.REPOSITORY_FOLDER_PROPERTY_DEFAULT, "Name of the folder in which to store the modules"));
 		props.add(new GlobalProperty(GLOBAL_PROPERTY_ADDRESS_TEMPLATE, DEFAULT_ADDRESS_TEMPLATE,
 		        "XML description of address formats"));
-		props.add(new GlobalProperty(GLOBAL_PROPERTY_LAYOUT_NAME_FORMAT, PERSON_NAME_FORMAT_SHORT,
+		props.add(new GlobalProperty("layout.name.format", "short",
 		        "Format in which to display the person names.  Valid values are short, long"));
 		
 		// TODO should be changed to text defaults and constants should be removed
@@ -814,12 +774,23 @@ public final class OpenmrsConstants {
 		                "Set to 'true' to turn on OpenMRS's gzip filter, and have the webapp compress data before sending it to any client that supports it. Generally use this if you are running Tomcat standalone. If you are running Tomcat behind Apache, then you'd want to use Apache to do gzip compression.",
 		                BooleanDatatype.class, null));
 		
-	
+		props
+		        .add(new GlobalProperty(
+		                GLOBAL_PROPERTY_MEDICAL_RECORD_OBSERVATIONS,
+		                "1238",
+		                "The concept id of the MEDICAL_RECORD_OBSERVATIONS concept.  This concept_id is presumed to be the generic grouping (obr) concept in hl7 messages.  An obs_group row is not created for this concept."));
+		
+		props
+		        .add(new GlobalProperty(
+		                GLOBAL_PROPERTY_PROBLEM_LIST,
+		                "1284",
+		                "The concept id of the PROBLEM LIST concept.  This concept_id is presumed to be the generic grouping (obr) concept in hl7 messages.  An obs_group row is not created for this concept."));
+		
 		props
 		        .add(new GlobalProperty(
 		                GLOBAL_PROPERTY_LOG_LEVEL,
 		                "org.openmrs.api:" + LOG_LEVEL_INFO,
-		                "Logging levels for log4j2.xml. Valid format is class:level,class:level. If class not specified, 'org.openmrs.api' presumed. Valid levels are trace, debug, info, warn, error or fatal"));
+		                "Logging levels for log4j.xml. Valid format is class:level,class:level. If class not specified, 'org.openmrs.api' presumed. Valid levels are trace, debug, info, warn, error or fatal"));
 		
 		props.add(new GlobalProperty(GP_LOG_LOCATION, "",
 		        "A directory where the OpenMRS log file appender is stored. The log file name is 'openmrs.log'."));
@@ -879,9 +850,6 @@ public final class OpenmrsConstants {
 		props.add(new GlobalProperty(GP_PASSWORD_MINIMUM_LENGTH, "8",
 		        "Configure the minimum length required of all passwords"));
 		
-		props.add(new GlobalProperty(GP_PASSWORD_RESET_VALIDTIME, "600000",
-		        " Specifies the duration of time in seconds for which a password reset token is valid, the default value is 10 minutes and the allowed values range from 1 minute to 12hrs"));
-		
 		props.add(new GlobalProperty(GP_PASSWORD_REQUIRES_DIGIT, "true",
 		        "Configure whether passwords must contain at least one digit", BooleanDatatype.class, null));
 		
@@ -936,12 +904,6 @@ public final class OpenmrsConstants {
 		props.add(new GlobalProperty(GLOBAL_PROPERTY_DEFAULT_LOCATION_NAME, "Unknown Location",
 		        "The name of the location to use as a system default"));
 		props
-				.add(new GlobalProperty(
-						GLOBAL_PROPERTY_PATIENT_IDENTIFIER_SEARCH_MATCH_MODE,
-						GLOBAL_PROPERTY_PATIENT_SEARCH_MATCH_EXACT,
-						"Specifies how patient identifiers are matched while searching for a patient. Valid values are 'EXACT, 'ANYWHERE' or 'START'. Defaults to 'EXACT' if missing or invalid value is present."));
-		
-		props
 		        .add(new GlobalProperty(
 		                GLOBAL_PROPERTY_PATIENT_SEARCH_MATCH_MODE,
 		                GLOBAL_PROPERTY_PATIENT_SEARCH_MATCH_START,
@@ -992,10 +954,7 @@ public final class OpenmrsConstants {
 		
 		props.add(new GlobalProperty(GP_ALLOWED_FAILED_LOGINS_BEFORE_LOCKOUT, "7",
 		        "Maximum number of failed logins allowed after which username is locked out"));
-
-		props.add(new GlobalProperty(GP_UNLOCK_ACCOUNT_WAITING_TIME, "5",
-			"Waiting time for account to get automatically unlocked after getting locked due to multiple invalid login tries"));
-
+		
 		props.add(new GlobalProperty(GP_DEFAULT_CONCEPT_MAP_TYPE, "NARROWER-THAN",
 		        "Default concept map type which is used when no other is set"));
 		
@@ -1038,9 +997,6 @@ public final class OpenmrsConstants {
 		
 		props.add(new GlobalProperty(GLOBAL_PROPERTY_DRUG_ORDER_REQUIRE_DRUG, "false",
 		        "Set to value true if you need to specify a formulation(Drug) when creating a drug order."));
-
-		props.add(new GlobalProperty(GLOBAL_PROPERTY_DRUG_ORDER_REQUIRE_OUTPATIENT_QUANTITY, "true",
-			"true/false whether to require quantity, quantityUnits, and numRefills for outpatient drug orders"));
 		
 		props.add(new GlobalProperty(GLOBAL_PROPERTY_PERSON_ATRIBUTE_TYPES_LOCKED, "false",
 		        "Set to a value of true if you do not want allow editing person attribute types, else set to false."));
@@ -1115,9 +1071,9 @@ public final class OpenmrsConstants {
 		
 		props
 				.add(new GlobalProperty(GP_DRUG_ORDER_DRUG_OTHER, "", "Specifies the uuid of the concept which represents drug other non coded"));
-		props.add(new GlobalProperty(GP_LOGIN_URL, LOGIN_URL,
-			"Responsible for defining the Authentication URL "));
-		props.addAll(ModuleFactory.getGlobalProperties());
+		for (GlobalProperty gp : ModuleFactory.getGlobalProperties()) {
+			props.add(gp);
+		}
 		
 		return props;
 	}
@@ -1135,7 +1091,7 @@ public final class OpenmrsConstants {
 	public static final String CONCEPT_PROPOSAL_REJECT = "REJECT";
 	
 	public static final Collection<String> CONCEPT_PROPOSAL_STATES() {
-		Collection<String> states = new ArrayList<>();
+		Collection<String> states = new Vector<String>();
 		
 		states.add(CONCEPT_PROPOSAL_UNMAPPED);
 		states.add(CONCEPT_PROPOSAL_CONCEPT);
@@ -1145,11 +1101,11 @@ public final class OpenmrsConstants {
 		return states;
 	}
 	
-	public static final Locale SPANISH_LANGUAGE = new Locale("es");
+	public static Locale SPANISH_LANGUAGE = new Locale("es");
 	
-	public static final Locale PORTUGUESE_LANGUAGE = new Locale("pt");
+	public static Locale PORTUGUESE_LANGUAGE = new Locale("pt");
 	
-	public static final Locale ITALIAN_LANGUAGE = new Locale("it");
+	public static Locale ITALIAN_LANGUAGE = new Locale("it");
 	
 	/*
 	 * User property names
@@ -1189,11 +1145,6 @@ public final class OpenmrsConstants {
 	 * <code>proficientLocales = en_US, en_GB, en, fr_RW</code>
 	 */
 	public static final String USER_PROPERTY_PROFICIENT_LOCALES = "proficientLocales";
-
-	/**
- 	 * Name of the user_property that stores user's last login time
-	 */
-	public static final String USER_PROPERTY_LAST_LOGIN_TIMESTAMP = "lastLoginTimestamp";
 	
 	// Used for differences between windows/linux upload capabilities)
 	// Used for determining where to find runtime properties
@@ -1216,17 +1167,17 @@ public final class OpenmrsConstants {
 	/**
 	 * URL to the concept source id verification server
 	 */
-	public static final String IMPLEMENTATION_ID_REMOTE_CONNECTION_URL = "https://implementation.openmrs.org";
+	public static final String IMPLEMENTATION_ID_REMOTE_CONNECTION_URL = "http://resources.openmrs.org/tools/implementationid";
 	
 	/**
 	 * Shortcut booleans used to make some OS specific checks more generic; note the *nix flavored
 	 * check is missing some less obvious choices
 	 */
-	public static final boolean UNIX_BASED_OPERATING_SYSTEM = (OPERATING_SYSTEM.contains(OPERATING_SYSTEM_LINUX)
-	        || OPERATING_SYSTEM.contains(OPERATING_SYSTEM_SUNOS)
-	        || OPERATING_SYSTEM.contains(OPERATING_SYSTEM_FREEBSD) || OPERATING_SYSTEM.contains(OPERATING_SYSTEM_OSX));
+	public static final boolean UNIX_BASED_OPERATING_SYSTEM = (OPERATING_SYSTEM.indexOf(OPERATING_SYSTEM_LINUX) > -1
+	        || OPERATING_SYSTEM.indexOf(OPERATING_SYSTEM_SUNOS) > -1
+	        || OPERATING_SYSTEM.indexOf(OPERATING_SYSTEM_FREEBSD) > -1 || OPERATING_SYSTEM.indexOf(OPERATING_SYSTEM_OSX) > -1);
 	
-	public static final boolean WINDOWS_BASED_OPERATING_SYSTEM = OPERATING_SYSTEM.contains("Windows");
+	public static final boolean WINDOWS_BASED_OPERATING_SYSTEM = OPERATING_SYSTEM.indexOf("Windows") > -1;
 	
 	public static final boolean WINDOWS_VISTA_OPERATING_SYSTEM = OPERATING_SYSTEM.equals(OPERATING_SYSTEM_WINDOWS_VISTA);
 	
@@ -1241,14 +1192,14 @@ public final class OpenmrsConstants {
 	
 	/**
 	 * It points to a directory where 'openmrs.log' is stored.
-	 *
+	 * 
 	 * @since 1.9.2
 	 */
 	public static final String GP_LOG_LOCATION = "log.location";
 	
 	/**
 	 * It specifies a log layout pattern used by the OpenMRS file appender.
-	 *
+	 * 
 	 * @since 1.9.2
 	 */
 	public static final String GP_LOG_LAYOUT = "log.layout";
@@ -1277,29 +1228,9 @@ public final class OpenmrsConstants {
 	public static final String LOG_LEVEL_FATAL = "fatal";
 	
 	/**
-	 * The name of the in-memory appender
-	 */
-	public static final String MEMORY_APPENDER_NAME = "MEMORY_APPENDER";
-
-	/**
-	 * Default url responsible for authentication if a user is not logged in.
-	 *
-	 * @see  #GP_LOGIN_URL
-	 */
-	public static final String LOGIN_URL = "login.htm";
-	
-	/**
-	 * Global property name that defines the default url
-	 * responsible for authentication if user is not logged in.
-	 *
-	 *  @see #LOGIN_URL
-	 */
-	public static final String GP_LOGIN_URL = "login.url";
-	
-	/**
 	 * These enumerations should be used in ObsService and PersonService getters to help determine
 	 * which type of object to restrict on
-	 *
+	 * 
 	 * @see org.openmrs.api.ObsService
 	 * @see org.openmrs.api.PersonService
 	 */
@@ -1324,13 +1255,4 @@ public final class OpenmrsConstants {
 	/** Value for the long person name format */
 	public static final String PERSON_NAME_FORMAT_LONG = "long";
 
-	// Liquibase Constants
-	public static final String LIQUIBASE_DUPLICATE_FILE_MODE_DEFAULT = GlobalConfiguration.DuplicateFileMode.SILENT.name();
-
-	/** Value for zero login attempts */
-	public static final String ZERO_LOGIN_ATTEMPTS_VALUE = "0";
-	
-	private OpenmrsConstants() {
-	}
-	
 }

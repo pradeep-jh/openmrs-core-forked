@@ -9,26 +9,57 @@
  */
 package org.openmrs.propertyeditor;
 
+import java.beans.PropertyEditorSupport;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.PersonAttributeType;
+import org.openmrs.api.PersonService;
 import org.openmrs.api.context.Context;
+import org.springframework.util.StringUtils;
 
 /**
- * Allows for serializing/deserializing an object to a string so that Spring knows how to pass an
- * object back and forth through an html form or other medium. <br>
+ * Allows for serializing/deserializing an object to a string so that Spring knows how to pass
+ * an object back and forth through an html form or other medium. <br>
  * <br>
  * In version 1.9, added ability for this to also retrieve objects by uuid
  * 
  * @see PersonAttributeType
  */
-public class PersonAttributeTypeEditor extends OpenmrsPropertyEditor<PersonAttributeType> {
+public class PersonAttributeTypeEditor extends PropertyEditorSupport {
 	
-	@Override
-	protected PersonAttributeType getObjectById(Integer id) {
-		return Context.getPersonService().getPersonAttributeType(id);
+	private Log log = LogFactory.getLog(this.getClass());
+	
+	/**
+	 * @should set using id
+	 * @should set using uuid
+	 */
+	public void setAsText(String text) throws IllegalArgumentException {
+		PersonService ps = Context.getPersonService();
+		if (StringUtils.hasText(text)) {
+			try {
+				setValue(ps.getPersonAttributeType(Integer.valueOf(text)));
+			}
+			catch (Exception ex) {
+				PersonAttributeType personAttributeType = ps.getPersonAttributeTypeByUuid(text);
+				setValue(personAttributeType);
+				if (personAttributeType == null) {
+					log.error("Error setting text: " + text, ex);
+					throw new IllegalArgumentException("Person Attribute Type not found: " + ex.getMessage());
+				}
+			}
+		} else {
+			setValue(null);
+		}
 	}
 	
-	@Override
-	protected PersonAttributeType getObjectByUuid(String uuid) {
-		return Context.getPersonService().getPersonAttributeTypeByUuid(uuid);
+	public String getAsText() {
+		PersonAttributeType t = (PersonAttributeType) getValue();
+		if (t == null) {
+			return "";
+		} else {
+			return t.getPersonAttributeTypeId().toString();
+		}
 	}
+	
 }

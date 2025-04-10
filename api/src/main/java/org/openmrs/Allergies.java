@@ -31,7 +31,7 @@ public class Allergies implements List<Allergy> {
 	
 	private String allergyStatus = UNKNOWN;
 	
-	private List<Allergy> allergies = new ArrayList<>();
+	private List<Allergy> allergies = new ArrayList<Allergy>();
 
 	/**
      * @return the allergyStatus
@@ -40,7 +40,6 @@ public class Allergies implements List<Allergy> {
     	return allergyStatus;
     }
 
-	@Override
 	public boolean add(Allergy allergy) {
 		throwExceptionIfHasDuplicateAllergen(allergy);
 		allergyStatus = SEE_LIST;
@@ -55,13 +54,12 @@ public class Allergies implements List<Allergy> {
 		return result;
 	}
 	
-	@Override
 	public void clear() {
 		allergyStatus = UNKNOWN;
 		allergies.clear();
 	}
 	
-	public void confirmNoKnownAllergies(){
+	public void confirmNoKnownAllergies() throws APIException {
 		if (!allergies.isEmpty()) {
 			throw new APIException("Cannot confirm no known allergies if allergy list is not empty");
 		}
@@ -297,7 +295,8 @@ public class Allergies implements List<Allergy> {
 	 * @param allergies the given allergies collection
 	 */
 	private void throwExceptionIfHasDuplicateAllergen(Collection<? extends Allergy> allergies) {
-		List<Allergy> allergiesCopy = new ArrayList<>(allergies);
+		List<Allergy> allergiesCopy = new ArrayList<Allergy>();
+		allergiesCopy.addAll(allergies);
 		
 		for (Allergy allergy : allergies) {
 			allergiesCopy.remove(allergy);

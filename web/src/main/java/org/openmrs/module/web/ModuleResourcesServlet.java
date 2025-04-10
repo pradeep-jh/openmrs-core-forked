@@ -18,11 +18,11 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.module.Module;
 import org.openmrs.module.ModuleUtil;
 import org.openmrs.util.OpenmrsUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ModuleResourcesServlet extends HttpServlet {
 	
@@ -30,7 +30,7 @@ public class ModuleResourcesServlet extends HttpServlet {
 	
 	private static final long serialVersionUID = 1239820102030344L;
 	
-	private static final Logger log = LoggerFactory.getLogger(ModuleResourcesServlet.class);
+	private Log log = LogFactory.getLog(this.getClass());
 	
 	/**
 	 * Used for caching purposes

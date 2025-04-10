@@ -9,7 +9,6 @@
  */
 package org.openmrs;
 
-import org.hibernate.envers.Audited;
 import org.openmrs.attribute.Attribute;
 import org.openmrs.attribute.BaseAttribute;
 
@@ -18,7 +17,6 @@ import org.openmrs.attribute.BaseAttribute;
  * @see Attribute
  * @since 1.9
  */
-@Audited
 public class VisitAttribute extends BaseAttribute<VisitAttributeType, Visit> implements Attribute<VisitAttributeType, Visit> {
 	
 	private Integer visitAttributeId;

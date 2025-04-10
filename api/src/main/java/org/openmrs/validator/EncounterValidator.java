@@ -11,13 +11,13 @@ package org.openmrs.validator;
 
 import java.util.Date;
 
-import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang.ObjectUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.Encounter;
 import org.openmrs.Visit;
 import org.openmrs.annotation.Handler;
 import org.openmrs.api.APIException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.validation.Errors;
 import org.springframework.validation.ValidationUtils;
 import org.springframework.validation.Validator;
@@ -30,7 +30,7 @@ import org.springframework.validation.Validator;
 @Handler(supports = { Encounter.class }, order = 50)
 public class EncounterValidator implements Validator {
 	
-	private static final Logger log = LoggerFactory.getLogger(EncounterValidator.class);
+	private static final Log log = LogFactory.getLog(EncounterValidator.class);
 	
 	/**
 	 * Returns whether or not this validator supports validating a given class.
@@ -40,7 +40,9 @@ public class EncounterValidator implements Validator {
 	 */
 	@Override
 	public boolean supports(Class<?> c) {
-		log.debug("{}.supports: {}", this.getClass().getName(), c.getName());
+		if (log.isDebugEnabled()) {
+			log.debug(this.getClass().getName() + ".supports: " + c.getName());
+		}
 		return Encounter.class.isAssignableFrom(c);
 	}
 	
@@ -52,19 +54,21 @@ public class EncounterValidator implements Validator {
 	 * @param errors Errors
 	 * @see org.springframework.validation.Validator#validate(java.lang.Object,
 	 *      org.springframework.validation.Errors)
-	 * <strong>Should</strong> fail if the patients for the visit and the encounter dont match
-	 * <strong>Should</strong> fail if patient is not set
-	 * <strong>Should</strong> fail if encounter type is not set
-	 * <strong>Should</strong> fail if encounter dateTime is not set
-	 * <strong>Should</strong> fail if encounter dateTime is after current dateTime
-	 * <strong>Should</strong> fail if encounter dateTime is before visit startDateTime
-	 * <strong>Should</strong> fail if encounter dateTime is after visit stopDateTime
-	 * <strong>Should</strong> pass validation if field lengths are correct
-	 * <strong>Should</strong> fail validation if field lengths are not correct
+	 * @should fail if the patients for the visit and the encounter dont match
+	 * @should fail if patient is not set
+	 * @should fail if encounter type is not set
+	 * @should fail if encounter dateTime is not set
+	 * @should fail if encounter dateTime is after current dateTime
+	 * @should fail if encounter dateTime is before visit startDateTime
+	 * @should fail if encounter dateTime is after visit stopDateTime
+	 * @should pass validation if field lengths are correct
+	 * @should fail validation if field lengths are not correct
 	 */
 	@Override
 	public void validate(Object obj, Errors errors) throws APIException {
-		log.debug("{}.validate...", this.getClass().getName());
+		if (log.isDebugEnabled()) {
+			log.debug(this.getClass().getName() + ".validate...");
+		}
 		
 		if (obj == null || !(obj instanceof Encounter)) {
 			throw new IllegalArgumentException("The parameter obj should not be null and must be of type " + Encounter.class);

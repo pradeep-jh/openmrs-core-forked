@@ -9,12 +9,11 @@
  */
 package org.openmrs.validator;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.ConceptClass;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 
@@ -27,45 +26,47 @@ public class ConceptClassValidatorTest extends BaseContextSensitiveTest {
 	 * @see ConceptClassValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfUserIsNullOrEmptyOrWhitespace() {
+	@Verifies(value = "should fail validation if user is null or empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfUserIsNullOrEmptyOrWhitespace() throws Exception {
 		ConceptClass cc = new ConceptClass();
 		cc.setName(null);
 		cc.setDescription("some text");
 		
 		Errors errors = new BindException(cc, "cc");
 		new ConceptClassValidator().validate(cc, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 		
 		cc.setName("");
 		errors = new BindException(cc, "cc");
 		new ConceptClassValidator().validate(cc, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 		
 		cc.setName(" ");
 		errors = new BindException(cc, "cc");
 		new ConceptClassValidator().validate(cc, errors);
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 	}
 	
 	@Test
-	public void validate_shouldPassValidationIfDescriptionIsNullOrEmptyOrWhitespace() {
+	@Verifies(value = "should pass validation if description is null or empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfDescriptionIsNullOrEmptyOrWhitespace() throws Exception {
 		ConceptClass cc = new ConceptClass();
 		cc.setName("name");
 		cc.setDescription(null);
 		
 		Errors errors = new BindException(cc, "cc");
 		new ConceptClassValidator().validate(cc, errors);
-		assertFalse(errors.hasFieldErrors("description"));
+		Assert.assertFalse(errors.hasFieldErrors("description"));
 		
 		cc.setDescription("");
 		errors = new BindException(cc, "cc");
 		new ConceptClassValidator().validate(cc, errors);
-		assertFalse(errors.hasFieldErrors("description"));
+		Assert.assertFalse(errors.hasFieldErrors("description"));
 		
 		cc.setDescription(" ");
 		errors = new BindException(cc, "cc");
 		new ConceptClassValidator().validate(cc, errors);
-		assertFalse(errors.hasFieldErrors("description"));
+		Assert.assertFalse(errors.hasFieldErrors("description"));
 		
 	}
 	
@@ -73,7 +74,8 @@ public class ConceptClassValidatorTest extends BaseContextSensitiveTest {
 	 * @see ConceptClassValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfAllRequiredFieldsHaveProperValues() {
+	@Verifies(value = "should pass validation if all required fields have proper values", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfAllRequiredFieldsHaveProperValues() throws Exception {
 		ConceptClass cc = new ConceptClass();
 		cc.setName("name");
 		cc.setDescription("some text");
@@ -81,14 +83,15 @@ public class ConceptClassValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(cc, "cc");
 		new ConceptClassValidator().validate(cc, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see ConceptClassValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfConceptClassNameAlreadyExist() {
+	@Verifies(value = "should fail validation if concept class name is already exist", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfConceptClassNameAlreadyExist() throws Exception {
 		ConceptClass cc = new ConceptClass();
 		cc.setName("Test");
 		cc.setDescription("some text");
@@ -96,14 +99,15 @@ public class ConceptClassValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(cc, "cc");
 		new ConceptClassValidator().validate(cc, errors);
 		
-		assertTrue(errors.hasErrors());
+		Assert.assertTrue(errors.hasErrors());
 	}
 	
 	/**
 	 * @see ConceptClassValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() {
+	@Verifies(value = "should pass validation if field lengths are correct", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() throws Exception {
 		ConceptClass cc = new ConceptClass();
 		cc.setName("name");
 		cc.setDescription("some text");
@@ -112,14 +116,15 @@ public class ConceptClassValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(cc, "cc");
 		new ConceptClassValidator().validate(cc, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see ConceptClassValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() {
+	@Verifies(value = "should fail validation if field lengths are not correct", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() throws Exception {
 		ConceptClass cc = new ConceptClass();
 		cc
 		        .setName("too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text");
@@ -131,8 +136,8 @@ public class ConceptClassValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(cc, "cc");
 		new ConceptClassValidator().validate(cc, errors);
 		
-		assertTrue(errors.hasFieldErrors("name"));
-		assertTrue(errors.hasFieldErrors("description"));
-		assertTrue(errors.hasFieldErrors("retireReason"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("description"));
+		Assert.assertTrue(errors.hasFieldErrors("retireReason"));
 	}
 }

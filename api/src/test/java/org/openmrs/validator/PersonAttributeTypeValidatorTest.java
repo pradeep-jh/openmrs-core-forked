@@ -9,12 +9,11 @@
  */
 package org.openmrs.validator;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.PersonAttributeType;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 import org.springframework.validation.BindException;
 import org.springframework.validation.Errors;
 
@@ -27,34 +26,37 @@ public class PersonAttributeTypeValidatorTest extends BaseContextSensitiveTest {
 	 * @see PersonAttributeTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfNameIsNull() {
+	@Verifies(value = "should fail validation if name is null", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfNameIsNull() throws Exception {
 		PersonAttributeType type = new PersonAttributeType();
 		
 		Errors errors = new BindException(type, "patObj");
 		new PersonAttributeTypeValidator().validate(type, errors);
 		
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 	}
 	
 	/**
 	 * @see PersonAttributeTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfNameAlreadyInUse() {
+	@Verifies(value = "should fail validation if name already in use", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfNameAlreadyInUse() throws Exception {
 		PersonAttributeType type = new PersonAttributeType();
 		type.setName("Birthplace");
 		
 		Errors errors = new BindException(type, "patObj");
 		new PersonAttributeTypeValidator().validate(type, errors);
 		
-		assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
 	}
 	
 	/**
 	 * @see PersonAttributeTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfAllFieldsAreCorreect() {
+	@Verifies(value = "should pass validation if all fields are correct", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfAllFieldsAreCorreect() throws Exception {
 		PersonAttributeType type = new PersonAttributeType();
 		type.setName("Zodiac");
 		type.setFormat("java.lang.String");
@@ -63,14 +65,15 @@ public class PersonAttributeTypeValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(type, "patObj");
 		new PersonAttributeTypeValidator().validate(type, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see PersonAttributeTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfFormatIsEmpty() {
+	@Verifies(value = "should fail validation if format is empty", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfFormatIsEmpty() throws Exception {
 		PersonAttributeType type = new PersonAttributeType();
 		type.setName("Zodiac");
 		type.setDescription("Zodiac Description");
@@ -78,38 +81,40 @@ public class PersonAttributeTypeValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(type, "patObj");
 		new PersonAttributeTypeValidator().validate(type, errors);
 		
-		assertTrue(errors.hasFieldErrors("format"));
+		Assert.assertTrue(errors.hasFieldErrors("format"));
 	}
 	
 	/**
 	 * @see PersonAttributeTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfDescriptionIsNullOrEmptyOrWhitespace() {
+	@Verifies(value = "should pass validation if description is null or empty or whitespace", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfDescriptionIsNullOrEmptyOrWhitespace() throws Exception {
 		PersonAttributeType type = new PersonAttributeType();
 		type.setName("name");
 		type.setDescription(null);
 		
 		Errors errors = new BindException(type, "type");
 		new PersonAttributeTypeValidator().validate(type, errors);
-		assertFalse(errors.hasFieldErrors("description"));
+		Assert.assertFalse(errors.hasFieldErrors("description"));
 		
 		type.setDescription("");
 		errors = new BindException(type, "type");
 		new PersonAttributeTypeValidator().validate(type, errors);
-		assertFalse(errors.hasFieldErrors("description"));
+		Assert.assertFalse(errors.hasFieldErrors("description"));
 		
 		type.setDescription(" ");
 		errors = new BindException(type, "type");
 		new PersonAttributeTypeValidator().validate(type, errors);
-		assertFalse(errors.hasFieldErrors("description"));
+		Assert.assertFalse(errors.hasFieldErrors("description"));
 	}
 	
 	/**
 	 * @see PersonAttributeTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() {
+	@Verifies(value = "should pass validation if field lengths are correct", method = "validate(Object,Errors)")
+	public void validate_shouldPassValidationIfFieldLengthsAreCorrect() throws Exception {
 		PersonAttributeType type = new PersonAttributeType();
 		type.setName("name");
 		type.setFormat("java.lang.String");
@@ -118,14 +123,15 @@ public class PersonAttributeTypeValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(type, "patObj");
 		new PersonAttributeTypeValidator().validate(type, errors);
 		
-		assertFalse(errors.hasErrors());
+		Assert.assertFalse(errors.hasErrors());
 	}
 	
 	/**
 	 * @see PersonAttributeTypeValidator#validate(Object,Errors)
 	 */
 	@Test
-	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() {
+	@Verifies(value = "should fail validation if field lengths are not correct", method = "validate(Object,Errors)")
+	public void validate_shouldFailValidationIfFieldLengthsAreNotCorrect() throws Exception {
 		PersonAttributeType type = new PersonAttributeType();
 		type
 		        .setName("too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text too long text");
@@ -137,8 +143,8 @@ public class PersonAttributeTypeValidatorTest extends BaseContextSensitiveTest {
 		Errors errors = new BindException(type, "patObj");
 		new PersonAttributeTypeValidator().validate(type, errors);
 		
-		assertTrue(errors.hasFieldErrors("name"));
-		assertTrue(errors.hasFieldErrors("format"));
-		assertTrue(errors.hasFieldErrors("retireReason"));
+		Assert.assertTrue(errors.hasFieldErrors("name"));
+		Assert.assertTrue(errors.hasFieldErrors("format"));
+		Assert.assertTrue(errors.hasFieldErrors("retireReason"));
 	}
 }

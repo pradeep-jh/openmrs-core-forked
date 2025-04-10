@@ -11,13 +11,10 @@ package org.openmrs.hl7.impl;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -27,8 +24,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.Location;
 import org.openmrs.Patient;
 import org.openmrs.PatientIdentifier;
@@ -56,8 +55,6 @@ import org.openmrs.util.OpenmrsConstants;
 import org.openmrs.util.OpenmrsUtil;
 import org.openmrs.util.PrivilegeConstants;
 import org.openmrs.validator.PatientIdentifierValidator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
 import ca.uhn.hl7v2.HL7Exception;
@@ -85,7 +82,7 @@ import ca.uhn.hl7v2.parser.GenericParser;
 @Transactional
 public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	
-	private static final Logger log = LoggerFactory.getLogger(HL7ServiceImpl.class);
+	private final Log log = LogFactory.getLog(this.getClass());
 	
 	private static HL7ServiceImpl instance;
 	
@@ -118,7 +115,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#setHL7DAO(org.openmrs.hl7.db.HL7DAO)
 	 */
-	@Override
 	public void setHL7DAO(HL7DAO dao) {
 		this.dao = dao;
 	}
@@ -144,7 +140,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#saveHL7Source(org.openmrs.hl7.HL7Source)
 	 */
-	@Override
 	public HL7Source saveHL7Source(HL7Source hl7Source) throws APIException {
 		if (hl7Source.getCreator() == null) {
 			hl7Source.setCreator(Context.getAuthenticatedUser());
@@ -159,7 +154,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#purgeHL7Source(org.openmrs.hl7.HL7Source)
 	 */
-	@Override
 	public void purgeHL7Source(HL7Source hl7Source) throws APIException {
 		dao.deleteHL7Source(hl7Source);
 	}
@@ -167,7 +161,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#retireHL7Source(org.openmrs.hl7.HL7Source)
 	 */
-	@Override
 	public HL7Source retireHL7Source(HL7Source hl7Source) throws APIException {
 		throw new APIException("general.not.yet.implemented", (Object[]) null);
 	}
@@ -175,7 +168,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#getHL7Source(java.lang.Integer)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public HL7Source getHL7Source(Integer hl7SourceId) {
 		return dao.getHL7Source(hl7SourceId);
@@ -184,7 +176,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#getAllHL7Sources()
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<HL7Source> getAllHL7Sources() throws APIException {
 		return dao.getAllHL7Sources();
@@ -193,7 +184,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#getHL7SourceByName(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public HL7Source getHL7SourceByName(String name) throws APIException {
 		return dao.getHL7SourceByName(name);
@@ -202,7 +192,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#getAllHL7InQueues()
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<HL7InQueue> getAllHL7InQueues() throws APIException {
 		return dao.getAllHL7InQueues();
@@ -266,7 +255,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#purgeHL7InQueue(org.openmrs.hl7.HL7InQueue)
 	 */
-	@Override
 	public void purgeHL7InQueue(HL7InQueue hl7InQueue) {
 		dao.deleteHL7InQueue(hl7InQueue);
 	}
@@ -274,7 +262,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#saveHL7InQueue(org.openmrs.hl7.HL7InQueue)
 	 */
-	@Override
 	public HL7InQueue saveHL7InQueue(HL7InQueue hl7InQueue) throws APIException {
 		if (hl7InQueue.getDateCreated() == null) {
 			hl7InQueue.setDateCreated(new Date());
@@ -290,7 +277,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#getHL7InQueue(java.lang.Integer)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public HL7InQueue getHL7InQueue(Integer hl7InQueueId) {
 		return dao.getHL7InQueue(hl7InQueueId);
@@ -305,7 +291,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#getNextHL7InQueue()
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public HL7InQueue getNextHL7InQueue() {
 		return dao.getNextHL7InQueue();
@@ -314,7 +299,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#getHL7InArchiveByState(java.lang.Integer)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<HL7InArchive> getHL7InArchiveByState(Integer state) throws APIException {
 		return dao.getHL7InArchiveByState(state);
@@ -323,7 +307,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#getHL7InQueueByState(java.lang.Integer)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<HL7InQueue> getHL7InQueueByState(Integer state) throws APIException {
 		return dao.getHL7InQueueByState(state);
@@ -332,7 +315,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#getAllHL7InArchives()
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<HL7InArchive> getAllHL7InArchives() throws APIException {
 		return dao.getAllHL7InArchives();
@@ -341,7 +323,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#purgeHL7InArchive(org.openmrs.hl7.HL7InArchive)
 	 */
-	@Override
 	public void purgeHL7InArchive(HL7InArchive hl7InArchive) throws APIException {
 		if (hl7InArchive != null) {
 			dao.deleteHL7InArchive(hl7InArchive);
@@ -351,7 +332,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#saveHL7InArchive(org.openmrs.hl7.HL7InArchive)
 	 */
-	@Override
 	public HL7InArchive saveHL7InArchive(HL7InArchive hl7InArchive) throws APIException {
 		if (hl7InArchive.getDateCreated() == null) {
 			hl7InArchive.setDateCreated(new Date());
@@ -362,7 +342,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#getHL7InArchive(java.lang.Integer)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public HL7InArchive getHL7InArchive(Integer hl7InArchiveId) {
 		return dao.getHL7InArchive(hl7InArchiveId);
@@ -378,7 +357,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#getAllHL7InErrors()
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<HL7InError> getAllHL7InErrors() throws APIException {
 		return dao.getAllHL7InErrors();
@@ -387,7 +365,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#purgeHL7InError(org.openmrs.hl7.HL7InError)
 	 */
-	@Override
 	public void purgeHL7InError(HL7InError hl7InError) throws APIException {
 		dao.deleteHL7InError(hl7InError);
 	}
@@ -395,7 +372,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#saveHL7InError(org.openmrs.hl7.HL7InError)
 	 */
-	@Override
 	public HL7InError saveHL7InError(HL7InError hl7InError) throws APIException {
 		if (hl7InError.getDateCreated() == null) {
 			hl7InError.setDateCreated(new Date());
@@ -406,7 +382,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#getHL7InError(java.lang.Integer)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public HL7InError getHL7InError(Integer hl7InErrorId) {
 		return dao.getHL7InError(hl7InErrorId);
@@ -425,8 +400,9 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
  	 * @return error string. User can not be resolveUserId
  	 */
  	private String getFindingUserErrorMessage(String idNum, String fName, String gName) {
-	    return "Error resolving user with id '" + idNum + "' family name '" + fName
-			      + "' and given name '" + gName + "'";
+ 		String cantFindUser = "Error resolving user with id '" + idNum + "' family name '" + fName
+ 				  + "' and given name '" + gName + "'";
+ 		return cantFindUser;
  	}
 	
 	/**
@@ -435,14 +411,23 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	 * @return Internal ID # of the specified user, or null if that user can't be found or is
 	 *         ambiguous
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public Integer resolveUserId(XCN xcn) throws HL7Exception {
 		String idNumber = xcn.getIDNumber().getValue();
 		String familyName = xcn.getFamilyName().getSurname().getValue();
 		String givenName = xcn.getGivenName().getValue();
 		
+		// unused
+		// String assigningAuthority = xcn.getAssigningAuthority()
+		// .getUniversalID().getValue();
+		
+		/*
+		 * if ("null".equals(familyName)) familyName = null; if
+		 * ("null".equals(givenName)) givenName = null; if
+		 * ("null".equals(assigningAuthority)) assigningAuthority = null;
+		 */
 		if (idNumber != null && idNumber.length() > 0) {
+			// log.debug("searching for user by id " + idNumber);
 			try {
 				Integer userId = Integer.valueOf(idNumber);
 				User user = Context.getUserService().getUser(userId);
@@ -453,6 +438,7 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 				return null;
 			}
 		} else {
+			// log.debug("searching for user by name");
 			try {
 				List<User> users = Context.getUserService().getUsersByName(givenName,familyName,true);
 				if (users.size() == 1) {
@@ -463,7 +449,7 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 					log.error(getFindingUserErrorMessage(idNumber, familyName, givenName) + ": Found " + users.size() + " ambiguous users.");
 					return null;
 				}
-				else {
+				else { // size == 0
 					// legacy behavior is looking up by username
 					StringBuilder username = new StringBuilder();
 					if (familyName != null) {
@@ -494,7 +480,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#resolvePersonId(ca.uhn.hl7v2.model.v25.datatype.XCN)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public Integer resolvePersonId(XCN xcn) throws HL7Exception {
 		String idNumber = xcn.getIDNumber().getValue();
@@ -529,7 +514,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	 * @return internal identifier of the specified location, or null if it is not found or
 	 *         ambiguous
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public Integer resolveLocationId(PL pl) throws HL7Exception {
 		// TODO: Get rid of hack that allows first component to be an integer
@@ -573,11 +557,10 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	 *         patient is not found, or if the PID segment is ambiguous
 	 * @throws HL7Exception
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public Integer resolvePatientId(PID pid) throws HL7Exception {
 		Person p = resolvePersonFromIdentifiers(pid.getPatientIdentifierList());
-		if (p != null && p.getIsPatient()) {
+		if (p != null && p.isPatient()) {
 			return p.getPersonId();
 		}
 		return null;
@@ -589,7 +572,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	 *         if the patient is not found
 	 * @throws HL7Exception
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public Person resolvePersonFromIdentifiers(CX[] identifiers) throws HL7Exception {
 		// TODO: Properly handle assigning authority. If specified it's
@@ -603,6 +585,9 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 		
 		// TODO other potential identifying characteristics in PID we could use
 		// to identify the patient
+		// XPN[] patientName = pid.getPersonName();
+		// String gender = pid.getAdministrativeSex().getValue();
+		// TS dateOfBirth = pid.getDateTimeOfBirth();
 		
 		// Take the first uniquely matching identifier
 		for (CX identifier : identifiers) {
@@ -660,6 +645,7 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 					if (matchingIds == null || matchingIds.isEmpty()) {
 						// no matches
 						log.warn("NO matches found for " + hl7PersonId);
+						continue; // try next identifier
 					} else if (matchingIds.size() == 1) {
 						// unique match -- we're done
 						return matchingIds.get(0).getPatient();
@@ -667,11 +653,13 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 						// ambiguous identifier
 						log.debug("Ambiguous identifier in PID. " + matchingIds.size() + " matches for identifier '"
 						        + hl7PersonId + "' of type '" + pit + "'");
+						continue; // try next identifier
 					}
 				}
 				catch (Exception e) {
 					log.error("Error resolving patient identifier '" + hl7PersonId + "' for assigning authority '"
 					        + assigningAuthority + "'", e);
+					continue;
 				}
 			} else {
 				try {
@@ -691,7 +679,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#garbageCollect()
 	 */
-	@Override
 	public void garbageCollect() {
 		dao.garbageCollect();
 	}
@@ -699,7 +686,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#processHL7InQueue(org.openmrs.hl7.HL7InQueue)
 	 */
-	@Override
 	public HL7InQueue processHL7InQueue(HL7InQueue hl7InQueue) throws HL7Exception {
 		
 		if (hl7InQueue == null) {
@@ -714,7 +700,10 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 			hl7InQueue.setMessageState(HL7Constants.HL7_STATUS_PROCESSING);
 		}
 		
-		log.debug("Processing HL7 inbound queue (id={},key={})", hl7InQueue.getHL7InQueueId(), hl7InQueue.getHL7SourceKey());
+		if (log.isDebugEnabled()) {
+			log.debug("Processing HL7 inbound queue (id=" + hl7InQueue.getHL7InQueueId() + ",key="
+			        + hl7InQueue.getHL7SourceKey() + ")");
+		}
 		
 		// Parse the HL7 into an HL7Message or abort with failure
 		String hl7Message = hl7InQueue.getHL7Data();
@@ -775,7 +764,7 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 		if (cause == null) {
 			hl7InError.setErrorDetails("");
 		} else {
-			log.error("Fatal error", cause);
+			log.error(cause);
 			hl7InError.setErrorDetails(ExceptionUtils.getStackTrace(cause));
 		}
 		Context.getHL7Service().saveHL7InError(hl7InError);
@@ -786,7 +775,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#parseHL7String(String)
 	 */
-	@Override
 	public Message parseHL7String(String hl7Message) throws HL7Exception {
 		// Any pre-parsing for HL7 messages would go here
 		// or a module can use AOP to pre-parse the message
@@ -799,7 +787,7 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 		catch (EncodingNotSupportedException e) {
 			throw new HL7Exception("HL7 encoding not supported", e);
 		}
-		catch (HL7Exception e) {
+		catch (ca.uhn.hl7v2.HL7Exception e) {
 			throw new HL7Exception("Error parsing message", e);
 		}
 		
@@ -821,7 +809,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#processHL7Message(ca.uhn.hl7v2.model.Message)
 	 */
-	@Override
 	public Message processHL7Message(Message message) throws HL7Exception {
 		// Any post-parsing (pre-routing) processing would go here
 		// or a module can use AOP to do the post-parsing
@@ -869,7 +856,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#createPersonFromNK1(ca.uhn.hl7v2.model.v25.segment.NK1)
 	 */
-	@Override
 	public Person createPersonFromNK1(NK1 nk1) throws HL7Exception {
 		// NOTE: following block (with minor modifications) stolen from
 		// ADTA28Handler
@@ -886,7 +872,7 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 		person.setUuid(uuid);
 		
 		// Patient Identifiers
-		List<PatientIdentifier> goodIdentifiers = new ArrayList<>();
+		List<PatientIdentifier> goodIdentifiers = new ArrayList<PatientIdentifier>();
 		for (CX id : identifiers) {
 			
 			String assigningAuthority = id.getAssigningAuthority().getNamespaceID().getValue();
@@ -931,6 +917,7 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 				}
 			} else {
 				log.debug("NK1 contains identifier with no assigning authority");
+				continue;
 			}
 		}
 		if (!goodIdentifiers.isEmpty()) {
@@ -959,7 +946,7 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 			throw new HL7Exception("Missing gender in an NK1 segment");
 		}
 		gender = gender.toUpperCase();
-		if (!OpenmrsConstants.GENDERS.contains(gender)) {
+		if (!OpenmrsConstants.GENDER().containsKey(gender)) {
 			throw new HL7Exception("Unrecognized gender: " + gender);
 		}
 		person.setGender(gender);
@@ -995,9 +982,8 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#getUuidFromIdentifiers(ca.uhn.hl7v2.model.v25.datatype.CX[])
 	 */
-	@Override
 	public String getUuidFromIdentifiers(CX[] identifiers) throws HL7Exception {
-		boolean found = false;
+		Boolean found = false;
 		String uuid = null;
 		for (CX identifier : identifiers) {
 			// check for UUID as the assigning authority
@@ -1017,7 +1003,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#loadHL7InArchiveData(List)
 	 */
-	@Override
 	public void loadHL7InArchiveData(List<HL7InArchive> archives) throws APIException {
 		for (HL7InArchive archive : archives) {
 			loadHL7InArchiveData(archive);
@@ -1027,7 +1012,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#loadHL7InArchiveData(HL7InArchive)
 	 */
-	@Override
 	public void loadHL7InArchiveData(HL7InArchive archive) throws APIException {
 		// quit early if there is no archive to work with
 		if (archive == null) {
@@ -1054,7 +1038,6 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 	/**
 	 * @see org.openmrs.hl7.HL7Service#migrateHl7InArchivesToFileSystem(Map)
 	 */
-	@Override
 	public void migrateHl7InArchivesToFileSystem(Map<String, Integer> progressStatusMap) throws APIException {
 		int numberTransferred = 0;
 		int numberOfFailedTransfers = 0;
@@ -1085,7 +1068,9 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 			hl7InArchives = getHL7InArchivesToMigrate();
 		}
 		
-		log.debug("Transfer of HL7 archives has completed or has been stopped");
+		if (log.isDebugEnabled()) {
+			log.debug("Transfer of HL7 archives has completed or has been stopped");
+		}
 	}
 	
 	/**
@@ -1157,7 +1142,7 @@ public class HL7ServiceImpl extends BaseOpenmrsService implements HL7Service {
 			        + ".txt");
 			
 			//write the hl7 data to the file
-			writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(fileToWriteTo), StandardCharsets.UTF_8));
+			writer = new PrintWriter(fileToWriteTo);
 			writer.write(hl7InArchive.getHL7Data());
 			
 			//check if there was an error while writing to the current file

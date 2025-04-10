@@ -9,17 +9,15 @@
  */
 package org.openmrs.customdatatype.datatype;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 import org.openmrs.customdatatype.InvalidCustomValueException;
 
 public class RegexValidatedTextTest {
 	
 	RegexValidatedTextDatatype datatype;
 	
-	@BeforeEach
+	@Before
 	public void before() {
 		datatype = new RegexValidatedTextDatatype();
 		datatype.setConfiguration("[a-z]+");
@@ -27,25 +25,28 @@ public class RegexValidatedTextTest {
 	
 	/**
 	 * @see RegexValidatedTextDatatype#validate(String)
+	 * @verifies accept a string that matches the regex
 	 */
 	@Test
-	public void validate_shouldAcceptAStringThatMatchesTheRegex() {
+	public void validate_shouldAcceptAStringThatMatchesTheRegex() throws Exception {
 		datatype.validate("thisisgood");
 	}
 	
 	/**
 	 * @see RegexValidatedTextDatatype#validate(String)
+	 * @verifies fail if the string does not match the regex
 	 */
-	@Test
-	public void validate_shouldFailIfTheStringDoesNotMatchTheRegex() {
-		assertThrows(InvalidCustomValueException.class, () -> datatype.validate("spaces not allowed"));
+	@Test(expected = InvalidCustomValueException.class)
+	public void validate_shouldFailIfTheStringDoesNotMatchTheRegex() throws Exception {
+		datatype.validate("spaces not allowed");
 	}
 	
 	/**
 	 * @see RegexValidatedTextDatatype#save(String, String))
+	 * @verifies fail if the string does not match the regex
 	 */
-	@Test
-	public void toPersistentString_shouldFailIfTheStringDoesNotMatchTheRegex() {
-		assertThrows(InvalidCustomValueException.class, () -> datatype.save("spaces not allowed", null));
+	@Test(expected = InvalidCustomValueException.class)
+	public void toPersistentString_shouldFailIfTheStringDoesNotMatchTheRegex() throws Exception {
+		datatype.save("spaces not allowed", null);
 	}
 }

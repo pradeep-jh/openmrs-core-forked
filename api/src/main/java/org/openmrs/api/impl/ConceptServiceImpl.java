@@ -9,9 +9,11 @@
  */
 package org.openmrs.api.impl;
 
-import java.lang.reflect.Field;
+import static org.apache.commons.lang.StringUtils.contains;
+
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -23,12 +25,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Vector;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
-import org.hibernate.Hibernate;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.Concept;
 import org.openmrs.ConceptAnswer;
 import org.openmrs.ConceptAttribute;
@@ -43,7 +45,6 @@ import org.openmrs.ConceptName;
 import org.openmrs.ConceptNameTag;
 import org.openmrs.ConceptNumeric;
 import org.openmrs.ConceptProposal;
-import org.openmrs.ConceptReferenceRange;
 import org.openmrs.ConceptReferenceTerm;
 import org.openmrs.ConceptReferenceTermMap;
 import org.openmrs.ConceptSearchResult;
@@ -67,11 +68,8 @@ import org.openmrs.customdatatype.CustomDatatypeUtil;
 import org.openmrs.util.OpenmrsConstants;
 import org.openmrs.util.OpenmrsUtil;
 import org.openmrs.validator.ValidateUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 /**
  * Default Implementation of ConceptService service layer classes
@@ -81,7 +79,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptService {
 	
-	private static final Logger log = LoggerFactory.getLogger(ConceptServiceImpl.class);
+	private final Log log = LogFactory.getLog(getClass());
 	
 	private ConceptDAO dao;
 	
@@ -91,31 +89,34 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	
 	private static Concept unknownConcept;
 
-	private static final String ERROR_MESSAGE = "Error generated";
-
-	private static final String CONCEPT_IDS_BY_MAPPING_CACHE_NAME = "conceptIdsByMapping";
-
+	private static final String errorMessage = "Error generated";
+	
 	/**
 	 * @see org.openmrs.api.ConceptService#setConceptDAO(org.openmrs.api.db.ConceptDAO)
 	 */
-	@Override
 	public void setConceptDAO(ConceptDAO dao) {
 		this.dao = dao;
 	}
-
+		
 	/**
 	 * @see org.openmrs.api.ConceptService#saveConcept(org.openmrs.Concept)
-	 * <strong>Should</strong> return the concept with new conceptID if creating new concept
-	 * <strong>Should</strong> return the concept with same conceptID if updating existing concept
-	 * <strong>Should</strong> leave preferred name preferred if set
-	 * <strong>Should</strong> set default preferred name to fully specified first
-	 * <strong>Should</strong> not set default preferred name to short or index terms
-     * <strong>Should</strong> force set flag if set members exist
+	 * @should return the concept with new conceptID if creating new concept
+	 * @should return the concept with same conceptID if updating existing concept
+	 * @should leave preferred name preferred if set
+	 * @should set default preferred name to fully specified first
+	 * @should not set default preferred name to short or index terms
+         * @should force set flag if set members exist
 	 */
-	@Override
-	@CacheEvict(value = CONCEPT_IDS_BY_MAPPING_CACHE_NAME, allEntries = true)
 	public Concept saveConcept(Concept concept) throws APIException {
-		ensureConceptMapTypeIsSet(concept);
+		ConceptMapType defaultConceptMapType = null;
+		for (ConceptMap map : concept.getConceptMappings()) {
+			if (map.getConceptMapType() == null) {
+				if (defaultConceptMapType == null) {
+					defaultConceptMapType = Context.getConceptService().getDefaultConceptMapType();
+				}
+				map.setConceptMapType(defaultConceptMapType);
+			}
+		}
 
 		CustomDatatypeUtil.saveAttributesIfNecessary(concept);
 
@@ -127,7 +128,7 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 		Map<String, ConceptName> uuidClonedConceptNameMap = null;
 		
 		if (concept.getConceptId() != null) {
-			uuidClonedConceptNameMap = new HashMap<>();
+			uuidClonedConceptNameMap = new HashMap<String, ConceptName>();
 			for (ConceptName conceptName : concept.getNames()) {
 				// ignore newly added names
 				if (conceptName.getConceptNameId() != null) {
@@ -137,7 +138,7 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 					
 					if (hasNameChanged(conceptName)) {
 						if (changedConceptNames == null) {
-							changedConceptNames = new ArrayList<>();
+							changedConceptNames = new ArrayList<ConceptName>();
 						}
 						changedConceptNames.add(conceptName);
 					} else {
@@ -147,8 +148,11 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 						try {
 							BeanUtils.copyProperties(conceptName, clone);
 						}
-						catch (IllegalAccessException | InvocationTargetException e) {
-							log.error(ERROR_MESSAGE, e);
+						catch (IllegalAccessException e) {
+							log.error(errorMessage, e);
+						}
+						catch (InvocationTargetException e) {
+							log.error(errorMessage, e);
 						}
 					}
 				}
@@ -158,80 +162,50 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 		if (CollectionUtils.isNotEmpty(changedConceptNames)) {
 			for (ConceptName changedName : changedConceptNames) {
 				// void old concept name
-				changedName.setVoided(true);
-				changedName.setDateVoided(new Date());
-				changedName.setVoidedBy(Context.getAuthenticatedUser());
-				changedName.setVoidReason(Context.getMessageSourceService().getMessage("Concept.name.voidReason.nameChanged"));
-
-				makeVoidedNameSynonym(changedName);
-				makeLocaleNotPreferred(changedName);
+				ConceptName nameInDB = changedName;
+				nameInDB.setVoided(true);
+				nameInDB.setDateVoided(new Date());
+				nameInDB.setVoidedBy(Context.getAuthenticatedUser());
+				nameInDB.setVoidReason(Context.getMessageSourceService().getMessage("Concept.name.voidReason.nameChanged"));
+				
+				// Make the voided name a synonym, this would help to avoid
+				// having multiple fully specified or preferred
+				// names in a locale in case the name is unvoided
+				if (!nameInDB.isSynonym()) {
+					nameInDB.setConceptNameType(null);
+				}
+				if (nameInDB.isLocalePreferred()) {
+					nameInDB.setLocalePreferred(false);
+				}
 				
 				// create a new concept name from the matching cloned
 				// conceptName
-				ConceptName clone = uuidClonedConceptNameMap.get(changedName.getUuid());
+				ConceptName clone = uuidClonedConceptNameMap.get(nameInDB.getUuid());
 				clone.setUuid(UUID.randomUUID().toString());
 				clone.setDateCreated(null);
 				clone.setCreator(null);
 				concept.addName(clone);
 			}
 		}
-		ensurePreferredNameForLocale(concept);
-		logConceptChangedData(concept);
 		
-		// force isSet when concept has members
-		if (!concept.getSet() && (!concept.getSetMembers().isEmpty())) {
-			concept.setSet(true);
-		}
-
-		return dao.saveConcept(concept);
-	}
-
-	private void ensureConceptMapTypeIsSet(Concept concept) {
-		ConceptMapType defaultConceptMapType = null;
-		for (ConceptMap map : concept.getConceptMappings()) {
-			if (map.getConceptMapType() == null) {
-				if (defaultConceptMapType == null) {
-					defaultConceptMapType = Context.getConceptService().getDefaultConceptMapType();
-				}
-				map.setConceptMapType(defaultConceptMapType);
-			}
-		}
-	}
-
-	private void makeVoidedNameSynonym(ConceptName conceptName) {
-		// Helps to avoid having  multiple fully
-		// specified or preferred names in a locale
-		// in case the name is unvoided
-		if (!conceptName.isSynonym()) {
-			conceptName.setConceptNameType(null);
-		}
-	}
-
-	private void makeLocaleNotPreferred(ConceptName conceptName) {
-		if (conceptName.getLocalePreferred()) {
-			conceptName.setLocalePreferred(false);
-		}
-	}
-
-	private void ensurePreferredNameForLocale(Concept concept) {
 		//Ensure if there's a name for a locale that at least one suitable name is marked preferred in that locale
 		//Order of preference is:
 		// 1) any name that concept.getPreferredName returns
 		// 2) fully specified name
 		// 3) any synonym
 		// short name and index terms are never preferred.
-
-		Set<Locale> checkedLocales = new HashSet<>();
+		
+		Set<Locale> checkedLocales = new HashSet<Locale>();
 		for (ConceptName n : concept.getNames()) {
 			Locale locale = n.getLocale();
 			if (checkedLocales.contains(locale)) {
 				continue; //we've already checked this locale
 			}
-
+			
 			//getPreferredName(locale) returns any name marked preferred,
 			//or the fullySpecifiedName even if not marked preferred
 			ConceptName possiblePreferredName = concept.getPreferredName(locale);
-
+			
 			if (possiblePreferredName != null) {
 				//do nothing yet, but stick around to setLocalePreferred(true)
 			} else if (concept.getFullySpecifiedName(locale) != null) {
@@ -240,23 +214,30 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 				concept.getSynonyms(locale).iterator().next().setLocalePreferred(true);
 			}
 			//index terms are never used as preferred name
-
+			
 			if (possiblePreferredName != null) { //there may have been none
 				possiblePreferredName.setLocalePreferred(true);
 			}
 			checkedLocales.add(locale);
 		}
-	}
-
-	private void logConceptChangedData(Concept concept) {
+		
+		//See TRUNK-3337 for why we set changed by and date changed every time we save a concept.
 		concept.setDateChanged(new Date());
 		concept.setChangedBy(Context.getAuthenticatedUser());
-	}
+		
+		// force isSet when concept has members
+		if (!concept.isSet() && (!concept.getSetMembers().isEmpty())) {
+                    concept.setSet(true);
+		}
 
+		Concept conceptToReturn = dao.saveConcept(concept);
+		
+		return conceptToReturn;
+	}
+	
 	/**
 	 * @see org.openmrs.api.ConceptService#saveDrug(org.openmrs.Drug)
 	 */
-	@Override
 	public Drug saveDrug(Drug drug) throws APIException {
 		checkIfLocked();
 		return dao.saveDrug(drug);
@@ -265,7 +246,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#purgeConcept(Concept)
 	 */
-	@Override
 	public void purgeConcept(Concept concept) throws APIException {
 		checkIfLocked();
 		
@@ -285,19 +265,19 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#retireConcept(org.openmrs.Concept, java.lang.String)
 	 */
-	@Override
 	public Concept retireConcept(Concept concept, String reason) throws APIException {
-		if (StringUtils.isBlank(reason)) {
+		if (!StringUtils.hasText(reason)) {
 			throw new IllegalArgumentException(Context.getMessageSourceService().getMessage("general.voidReason.empty"));
 		}
 		
 		// only do this if the concept isn't retired already
-		if (!concept.getRetired()) {
+		if (!concept.isRetired()) {
 			checkIfLocked();
 			
 			concept.setRetired(true);
 			concept.setRetireReason(reason);
-			return Context.getConceptService().saveConcept(concept);
+			return dao.saveConcept(concept);
+			
 		}
 		
 		return concept;
@@ -307,7 +287,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	 * @see org.openmrs.api.ConceptService#retireDrug(org.openmrs.Drug, java.lang.String)
 	 * @throws APIException
 	 */
-	@Override
 	public Drug retireDrug(Drug drug, String reason) throws APIException {
 		return dao.saveDrug(drug);
 	}
@@ -315,16 +294,14 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#unretireDrug(org.openmrs.Drug)
 	 */
-	@Override
 	public Drug unretireDrug(Drug drug) throws APIException {
-		return Context.getConceptService().saveDrug(drug);
+		return dao.saveDrug(drug);
 	}
 	
 	/**
 	 * @see org.openmrs.api.ConceptService#purgeDrug(org.openmrs.Drug)
 	 * @throws APIException
 	 */
-	@Override
 	public void purgeDrug(Drug drug) throws APIException {
 		dao.purgeDrug(drug);
 	}
@@ -332,69 +309,14 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConcept(java.lang.Integer)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public Concept getConcept(Integer conceptId) throws APIException {
 		return dao.getConcept(conceptId);
-	}
-
-	/**
-	 * @see org.openmrs.api.ConceptService#getConceptByReference(String conceptRef)
-	 */
-	@Override
-	@Transactional(readOnly = true)
-	public Concept getConceptByReference(String conceptRef) {
-		if (StringUtils.isBlank(conceptRef)) {
-			return null;
-		}
-		Concept cpt = null;
-		//check if input is a valid Uuid
-		if (isValidUuidFormat(conceptRef)) {
-			cpt = Context.getConceptService().getConceptByUuid(conceptRef);
-			if (cpt != null) {
-				return cpt;
-			}
-		}
-		//handle mapping
-		int idx = conceptRef.indexOf(":");
-		if (idx >= 0 && idx < conceptRef.length() - 1) {
-			String conceptSource = conceptRef.substring(0, idx);
-			String conceptCode = conceptRef.substring(idx + 1);
-			cpt = Context.getConceptService().getConceptByMapping(conceptCode, conceptSource);
-			if (cpt != null) {
-				return cpt;
-			}
-		}
-		//handle id
-		int conceptId = NumberUtils.toInt(conceptRef, -1);
-		if (conceptId >= 0) {
-			cpt = Context.getConceptService().getConcept(conceptId);
-			if (cpt != null) {
-				return cpt;
-			}
-		} else {
-			//handle name
-			cpt = Context.getConceptService().getConceptByName(conceptRef);
-			if (cpt != null) {
-				return cpt;
-			}
-		}
-		//handle static constant
-		if (conceptRef.contains(".")) {
-			try {
-				return getConceptByReference(evaluateStaticConstant(conceptRef));
-			}
-			catch (APIException e) {
-				log.warn("Unable to translate '{}' into a concept", conceptRef, e);
-			}
-		}
-		return cpt == null ? null : cpt;
 	}
 	
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptName(java.lang.Integer)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptName getConceptName(Integer conceptNameId) throws APIException {
 		return dao.getConceptName(conceptNameId);
@@ -403,7 +325,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptAnswer(java.lang.Integer)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptAnswer getConceptAnswer(Integer conceptAnswerId) throws APIException {
 		return dao.getConceptAnswer(conceptAnswerId);
@@ -412,7 +333,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getDrug(java.lang.Integer)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public Drug getDrug(Integer drugId) throws APIException {
 		return dao.getDrug(drugId);
@@ -421,7 +341,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptNumeric(java.lang.Integer)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptNumeric getConceptNumeric(Integer conceptId) throws APIException {
 		return dao.getConceptNumeric(conceptId);
@@ -430,7 +349,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptComplex(java.lang.Integer)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptComplex getConceptComplex(Integer conceptId) {
 		return dao.getConceptComplex(conceptId);
@@ -439,7 +357,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getAllConcepts()
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<Concept> getAllConcepts() throws APIException {
 		return Context.getConceptService().getAllConcepts(null, true, true);
@@ -448,18 +365,18 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getAllConcepts(java.lang.String, boolean, boolean)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<Concept> getAllConcepts(String sortBy, boolean asc, boolean includeRetired) throws APIException {
-		String tmpSortBy = sortBy == null ? "conceptId" : sortBy;
+		if (sortBy == null) {
+			sortBy = "conceptId";
+		}
 		
-		return dao.getAllConcepts(tmpSortBy, asc, includeRetired);
+		return dao.getAllConcepts(sortBy, asc, includeRetired);
 	}
 
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptsByName(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<Concept> getConceptsByName(String name) throws APIException {
 		return getConcepts(name, Context.getLocale(), true, null, null);
@@ -468,10 +385,9 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptByName(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public Concept getConceptByName(String name) {
-		if (StringUtils.isBlank(name)) {
+		if (!StringUtils.hasText(name)) {
 			return null;
 		}
 		return dao.getConceptByName(name);
@@ -480,11 +396,10 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConcept(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public Concept getConcept(String conceptIdOrName) {
-		Concept c;
-		Integer conceptId;
+		Concept c = null;
+		Integer conceptId = null;
 		try {
 			conceptId = Integer.valueOf(conceptIdOrName);
 		}
@@ -510,19 +425,22 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	 */
 	private List<Concept> getConcepts(String name, Locale loc, boolean searchOnPhrase, List<ConceptClass> classes,
 	        List<ConceptDatatype> datatypes) {
-		List<ConceptClass> tmpClasses = classes == null ? new ArrayList<>() : classes;
-		List<ConceptDatatype> tmpDatatypes = datatypes == null ? new ArrayList<>() : datatypes;
+		if (classes == null) {
+			classes = new Vector<ConceptClass>();
+		}
+		if (datatypes == null) {
+			datatypes = new Vector<ConceptDatatype>();
+		}
 		
-		return dao.getConcepts(name, loc, searchOnPhrase, tmpClasses, tmpDatatypes);
+		return dao.getConcepts(name, loc, searchOnPhrase, classes, datatypes);
 	}
 	
 	/**
 	 * @see org.openmrs.api.ConceptService#getDrug(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public Drug getDrug(String drugNameOrId) {
-		Integer drugId;
+		Integer drugId = null;
 		
 		try {
 			drugId = Integer.valueOf(drugNameOrId);
@@ -548,7 +466,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getAllDrugs()
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<Drug> getAllDrugs() {
 		return Context.getConceptService().getAllDrugs(true);
@@ -557,7 +474,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getAllDrugs(boolean)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<Drug> getAllDrugs(boolean includeRetired) {
 		return dao.getDrugs(null, null, includeRetired);
@@ -566,7 +482,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getDrugsByConcept(org.openmrs.Concept)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<Drug> getDrugsByConcept(Concept concept) {
 		return dao.getDrugs(null, concept, false);
@@ -575,10 +490,9 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getDrugs(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<Drug> getDrugs(String phrase) {
-		List<Drug> drugs = new ArrayList<>();
+		List<Drug> drugs = new ArrayList<Drug>();
 		// trying to treat search phrase as drug id
 		try {
 			Integer drugId = Integer.parseInt(phrase);
@@ -611,16 +525,17 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptsByClass(org.openmrs.ConceptClass)
 	 */
-	@Override
 	@Transactional(readOnly = true)
-	public List<Concept> getConceptsByClass(ConceptClass cc) {		
-		return dao.getConceptsByClass(cc);
+	public List<Concept> getConceptsByClass(ConceptClass cc) {
+		List<ConceptClass> classes = new Vector<ConceptClass>();
+		classes.add(cc);
+		
+		return getConcepts(null, null, false, classes, null);
 	}
 	
 	/**
 	 * @see org.openmrs.api.ConceptService#getAllConceptClasses(boolean)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<ConceptClass> getAllConceptClasses(boolean includeRetired) {
 		return dao.getAllConceptClasses(includeRetired);
@@ -629,7 +544,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptClass(java.lang.Integer)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptClass getConceptClass(Integer i) {
 		return dao.getConceptClass(i);
@@ -638,7 +552,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptClassByName(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptClass getConceptClassByName(String name) {
 		List<ConceptClass> ccList = dao.getConceptClasses(name);
@@ -654,7 +567,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getAllConceptClasses(boolean)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<ConceptClass> getAllConceptClasses() throws APIException {
 		return Context.getConceptService().getAllConceptClasses(true);
@@ -663,7 +575,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#saveConceptClass(org.openmrs.ConceptClass)
 	 */
-	@Override
 	public ConceptClass saveConceptClass(ConceptClass cc) throws APIException {
 		return dao.saveConceptClass(cc);
 	}
@@ -671,7 +582,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#purgeConceptClass(org.openmrs.ConceptClass)
 	 */
-	@Override
 	public void purgeConceptClass(ConceptClass cc) {
 		dao.purgeConceptClass(cc);
 	}
@@ -679,7 +589,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#purgeConceptNameTag(org.openmrs.ConceptNameTag)
 	 */
-	@Override
 	public void purgeConceptNameTag(ConceptNameTag cnt) {
 		dao.deleteConceptNameTag(cnt);
 	}
@@ -687,7 +596,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getAllConceptDatatypes()
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<ConceptDatatype> getAllConceptDatatypes() {
 		return Context.getConceptService().getAllConceptDatatypes(true);
@@ -696,7 +604,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getAllConceptDatatypes(boolean)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<ConceptDatatype> getAllConceptDatatypes(boolean includeRetired) throws APIException {
 		return dao.getAllConceptDatatypes(includeRetired);
@@ -705,7 +612,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptDatatype(java.lang.Integer)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptDatatype getConceptDatatype(Integer i) {
 		return dao.getConceptDatatype(i);
@@ -714,7 +620,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptDatatypeByName(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptDatatype getConceptDatatypeByName(String name) {
 		return dao.getConceptDatatypeByName(name);
@@ -723,20 +628,18 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptSetsByConcept(org.openmrs.Concept)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<ConceptSet> getConceptSetsByConcept(Concept concept) throws APIException {
 		return dao.getConceptSetsByConcept(concept);
 	}
 	
 	/**
-	 * @see org.openmrs.api.ConceptService#getConceptsByConceptSet(Concept)
+	 * @see org.openmrs.api.ConceptService#getConceptsInSet(org.openmrs.Concept)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<Concept> getConceptsByConceptSet(Concept c) {
-		Set<Integer> alreadySeen = new HashSet<>();
-		List<Concept> ret = new ArrayList<>();
+		Set<Integer> alreadySeen = new HashSet<Integer>();
+		List<Concept> ret = new ArrayList<Concept>();
 		explodeConceptSetHelper(c, ret, alreadySeen);
 		return ret;
 	}
@@ -744,7 +647,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getSetsContainingConcept(org.openmrs.Concept)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<ConceptSet> getSetsContainingConcept(Concept concept) {
 		if (concept.getConceptId() == null) {
@@ -757,7 +659,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptProposal(java.lang.Integer)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptProposal getConceptProposal(Integer conceptProposalId) {
 		return dao.getConceptProposal(conceptProposalId);
@@ -766,7 +667,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getAllConceptProposals(boolean)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<ConceptProposal> getAllConceptProposals(boolean includeCompleted) {
 		return dao.getAllConceptProposals(includeCompleted);
@@ -775,7 +675,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptProposals(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<ConceptProposal> getConceptProposals(String cp) {
 		return dao.getConceptProposals(cp);
@@ -784,7 +683,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getProposedConcepts(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<Concept> getProposedConcepts(String text) {
 		return dao.getProposedConcepts(text);
@@ -793,7 +691,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#saveConceptProposal(org.openmrs.ConceptProposal)
 	 */
-	@Override
 	public ConceptProposal saveConceptProposal(ConceptProposal conceptProposal) throws APIException {
 		return dao.saveConceptProposal(conceptProposal);
 	}
@@ -801,7 +698,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#purgeConceptProposal(org.openmrs.ConceptProposal)
 	 */
-	@Override
 	public void purgeConceptProposal(ConceptProposal cp) throws APIException {
 		dao.purgeConceptProposal(cp);
 	}
@@ -809,7 +705,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#mapConceptProposalToConcept(ConceptProposal, Concept, Locale)
 	 */
-	@Override
 	public Concept mapConceptProposalToConcept(ConceptProposal cp, Concept mappedConcept, Locale locale) throws APIException {
 		
 		if (cp.getState().equals(OpenmrsConstants.CONCEPT_PROPOSAL_REJECT)) {
@@ -823,7 +718,7 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 		}
 		
 		ConceptName conceptName = null;
-		if (cp.getState().equals(OpenmrsConstants.CONCEPT_PROPOSAL_CONCEPT) || StringUtils.isBlank(cp.getFinalText())) {
+		if (cp.getState().equals(OpenmrsConstants.CONCEPT_PROPOSAL_CONCEPT) || !StringUtils.hasText(cp.getFinalText())) {
 			cp.setState(OpenmrsConstants.CONCEPT_PROPOSAL_CONCEPT);
 			cp.setFinalText("");
 		} else if (cp.getState().equals(OpenmrsConstants.CONCEPT_PROPOSAL_SYNONYM)) {
@@ -876,7 +771,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	 * @see org.openmrs.api.ConceptService#mapConceptProposalToConcept(org.openmrs.ConceptProposal,
 	 *      org.openmrs.Concept)
 	 */
-	@Override
 	public Concept mapConceptProposalToConcept(ConceptProposal cp, Concept mappedConcept) throws APIException {
 		return Context.getConceptService().mapConceptProposalToConcept(cp, mappedConcept, null);
 	}
@@ -884,7 +778,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptsByAnswer(org.openmrs.Concept)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<Concept> getConceptsByAnswer(Concept concept) throws APIException {
 		if (concept.getConceptId() == null) {
@@ -897,7 +790,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getPrevConcept(org.openmrs.Concept)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public Concept getPrevConcept(Concept c) {
 		return dao.getPrevConcept(c);
@@ -906,7 +798,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getNextConcept(org.openmrs.Concept)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public Concept getNextConcept(Concept c) {
 		return dao.getNextConcept(c);
@@ -915,7 +806,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#checkIfLocked()
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public void checkIfLocked() throws ConceptsLockedException {
 		String locked = Context.getAdministrationService().getGlobalProperty(
@@ -928,7 +818,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptsWithDrugsInFormulary()
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<Concept> getConceptsWithDrugsInFormulary() {
 		return dao.getConceptsWithDrugsInFormulary();
@@ -937,7 +826,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see ConceptService#getMaxConceptId()
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public Integer getMaxConceptId() {
 		return dao.getMaxConceptId();
@@ -958,7 +846,7 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 		List<ConceptSet> cs = getConceptSetsByConcept(concept);
 		for (ConceptSet set : cs) {
 			Concept c = set.getConcept();
-			if (c.getSet()) {
+			if (c.isSet()) {
 				ret.add(c);
 				explodeConceptSetHelper(c, ret, alreadySeen);
 			} else {
@@ -970,7 +858,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptNameTagByName(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptNameTag getConceptNameTagByName(String tagName) {
 		return dao.getConceptNameTagByName(tagName);
@@ -979,7 +866,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getLocalesOfConceptNames()
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public Set<Locale> getLocalesOfConceptNames() {
 		return dao.getLocalesOfConceptNames();
@@ -988,7 +874,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptSource(java.lang.Integer)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptSource getConceptSource(Integer conceptSourceId) {
 		return dao.getConceptSource(conceptSourceId);
@@ -997,7 +882,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getAllConceptSources(boolean)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<ConceptSource> getAllConceptSources(boolean includeRetired) {
 		return dao.getAllConceptSources(includeRetired);
@@ -1006,26 +890,22 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#purgeConceptSource(org.openmrs.ConceptSource)
 	 */
-	@Override
-	@CacheEvict(value = CONCEPT_IDS_BY_MAPPING_CACHE_NAME, allEntries = true)
 	public ConceptSource purgeConceptSource(ConceptSource cs) throws APIException {
+		
 		return dao.deleteConceptSource(cs);
 	}
 	
 	/**
 	 * @see org.openmrs.api.ConceptService#retireConceptSource(org.openmrs.ConceptSource, String)
 	 */
-	@Override
 	public ConceptSource retireConceptSource(ConceptSource cs, String reason) throws APIException {
 		// retireReason is automatically set in BaseRetireHandler
-		return Context.getConceptService().saveConceptSource(cs);
+		return dao.saveConceptSource(cs);
 	}
 	
 	/**
 	 * @see org.openmrs.api.ConceptService#saveConceptSource(org.openmrs.ConceptSource)
 	 */
-	@Override
-	@CacheEvict(value = CONCEPT_IDS_BY_MAPPING_CACHE_NAME, allEntries = true)
 	public ConceptSource saveConceptSource(ConceptSource conceptSource) throws APIException {
 		return dao.saveConceptSource(conceptSource);
 	}
@@ -1033,7 +913,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#saveConceptNameTag(org.openmrs.ConceptNameTag)
 	 */
-	@Override
 	public ConceptNameTag saveConceptNameTag(ConceptNameTag nameTag) {
 		checkIfLocked();
 		
@@ -1043,7 +922,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#conceptIterator()
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public Iterator<Concept> conceptIterator() {
 		return dao.conceptIterator();
@@ -1052,7 +930,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptByUuid(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public Concept getConceptByUuid(String uuid) {
 		return dao.getConceptByUuid(uuid);
@@ -1061,30 +938,25 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptClassByUuid(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptClass getConceptClassByUuid(String uuid) {
 		return dao.getConceptClassByUuid(uuid);
 	}
 	
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptAnswer getConceptAnswerByUuid(String uuid) {
 		return dao.getConceptAnswerByUuid(uuid);
 	}
 	
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptName getConceptNameByUuid(String uuid) {
 		return dao.getConceptNameByUuid(uuid);
 	}
 	
-	@Override
 	public ConceptSet getConceptSetByUuid(String uuid) {
 		return dao.getConceptSetByUuid(uuid);
 	}
 	
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptSource getConceptSourceByUuid(String uuid) {
 		return dao.getConceptSourceByUuid(uuid);
@@ -1093,7 +965,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptDatatypeByUuid(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptDatatype getConceptDatatypeByUuid(String uuid) {
 		return dao.getConceptDatatypeByUuid(uuid);
@@ -1102,7 +973,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptNumericByUuid(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptNumeric getConceptNumericByUuid(String uuid) {
 		return dao.getConceptNumericByUuid(uuid);
@@ -1111,7 +981,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptProposalByUuid(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptProposal getConceptProposalByUuid(String uuid) {
 		return dao.getConceptProposalByUuid(uuid);
@@ -1120,7 +989,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getDrugByUuid(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public Drug getDrugByUuid(String uuid) {
 		return dao.getDrugByUuid(uuid);
@@ -1129,7 +997,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getDrugIngredientByUuid(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public DrugIngredient getDrugIngredientByUuid(String uuid) {
 		return dao.getDrugIngredientByUuid(uuid);
@@ -1138,7 +1005,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptDescriptionByUuid(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptDescription getConceptDescriptionByUuid(String uuid) {
 		return dao.getConceptDescriptionByUuid(uuid);
@@ -1147,7 +1013,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptNameTagByUuid(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptNameTag getConceptNameTagByUuid(String uuid) {
 		return dao.getConceptNameTagByUuid(uuid);
@@ -1156,7 +1021,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getAllConceptNameTags()
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<ConceptNameTag> getAllConceptNameTags() {
 		return dao.getAllConceptNameTags();
@@ -1165,7 +1029,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptNameTag(java.lang.Integer)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptNameTag getConceptNameTag(Integer id) {
 		return dao.getConceptNameTag(id);
@@ -1174,7 +1037,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptByMapping(java.lang.String, java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public Concept getConceptByMapping(String code, String sourceName) throws APIException {
 		return Context.getConceptService().getConceptByMapping(code, sourceName, true);
@@ -1184,7 +1046,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	 * @see org.openmrs.api.ConceptService#getConceptByMapping(java.lang.String, java.lang.String,
 	 *      java.lang.Boolean)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public Concept getConceptByMapping(String code, String sourceName, Boolean includeRetired) throws APIException {
 		List<Concept> concepts = Context.getConceptService().getConceptsByMapping(code, sourceName, includeRetired);
@@ -1196,7 +1057,7 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 		// since the getConceptByMapping DAO method returns a list with all non-retired concept
 		// sorted to the front of the list, we can test if there is more than one retired concept
 		// by testing if the second concept in the list is retired or not
-		else if (concepts.size() > 1 && !concepts.get(1).getRetired()) {
+		else if (concepts.size() > 1 && !concepts.get(1).isRetired()) {
 			throw new APIException("Concept.error.multiple.non.retired", new Object[] { code, sourceName });
 		} else {
 			return concepts.get(0);
@@ -1206,7 +1067,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptsByMapping(java.lang.String, java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<Concept> getConceptsByMapping(String code, String sourceName) throws APIException {
 		return Context.getConceptService().getConceptsByMapping(code, sourceName, true);
@@ -1215,24 +1075,9 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptsByMapping(java.lang.String, java.lang.String, boolean)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<Concept> getConceptsByMapping(String code, String sourceName, boolean includeRetired) throws APIException {
-		List<Concept> concepts = new ArrayList<>();
-		for (Integer conceptId : Context.getConceptService().getConceptIdsByMapping(code, sourceName, includeRetired)) {
-			concepts.add(getConcept(conceptId));
-		}
-		return concepts;
-	}
-
-	/**
-	 * @see org.openmrs.api.ConceptService#getConceptIdsByMapping(java.lang.String, java.lang.String, boolean)
-	 */
-	@Override
-	@Transactional(readOnly = true)
-	@Cacheable(value = CONCEPT_IDS_BY_MAPPING_CACHE_NAME)
-	public List<Integer> getConceptIdsByMapping(String code, String sourceName, boolean includeRetired) throws APIException {
-		return dao.getConceptIdsByMapping(code, sourceName, includeRetired);
+		return dao.getConceptsByMapping(code, sourceName, includeRetired);
 	}
 	
 	/**
@@ -1269,12 +1114,9 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	public Concept getUnknownConcept() {
 		if (unknownConcept == null) {
 			try {
-				Concept unknownConcept = Context.getConceptService().getConcept(
-					Integer.parseInt(Context.getAdministrationService().getGlobalProperty(
-						OpenmrsConstants.GLOBAL_PROPERTY_UNKNOWN_CONCEPT)));
-				initializeLazyPropertiesForConcept(unknownConcept);
-				
-				ConceptServiceImpl.setStaticUnknownConcept(unknownConcept);
+				ConceptServiceImpl.setStaticUnknownConcept(Context.getConceptService().getConcept(
+				    Integer.parseInt(Context.getAdministrationService().getGlobalProperty(
+				        OpenmrsConstants.GLOBAL_PROPERTY_UNKNOWN_CONCEPT))));
 			}
 			catch (NumberFormatException e) {
 				log.warn("Concept id for unknown concept should be a number");
@@ -1302,34 +1144,19 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 			trueConcept = Context.getConceptService().getConcept(
 			    Integer.parseInt(Context.getAdministrationService().getGlobalProperty(
 			        OpenmrsConstants.GLOBAL_PROPERTY_TRUE_CONCEPT)));
-			initializeLazyPropertiesForConcept(trueConcept);
-			
 			falseConcept = Context.getConceptService().getConcept(
 			    Integer.parseInt(Context.getAdministrationService().getGlobalProperty(
 			        OpenmrsConstants.GLOBAL_PROPERTY_FALSE_CONCEPT)));
-			initializeLazyPropertiesForConcept(falseConcept);
 		}
 		catch (NumberFormatException e) {
 			log.warn("Concept ids for boolean concepts should be numbers");
+			return;
 		}
 	}
-
-	private void initializeLazyPropertiesForConcept(Concept concept) {
-		Hibernate.initialize(concept.getRetiredBy());
-		Hibernate.initialize(concept.getCreator());
-		Hibernate.initialize(concept.getChangedBy());
-		Hibernate.initialize(concept.getNames());
-		Hibernate.initialize(concept.getAnswers());
-		Hibernate.initialize(concept.getConceptSets());
-		Hibernate.initialize(concept.getDescriptions());
-		Hibernate.initialize(concept.getConceptMappings());
-		Hibernate.initialize(concept.getAttributes());
-	}
-
+	
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptSourceByName(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptSource getConceptSourceByName(String conceptSourceName) throws APIException {
 		return dao.getConceptSourceByName(conceptSourceName);
@@ -1338,7 +1165,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptSourceByUniqueId(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptSource getConceptSourceByUniqueId(String uniqueId) throws APIException {
 		if (uniqueId == null) {
@@ -1350,7 +1176,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptSourceByHL7Code(java.lang.String)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public ConceptSource getConceptSourceByHL7Code(String hl7Code) throws APIException {
 		if (hl7Code == null) {
@@ -1374,7 +1199,9 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 			if (!(dao.getSavedConceptDatatype(concept).isBoolean() && concept.getDatatype().isCoded())) {
 				throw new ConceptInUseException();
 			}
-			log.debug("Converting datatype of concept with id {} from Boolean to coded", concept.getConceptId());
+			if (log.isDebugEnabled()) {
+				log.debug("Converting datatype of concept with id " + concept.getConceptId() + " from Boolean to Coded");
+			}
 		}
 	}
 	
@@ -1393,10 +1220,9 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#hasAnyObservation(org.openmrs.Concept)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public boolean hasAnyObservation(Concept concept) {
-		List<Concept> concepts = new ArrayList<>();
+		List<Concept> concepts = new Vector<Concept>();
 		concepts.add(concept);
 		Integer count = Context.getObsService().getObservationCount(null, null, concepts, null, null, null, null, null,
 		    null, true);
@@ -1426,7 +1252,7 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	@Override
 	@Transactional(readOnly = true)
 	public boolean hasAnyObservation(ConceptName conceptName) throws APIException {
-		List<ConceptName> conceptNames = new ArrayList<>();
+		List<ConceptName> conceptNames = new Vector<ConceptName>();
 		conceptNames.add(conceptName);
 		Integer count = Context.getObsService().getObservationCount(conceptNames, true);
 		return count > 0;
@@ -1456,9 +1282,21 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 		try {
 			copy = (ConceptName) BeanUtils.cloneBean(conceptName);
 		}
-		catch (IllegalAccessException | NoSuchMethodException | InvocationTargetException | InstantiationException e) {
+		catch (IllegalAccessException e) {
 			
-			log.warn(ERROR_MESSAGE, e);
+			log.warn(errorMessage, e);
+		}
+		catch (InstantiationException e) {
+			
+			log.warn(errorMessage, e);
+		}
+		catch (InvocationTargetException e) {
+			
+			log.warn(errorMessage, e);
+		}
+		catch (NoSuchMethodException e) {
+			
+			log.warn(errorMessage, e);
 		}
 		return copy;
 	}
@@ -1469,15 +1307,16 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	@Override
 	@Transactional(readOnly = true)
 	public List<ConceptSearchResult> findConceptAnswers(String phrase, Locale locale, Concept concept) throws APIException {
-
-		return getConcepts(phrase, Collections.singletonList(locale), false, null, null, null, null,
+		
+		List<ConceptSearchResult> concepts = getConcepts(phrase, Arrays.asList(locale), false, null, null, null, null,
 		    concept, null, null);
+		
+		return concepts;
 	}
 	
 	/**
 	 * @see org.openmrs.api.ConceptService#getConceptStopWords(java.util.Locale)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<String> getConceptStopWords(Locale locale) {
 		return dao.getConceptStopWords(locale);
@@ -1486,7 +1325,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#saveConceptStopWord(org.openmrs.ConceptStopWord)
 	 */
-	@Override
 	public ConceptStopWord saveConceptStopWord(ConceptStopWord conceptStopWord) throws APIException {
 		try {
 			return dao.saveConceptStopWord(conceptStopWord);
@@ -1502,13 +1340,12 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#deleteConceptStopWord(Integer)
 	 */
-	@Override
 	public void deleteConceptStopWord(Integer conceptStopWordId) throws APIException {
 		try {
 			dao.deleteConceptStopWord(conceptStopWordId);
 		}
 		catch (DAOException e) {
-			if (StringUtils.contains(e.getMessage(), "Concept Stop Word not found or already deleted")) {
+			if (contains(e.getMessage(), "Concept Stop Word not found or already deleted")) {
 				throw new ConceptStopWordException("ConceptStopWord.error.notfound", e);
 			}
 			throw new ConceptStopWordException("general.cannot.delete", e);
@@ -1518,7 +1355,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see org.openmrs.api.ConceptService#getAllConceptStopWords()
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<ConceptStopWord> getAllConceptStopWords() {
 		return dao.getAllConceptStopWords();
@@ -1534,14 +1370,22 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	        List<ConceptClass> requireClasses, List<ConceptClass> excludeClasses, List<ConceptDatatype> requireDatatypes,
 	        List<ConceptDatatype> excludeDatatypes, Concept answersToConcept, Integer start, Integer size)
 	        throws APIException {
-
-		List<ConceptClass> tmpRequireClasses = requireClasses == null ? new ArrayList<>() : requireClasses;
-		List<ConceptClass> tmpExcludeClasses = excludeClasses == null ? new ArrayList<>() : excludeClasses;
-		List<ConceptDatatype> tmpRequireDatatypes = requireDatatypes == null ? new ArrayList<>() : requireDatatypes;
-		List<ConceptDatatype> tmpExcludeDatatypes = excludeDatatypes == null ? new ArrayList<>() : excludeDatatypes;
 		
-		return dao.getConcepts(phrase, locales, includeRetired, tmpRequireClasses, tmpExcludeClasses, tmpRequireDatatypes,
-		    tmpExcludeDatatypes, answersToConcept, start, size);
+		if (requireClasses == null) {
+			requireClasses = new Vector<ConceptClass>();
+		}
+		if (excludeClasses == null) {
+			excludeClasses = new Vector<ConceptClass>();
+		}
+		if (requireDatatypes == null) {
+			requireDatatypes = new Vector<ConceptDatatype>();
+		}
+		if (excludeDatatypes == null) {
+			excludeDatatypes = new Vector<ConceptDatatype>();
+		}
+		
+		return dao.getConcepts(phrase, locales, includeRetired, requireClasses, excludeClasses, requireDatatypes,
+		    excludeDatatypes, answersToConcept, start, size);
 		
 	}
 	
@@ -1557,7 +1401,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	 * @see ConceptService#updateConceptIndexes()
 	 */
 	@Override
-	@CacheEvict(value = CONCEPT_IDS_BY_MAPPING_CACHE_NAME, allEntries = true)
 	public void updateConceptIndexes() throws APIException {
 		Context.updateSearchIndexForType(ConceptName.class);
 	}
@@ -1571,20 +1414,26 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	public Integer getCountOfConcepts(String phrase, List<Locale> locales, boolean includeRetired,
 	        List<ConceptClass> requireClasses, List<ConceptClass> excludeClasses, List<ConceptDatatype> requireDatatypes,
 	        List<ConceptDatatype> excludeDatatypes, Concept answersToConcept) {
-
-		List<ConceptClass> tmpRequireClasses = requireClasses == null ? new ArrayList<>() : requireClasses;
-		List<ConceptClass> tmpExcludeClasses = excludeClasses == null ? new ArrayList<>() : excludeClasses;
-		List<ConceptDatatype> tmpRequireDatatypes = requireDatatypes == null ? new ArrayList<>() : requireDatatypes;
-		List<ConceptDatatype> tmpExcludeDatatypes = excludeDatatypes == null ? new ArrayList<>() : excludeDatatypes;
+		if (requireClasses == null) {
+			requireClasses = new Vector<ConceptClass>();
+		}
+		if (excludeClasses == null) {
+			excludeClasses = new Vector<ConceptClass>();
+		}
+		if (requireDatatypes == null) {
+			requireDatatypes = new Vector<ConceptDatatype>();
+		}
+		if (excludeDatatypes == null) {
+			excludeDatatypes = new Vector<ConceptDatatype>();
+		}
 		
-		return dao.getCountOfConcepts(phrase, locales, includeRetired, tmpRequireClasses, tmpExcludeClasses, tmpRequireDatatypes,
-		    tmpExcludeDatatypes, answersToConcept);
+		return dao.getCountOfConcepts(phrase, locales, includeRetired, requireClasses, excludeClasses, requireDatatypes,
+		    excludeDatatypes, answersToConcept);
 	}
 	
 	/**
 	 * @see ConceptService#getCountOfDrugs(String, Concept, boolean, boolean, boolean)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public Integer getCountOfDrugs(String drugName, Concept concept, boolean searchOnPhrase, boolean searchDrugConceptNames,
 	        boolean includeRetired) throws APIException {
@@ -1595,7 +1444,6 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	/**
 	 * @see ConceptService#getDrugs(String, Concept, boolean, boolean, boolean, Integer, Integer)
 	 */
-	@Override
 	@Transactional(readOnly = true)
 	public List<Drug> getDrugs(String drugName, Concept concept, boolean searchOnPhrase, boolean searchDrugConceptNames,
 	        boolean includeRetired, Integer start, Integer length) throws APIException {
@@ -1608,7 +1456,7 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	@Override
 	@Transactional(readOnly = true)
 	public List<ConceptSearchResult> getConcepts(String phrase, Locale locale, boolean includeRetired) throws APIException {
-		List<Locale> locales = new ArrayList<>();
+		List<Locale> locales = new Vector<Locale>();
 		if (locale != null) {
 			locales.add(locale);
 		}
@@ -1698,11 +1546,10 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	 */
 	@Override
 	public ConceptMapType retireConceptMapType(ConceptMapType conceptMapType, String retireReason) throws APIException {
-		String tmpRetireReason = retireReason;
-		if (StringUtils.isBlank(tmpRetireReason)) {
-			tmpRetireReason = Context.getMessageSourceService().getMessage("general.default.retireReason");
+		if (!StringUtils.hasText(retireReason)) {
+			retireReason = Context.getMessageSourceService().getMessage("general.default.retireReason");
 		}
-		conceptMapType.setRetireReason(tmpRetireReason);
+		conceptMapType.setRetireReason(retireReason);
 		return dao.saveConceptMapType(conceptMapType);
 	}
 	
@@ -1711,7 +1558,7 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	 */
 	@Override
 	public ConceptMapType unretireConceptMapType(ConceptMapType conceptMapType) throws APIException {
-		return Context.getConceptService().saveConceptMapType(conceptMapType);
+		return dao.saveConceptMapType(conceptMapType);
 	}
 	
 	/**
@@ -1771,7 +1618,7 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 		//On addition of extra attributes to concept maps, terms that were generated from existing maps have 
 		//empty string values for the name property, ignore the search when name is an empty string but allow 
 		//white space characters
-		if (StringUtils.isBlank(name)) {
+		if (!StringUtils.hasLength(name)) {
 			return null;
 		}
 		return dao.getConceptReferenceTermByName(name, conceptSource);
@@ -1786,18 +1633,11 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	public ConceptReferenceTerm getConceptReferenceTermByCode(String code, ConceptSource conceptSource) throws APIException {
 		return dao.getConceptReferenceTermByCode(code, conceptSource);
 	}
-
-	@Override
-	@Transactional(readOnly = true)
-	public List<ConceptReferenceTerm> getConceptReferenceTermByCode(String code, ConceptSource conceptSource, boolean includeRetired) throws APIException {
-		return dao.getConceptReferenceTermByCode(code, conceptSource, includeRetired);
-	}
-
+	
 	/**
 	 * @see org.openmrs.api.ConceptService#saveConceptReferenceTerm(org.openmrs.ConceptReferenceTerm)
 	 */
 	@Override
-	@CacheEvict(value = CONCEPT_IDS_BY_MAPPING_CACHE_NAME, allEntries = true)
 	public ConceptReferenceTerm saveConceptReferenceTerm(ConceptReferenceTerm conceptReferenceTerm) throws APIException {
 		return dao.saveConceptReferenceTerm(conceptReferenceTerm);
 	}
@@ -1808,12 +1648,11 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	@Override
 	public ConceptReferenceTerm retireConceptReferenceTerm(ConceptReferenceTerm conceptReferenceTerm, String retireReason)
 	        throws APIException {
-		String tmpRetireReason = retireReason;
-		if (StringUtils.isBlank(tmpRetireReason)) {
-			tmpRetireReason = Context.getMessageSourceService().getMessage("general.default.retireReason");
+		if (!StringUtils.hasText(retireReason)) {
+			retireReason = Context.getMessageSourceService().getMessage("general.default.retireReason");
 		}
-		conceptReferenceTerm.setRetireReason(tmpRetireReason);
-		return Context.getConceptService().saveConceptReferenceTerm(conceptReferenceTerm);
+		conceptReferenceTerm.setRetireReason(retireReason);
+		return dao.saveConceptReferenceTerm(conceptReferenceTerm);
 	}
 	
 	/**
@@ -1821,14 +1660,13 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	 */
 	@Override
 	public ConceptReferenceTerm unretireConceptReferenceTerm(ConceptReferenceTerm conceptReferenceTerm) throws APIException {
-		return Context.getConceptService().saveConceptReferenceTerm(conceptReferenceTerm);
+		return dao.saveConceptReferenceTerm(conceptReferenceTerm);
 	}
 	
 	/**
 	 * @see org.openmrs.api.ConceptService#purgeConceptReferenceTerm(org.openmrs.ConceptReferenceTerm)
 	 */
 	@Override
-	@CacheEvict(value = CONCEPT_IDS_BY_MAPPING_CACHE_NAME, allEntries = true)
 	public void purgeConceptReferenceTerm(ConceptReferenceTerm conceptReferenceTerm) throws APIException {
 		if (dao.isConceptReferenceTermInUse(conceptReferenceTerm)) {
 			throw new APIException("ConceptRefereceTerm.inUse", (Object[]) null);
@@ -1844,11 +1682,10 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	@Transactional(readOnly = true)
 	public List<ConceptReferenceTerm> getConceptReferenceTerms(String query, ConceptSource conceptSource, Integer start,
 	        Integer length, boolean includeRetired) throws APIException {
-		Integer tmpLength = length;
-		if (tmpLength == null) {
-			tmpLength = 10000;
+		if (length == null) {
+			length = 10000;
 		}
-		return dao.getConceptReferenceTerms(query, conceptSource, start, tmpLength, includeRetired);
+		return dao.getConceptReferenceTerms(query, conceptSource, start, length, includeRetired);
 	}
 	
 	/**
@@ -1919,13 +1756,14 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	@Transactional(readOnly = true)
 	public List<Drug> getDrugsByMapping(String code, ConceptSource conceptSource,
 	        Collection<ConceptMapType> withAnyOfTheseTypes, boolean includeRetired) throws APIException {
-		Collection<ConceptMapType> tmpWithAnyOfTheseTypes = withAnyOfTheseTypes == null ? Collections.emptyList() : withAnyOfTheseTypes;
-
+		
 		if (conceptSource == null) {
 			throw new APIException("ConceptSource.is.required", (Object[]) null);
 		}
-
-		return dao.getDrugsByMapping(code, conceptSource, tmpWithAnyOfTheseTypes, includeRetired);
+		if (withAnyOfTheseTypes == null) {
+			withAnyOfTheseTypes = Collections.emptyList();
+		}
+		return dao.getDrugsByMapping(code, conceptSource, withAnyOfTheseTypes, includeRetired);
 	}
 	
 	/**
@@ -1935,14 +1773,13 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	@Transactional(readOnly = true)
 	public Drug getDrugByMapping(String code, ConceptSource conceptSource,
 	        Collection<ConceptMapType> withAnyOfTheseTypesOrOrderOfPreference) throws APIException {
-		Collection<ConceptMapType> tmpWithAnyOfTheseTypesOrOrderOfPreference = withAnyOfTheseTypesOrOrderOfPreference == null
-				? Collections.emptyList() : withAnyOfTheseTypesOrOrderOfPreference;
-
 		if (conceptSource == null) {
 			throw new APIException("ConceptSource.is.required", (Object[]) null);
 		}
-
-		return dao.getDrugByMapping(code, conceptSource, tmpWithAnyOfTheseTypesOrOrderOfPreference);
+		if (withAnyOfTheseTypesOrOrderOfPreference == null) {
+			withAnyOfTheseTypesOrOrderOfPreference = Collections.emptyList();
+		}
+		return dao.getDrugByMapping(code, conceptSource, withAnyOfTheseTypesOrOrderOfPreference);
 	}
 	
 	/**
@@ -1957,13 +1794,12 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 		if (mappedClasses.isEmpty()) {
 			return Collections.emptyList();
 		}
-		List<Locale> tmpLocales = locales;
-		if (tmpLocales == null) {
-			tmpLocales = new ArrayList<>();
-			tmpLocales.add(Context.getLocale());
+		if (locales == null) {
+			locales = new ArrayList<Locale>();
+			locales.add(Context.getLocale());
 		}
-		return dao.getConcepts(phrase, tmpLocales, false, mappedClasses, Collections.emptyList(), Collections.emptyList(),
-		    Collections.emptyList(), null, start, length);
+		return dao.getConcepts(phrase, locales, false, mappedClasses, (List) Collections.emptyList(), (List) Collections
+		        .emptyList(), (List) Collections.emptyList(), null, start, length);
 	}
 
 	/**
@@ -2041,7 +1877,7 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 	 */
 	@Override
 	public ConceptAttributeType unretireConceptAttributeType(ConceptAttributeType conceptAttributeType) {
-		return Context.getConceptService().saveConceptAttributeType(conceptAttributeType);
+		return dao.saveConceptAttributeType(conceptAttributeType);
 	}
 
 	/**
@@ -2062,66 +1898,8 @@ public class ConceptServiceImpl extends BaseOpenmrsService implements ConceptSer
 		return dao.getConceptAttributeCount(conceptAttributeType) > 0;
 	}
 
-	/**
-	 * @see ConceptService#saveConceptReferenceRange(ConceptReferenceRange)
-	 */
-	@Override
-	public ConceptReferenceRange saveConceptReferenceRange(ConceptReferenceRange conceptReferenceRange) {
-		return dao.saveConceptReferenceRange(conceptReferenceRange);
-	}
-
-	/**
-	 * @see ConceptService#getConceptReferenceRangesByConceptId(Integer)
-	 */
-	@Override
-	@Transactional(readOnly = true)
-	public List<ConceptReferenceRange> getConceptReferenceRangesByConceptId(Integer conceptId) {
-		return dao.getConceptReferenceRangesByConceptId(conceptId);
-	}
-
-	@Override
-	public ConceptReferenceRange getConceptReferenceRangeByUuid(String uuid) {
-		return dao.getConceptReferenceRangeByUuid(uuid);
-	}
-
-	/***
-	 * Determines if the passed string is in valid uuid format By OpenMRS standards, a uuid must be 36
-	 * characters in length and not contain whitespace, but we do not enforce that a uuid be in the
-	 * "canonical" form, with alphanumerics seperated by dashes, since the MVP dictionary does not use
-	 * this format (We also are being slightly lenient and accepting uuids that are 37 or 38 characters
-	 * in length, since the uuid data field is 38 characters long)
-	 */
-	public static boolean isValidUuidFormat(String uuid) {
-		if (uuid.length() < 36 || uuid.length() > 38 || uuid.contains(" ") || uuid.contains(".")) {
-			return false;
-		}
-		return true;
-	}
-
-	/**
-	 * Evaluates the specified Java constant using reflection: if input is org.openmrs.CLASS_NAME.CONSTANT_NAME
-	 * then, output will be CONSTANT_NAME
-	 * @param fqn the fully qualified name of the constant
-	 * @return the constant value or null
-	 */
-	private static String evaluateStaticConstant(String fqn) {
-		int lastPeriod = fqn.lastIndexOf(".");
-		String clazzName = fqn.substring(0, lastPeriod);
-		String constantName = fqn.substring(lastPeriod + 1);
-		try {
-			Class<?> clazz = Context.loadClass(clazzName);
-			Field constantField = clazz.getDeclaredField(constantName);
-			constantField.setAccessible(true);
-			Object val = constantField.get(null);
-			return val != null ? String.valueOf(val) : null;
-		}
-		catch (Exception ex) {
-			throw new APIException("Error while evaluating " + fqn + " as a constant" , ex);
-		}
-	}
-	
 	private List<ConceptClass> getConceptClassesOfOrderTypes() {
-		List<ConceptClass> mappedClasses = new ArrayList<>();
+		List<ConceptClass> mappedClasses = new ArrayList<ConceptClass>();
 		AdministrationService administrationService = Context.getAdministrationService();
 		List<List<Object>> result = administrationService.executeSQL(
 		    "SELECT DISTINCT concept_class_id FROM order_type_class_map", true);

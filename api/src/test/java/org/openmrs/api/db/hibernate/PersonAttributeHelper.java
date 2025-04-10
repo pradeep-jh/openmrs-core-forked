@@ -9,11 +9,11 @@
  */
 package org.openmrs.api.db.hibernate;
 
-import java.util.List;
-
 import org.hibernate.Query;
 import org.hibernate.SessionFactory;
 import org.openmrs.PersonAttribute;
+
+import java.util.List;
 
 public class PersonAttributeHelper {
 	
@@ -31,40 +31,40 @@ public class PersonAttributeHelper {
 	}
 	
 	/**
-	 * <strong>Should</strong> return true if a person attribute exists
+	 * @should return true if a person attribute exists
 	 */
 	public boolean personAttributeExists(String value) {
 		return getPersonAttribute(getPersonAttributeList(QUERY_ALL_PERSON_ATTRIBUTES), value) != null;
 	}
 	
 	/**
-	 * <strong>Should</strong> return true if a voided person attribute exists
+	 * @should return true if a voided person attribute exists
 	 */
 	public boolean voidedPersonAttributeExists(String value) {
 		PersonAttribute personAttribute = getPersonAttribute(getPersonAttributeList(QUERY_ALL_VOIDED_PERSON_ATTRIBUTES),
 		    value);
 		if (personAttribute != null) {
-			return personAttribute.getVoided();
+			return personAttribute.isVoided();
 		}
 		return false;
 	}
 	
 	/**
-	 * <strong>Should</strong> return true if a non-voided person attribute exists
+	 * @should return true if a non-voided person attribute exists
 	 */
 	public boolean nonVoidedPersonAttributeExists(String value) {
 		return personAttributeExists(value) && (!voidedPersonAttributeExists(value));
 	}
 	
 	/**
-	 * <strong>Should</strong> return true if a non-searchable person attribute exists
+	 * @should return true if a non-searchable person attribute exists
 	 */
 	public boolean nonSearchablePersonAttributeExists(String value) {
 		return getPersonAttribute(getPersonAttributeList(QUERY_ALL_NON_SEARCHABLE_PERSON_ATTRIBUTES), value) != null;
 	}
 	
 	/**
-	 * <strong>Should</strong> return true if a searchable person attribute exists
+	 * @should return true if a searchable person attribute exists
 	 */
 	public boolean searchablePersonAttributeExists(String value) {
 		return personAttributeExists(value) && (!nonSearchablePersonAttributeExists(value));

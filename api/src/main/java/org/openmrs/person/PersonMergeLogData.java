@@ -39,15 +39,8 @@ public class PersonMergeLogData {
 	
 	/**
 	 * List of UUIDs of patient programs copied from non-preferred to preferred
-	 * (Deprecated in 2.6.8 and 2.7.0+, as we now move programs)
 	 */
-	@Deprecated
 	private List<String> createdPrograms;
-
-	/**
-	 * List of UUIDs of patient programs moved from non-preferred to preferred
-	 */
-	private List<String> movedPrograms;
 	
 	/**
 	 * List of UUIDs of voided relationships
@@ -138,40 +131,27 @@ public class PersonMergeLogData {
 	
 	public void addMovedVisit(String uuid) {
 		if (movedVisits == null) {
-			movedVisits = new ArrayList<>();
+			movedVisits = new ArrayList<String>();
 		}
 		movedVisits.add(uuid);
 	}
 	
 	public void addMovedEncounter(String uuid) {
 		if (movedEncounters == null) {
-			movedEncounters = new ArrayList<>();
+			movedEncounters = new ArrayList<String>();
 		}
 		movedEncounters.add(uuid);
 	}
 	
-	@Deprecated
 	public List<String> getCreatedPrograms() {
 		return createdPrograms;
 	}
 	
-	@Deprecated
 	public void addCreatedProgram(String uuid) {
 		if (createdPrograms == null) {
-			createdPrograms = new ArrayList<>();
+			createdPrograms = new ArrayList<String>();
 		}
 		createdPrograms.add(uuid);
-	}
-
-	public List<String> getMovedPrograms() {
-		return movedPrograms;
-	}
-
-	public void addMovedProgram(String uuid) {
-		if (movedPrograms == null) {
-			movedPrograms = new ArrayList<>();
-		}
-		movedPrograms.add(uuid);
 	}
 	
 	public List<String> getVoidedRelationships() {
@@ -180,7 +160,7 @@ public class PersonMergeLogData {
 	
 	public void addVoidedRelationship(String uuid) {
 		if (voidedRelationships == null) {
-			voidedRelationships = new ArrayList<>();
+			voidedRelationships = new ArrayList<String>();
 		}
 		voidedRelationships.add(uuid);
 	}
@@ -191,7 +171,7 @@ public class PersonMergeLogData {
 	
 	public void addCreatedRelationship(String uuid) {
 		if (createdRelationships == null) {
-			createdRelationships = new ArrayList<>();
+			createdRelationships = new ArrayList<String>();
 		}
 		createdRelationships.add(uuid);
 	}
@@ -202,7 +182,7 @@ public class PersonMergeLogData {
 	
 	public void addMovedIndependentObservation(String uuid) {
 		if (movedIndependentObservations == null) {
-			movedIndependentObservations = new ArrayList<>();
+			movedIndependentObservations = new ArrayList<String>();
 		}
 		movedIndependentObservations.add(uuid);
 	}
@@ -213,7 +193,7 @@ public class PersonMergeLogData {
 	
 	public void addCreatedOrder(String uuid) {
 		if (createdOrders == null) {
-			createdOrders = new ArrayList<>();
+			createdOrders = new ArrayList<String>();
 		}
 		createdOrders.add(uuid);
 	}
@@ -224,7 +204,7 @@ public class PersonMergeLogData {
 	
 	public void addCreatedIdentifier(String uuid) {
 		if (createdIdentifiers == null) {
-			createdIdentifiers = new ArrayList<>();
+			createdIdentifiers = new ArrayList<String>();
 		}
 		createdIdentifiers.add(uuid);
 	}
@@ -235,7 +215,7 @@ public class PersonMergeLogData {
 	
 	public void addCreatedAddress(String uuid) {
 		if (createdAddresses == null) {
-			createdAddresses = new ArrayList<>();
+			createdAddresses = new ArrayList<String>();
 		}
 		createdAddresses.add(uuid);
 	}
@@ -246,7 +226,7 @@ public class PersonMergeLogData {
 	
 	public void addCreatedName(String uuid) {
 		if (createdNames == null) {
-			createdNames = new ArrayList<>();
+			createdNames = new ArrayList<String>();
 		}
 		createdNames.add(uuid);
 	}
@@ -257,7 +237,7 @@ public class PersonMergeLogData {
 	
 	public void addCreatedAttribute(String uuid) {
 		if (createdAttributes == null) {
-			createdAttributes = new ArrayList<>();
+			createdAttributes = new ArrayList<String>();
 		}
 		createdAttributes.add(uuid);
 	}
@@ -268,7 +248,7 @@ public class PersonMergeLogData {
 	
 	public void addMovedUser(String uuid) {
 		if (movedUsers == null) {
-			movedUsers = new ArrayList<>();
+			movedUsers = new ArrayList<String>();
 		}
 		movedUsers.add(uuid);
 	}
@@ -309,6 +289,7 @@ public class PersonMergeLogData {
 		return priorDateOfDeathEstimated;
 	}
 	
+	//public void setPriorDateOfDeathEstimated(boolean priorDateOfDeathEstimated) {
 	public void setPriorDateOfDeathEstimated(Boolean priorDateOfDeathEstimated) {
 		this.priorDateOfDeathEstimated = priorDateOfDeathEstimated;
 	}
@@ -345,9 +326,6 @@ public class PersonMergeLogData {
 		}
 		if (getCreatedPrograms() != null) {
 			str += getCreatedPrograms().toString();
-		}
-		if (getMovedPrograms() != null) {
-			str += getMovedPrograms().toString();
 		}
 		if (getCreatedRelationships() != null) {
 			str += getCreatedRelationships().toString();

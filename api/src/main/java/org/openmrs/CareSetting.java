@@ -9,8 +9,6 @@
  */
 package org.openmrs;
 
-import org.hibernate.envers.Audited;
-
 /**
  * Care Setting defines the scope of care for any piece of data within the medical record. Clinical
  * data (treatments, notes, etc.) apply within their associated care setting. Implementations
@@ -26,8 +24,7 @@ import org.hibernate.envers.Audited;
  * 
  * @since 1.10
  */
-@Audited
-public class CareSetting extends BaseChangeableOpenmrsMetadata {
+public class CareSetting extends BaseOpenmrsMetadata {
 	
 	public enum CareSettingType {
 		OUTPATIENT,

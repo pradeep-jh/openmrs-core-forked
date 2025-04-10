@@ -16,12 +16,11 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
 import org.openmrs.util.OpenmrsConstants;
-import org.openmrs.util.PrivilegeConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
@@ -32,7 +31,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
  */
 public class GZIPFilter extends OncePerRequestFilter {
 	
-	private static final Logger log = LoggerFactory.getLogger(GZIPFilter.class);
+	private static final Log log = LogFactory.getLog(GZIPFilter.class);
 	
 	private Boolean cachedGZipEnabledFlag = null;
 	
@@ -42,7 +41,6 @@ public class GZIPFilter extends OncePerRequestFilter {
 	 * @see org.springframework.web.filter.OncePerRequestFilter#doFilterInternal(javax.servlet.http.HttpServletRequest,
 	 *      javax.servlet.http.HttpServletResponse, javax.servlet.FilterChain)
 	 */
-	@Override
 	public void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
 	        throws IOException, ServletException {
 		try {
@@ -78,11 +76,15 @@ public class GZIPFilter extends OncePerRequestFilter {
 				throw new APIException("Unsupported Media Type");
 			}
 			
-			log.debug("GZIP request supported");
+			if (log.isDebugEnabled()) {
+				log.debug("GZIP request supported");
+			}
 			
 			try {
 				GZIPRequestWrapper wrapperRequest = new GZIPRequestWrapper(req);
-				log.debug("GZIP request wrapped successfully");
+				if (log.isDebugEnabled()) {
+					log.debug("GZIP request wrapped successfully");
+				}
 				return wrapperRequest;
 			}
 			catch (IOException e) {
@@ -103,7 +105,7 @@ public class GZIPFilter extends OncePerRequestFilter {
 	 */
 	private boolean isGZIPSupported(HttpServletRequest req) {
 		String browserEncodings = req.getHeader("accept-encoding");
-		boolean supported = ((browserEncodings != null) && (browserEncodings.contains("gzip")));
+		boolean supported = ((browserEncodings != null) && (browserEncodings.indexOf("gzip") != -1));
 		
 		String userAgent = req.getHeader("user-agent");
 		
@@ -125,12 +127,11 @@ public class GZIPFilter extends OncePerRequestFilter {
 		}
 		
 		try {
-			Context.addProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
-			
 			String gzipEnabled = Context.getAdministrationService().getGlobalProperty(
 			    OpenmrsConstants.GLOBAL_PROPERTY_GZIP_ENABLED, "");
-
-			cachedGZipEnabledFlag = Boolean.valueOf(gzipEnabled);
+			
+			boolean isEnabled = Boolean.valueOf(gzipEnabled);
+			cachedGZipEnabledFlag = isEnabled;
 			return cachedGZipEnabledFlag;
 		}
 		catch (Exception e) {
@@ -139,9 +140,6 @@ public class GZIPFilter extends OncePerRequestFilter {
 			// before the next request
 			
 			return false;
-		}
-		finally {
-			Context.removeProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
 		}
 	}
 	

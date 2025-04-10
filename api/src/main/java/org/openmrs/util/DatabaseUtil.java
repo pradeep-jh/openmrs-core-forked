@@ -19,10 +19,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.hibernate.Session;
+import org.hibernate.jdbc.Work;
 import org.openmrs.api.db.DAOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
 /**
@@ -31,13 +32,10 @@ import org.springframework.util.StringUtils;
  * @since 1.6
  */
 public class DatabaseUtil {
-
-	private DatabaseUtil() {
-	}
 	
-	private static final Logger log = LoggerFactory.getLogger(DatabaseUtil.class);
+	private final static Log log = LogFactory.getLog(DatabaseUtil.class);
 
-	public static final String ORDER_ENTRY_UPGRADE_SETTINGS_FILENAME = "order_entry_upgrade_settings.txt";
+	public final static String ORDER_ENTRY_UPGRADE_SETTINGS_FILENAME = "order_entry_upgrade_settings.txt";
 
 	/**
 	 * Executes the passed SQL query, enforcing select only if that parameter is set Load the jdbc
@@ -49,7 +47,7 @@ public class DatabaseUtil {
 	 *
 	 * @param connectionUrl the connection url for the database, such as
 	 * "jdbc:mysql://localhost:3306/..."
-	 * @param connectionDriver the database driver class name, such as "com.mysql.cj.jdbc.Driver"
+	 * @param connectionDriver the database driver class name, such as "com.mysql.jdbc.Driver"
 	 * @throws ClassNotFoundException
 	 */
 	public static String loadDatabaseDriver(String connectionUrl, String connectionDriver) throws ClassNotFoundException {
@@ -58,8 +56,8 @@ public class DatabaseUtil {
 			log.debug("set user defined Database driver class: " + connectionDriver);
 		} else {
 			if (connectionUrl.contains("mysql")) {
-				Class.forName("com.mysql.cj.jdbc.Driver");
-				connectionDriver = "com.mysql.cj.jdbc.Driver";
+				Class.forName("com.mysql.jdbc.Driver");
+				connectionDriver = "com.mysql.jdbc.Driver";
 			} else if (connectionUrl.contains("hsqldb")) {
 				Class.forName("org.hsqldb.jdbcDriver");
 				connectionDriver = "org.hsqldb.jdbcDriver";
@@ -88,11 +86,18 @@ public class DatabaseUtil {
 		sql = sql.trim();
 		boolean dataManipulation = checkQueryForManipulationCommands(sql, selectOnly);
 		
-		final List<List<Object>> result = new ArrayList<>();
+		final List<List<Object>> result = new ArrayList<List<Object>>();
 		final String query = sql;
 		final boolean sessionDataManipulation = dataManipulation;
 		
-		session.doWork(conn -> populateResultsFromSQLQuery(conn, query, sessionDataManipulation, result));
+		//todo replace with lambdas after moving on to Java 8
+		session.doWork(new Work() {
+			
+			@Override
+			public void execute(Connection conn) {
+				populateResultsFromSQLQuery(conn, query, sessionDataManipulation, result);
+			}
+		});
 		
 		return result;
 	}
@@ -103,7 +108,7 @@ public class DatabaseUtil {
 	public static List<List<Object>> executeSQL(Connection conn, String sql, boolean selectOnly) throws DAOException {
 		sql = sql.trim();
 		boolean dataManipulation = checkQueryForManipulationCommands(sql, selectOnly);
-		List<List<Object>> result = new ArrayList<>();
+		List<List<Object>> result = new ArrayList<List<Object>>();
 		populateResultsFromSQLQuery(conn, sql, dataManipulation, result);
 		return result;
 	}
@@ -131,7 +136,7 @@ public class DatabaseUtil {
 			ps = conn.prepareStatement(sql);
 			if (dataManipulation) {
 				Integer i = ps.executeUpdate();
-				List<Object> row = new ArrayList<>();
+				List<Object> row = new ArrayList<Object>();
 				row.add(i);
 				results.add(row);
 			} else {
@@ -141,7 +146,7 @@ public class DatabaseUtil {
 				int columnCount = rmd.getColumnCount();
 				
 				while (resultSet.next()) {
-					List<Object> rowObjects = new ArrayList<>();
+					List<Object> rowObjects = new ArrayList<Object>();
 					for (int x = 1; x <= columnCount; x++) {
 						rowObjects.add(resultSet.getObject(x));
 					}
@@ -176,7 +181,7 @@ public class DatabaseUtil {
 	 */
 	public static <T> Set<T> getUniqueNonNullColumnValues(String columnName, String tableName, Class<T> type,
 	        Connection connection) throws Exception {
-		Set<T> uniqueValues = new HashSet<>();
+		Set<T> uniqueValues = new HashSet<T>();
 		final String alias = "unique_values";
 		String select = "SELECT DISTINCT " + columnName + " AS " + alias + " FROM " + tableName + " WHERE " + columnName
 		        + " IS NOT NULL";

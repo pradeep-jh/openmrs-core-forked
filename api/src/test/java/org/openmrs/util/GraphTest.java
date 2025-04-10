@@ -9,12 +9,11 @@
  */
 package org.openmrs.util;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
+import org.openmrs.test.Verifies;
 
 /**
  * Tests the methods on the {@link Graph} class
@@ -26,9 +25,10 @@ public class GraphTest {
 	 * @see Graph#topologicalSort()
 	 */
 	@Test
+	@Verifies(value = "should sort graph in topological order", method = "topologicalSort()")
 	public void topologicalSort_shouldSortGraphInTopologicalOrder() throws CycleException {
 		
-		Graph<String> graph = new Graph<>();
+		Graph<String> graph = new Graph<String>();
 		
 		graph.addNode("E");
 		graph.addNode("D");
@@ -48,21 +48,22 @@ public class GraphTest {
 		                             "D", "E"));
 		
 		List<String> sortedNodes = graph.topologicalSort();
-		assertTrue(sortedNodes.indexOf("A") < sortedNodes.indexOf("B"));
-		assertTrue(sortedNodes.indexOf("A") < sortedNodes.indexOf("C"));
-		assertTrue(sortedNodes.indexOf("B") < sortedNodes.indexOf("C"));
-		assertTrue(sortedNodes.indexOf("B") < sortedNodes.indexOf("D"));
-		assertTrue(sortedNodes.indexOf("D") < sortedNodes.indexOf("E"));
+		Assert.assertTrue(sortedNodes.indexOf("A") < sortedNodes.indexOf("B"));
+		Assert.assertTrue(sortedNodes.indexOf("A") < sortedNodes.indexOf("C"));
+		Assert.assertTrue(sortedNodes.indexOf("B") < sortedNodes.indexOf("C"));
+		Assert.assertTrue(sortedNodes.indexOf("B") < sortedNodes.indexOf("D"));
+		Assert.assertTrue(sortedNodes.indexOf("D") < sortedNodes.indexOf("E"));
 	}
 	
 	/**
 	 * @throws CycleException 
 	 * @see Graph#topologicalSort()
 	 */
-	@Test
+	@Test(expected = CycleException.class)
+	@Verifies(value = "should throw CycleException", method = "topologicalSort()")
 	public void topologicalSort_shouldThrowCycleException() throws CycleException {
 		
-		Graph<String> graph = new Graph<>();
+		Graph<String> graph = new Graph<String>();
 		
 		graph.addNode("E");
 		graph.addNode("D");
@@ -81,7 +82,7 @@ public class GraphTest {
 		graph.addEdge(graph.new Edge(
 		                             "D", "A"));
 		
-		assertThrows(CycleException.class, () -> graph.topologicalSort());
+		graph.topologicalSort();
 	}
 	
 }

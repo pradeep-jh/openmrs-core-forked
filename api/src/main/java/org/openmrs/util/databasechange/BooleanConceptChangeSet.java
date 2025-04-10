@@ -17,10 +17,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.openmrs.util.OpenmrsConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import liquibase.change.custom.CustomTaskChange;
 import liquibase.database.Database;
 import liquibase.database.jvm.JdbcConnection;
@@ -30,21 +26,25 @@ import liquibase.exception.SetupException;
 import liquibase.exception.ValidationErrors;
 import liquibase.resource.ResourceAccessor;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.openmrs.util.OpenmrsConstants;
+
 /**
  * Adds yes/no boolean concepts and changes all boolean obs values to match these concepts
  */
 public class BooleanConceptChangeSet implements CustomTaskChange {
 	
-	private static final Logger log = LoggerFactory.getLogger(BooleanConceptChangeSet.class);
+	private static Log log = LogFactory.getLog(BooleanConceptChangeSet.class);
 	
 	private Integer trueConceptId;
 	
 	private Integer falseConceptId;
 	
 	//string values for boolean concepts
-	private static Map<String, String[]> trueNames = new HashMap<>();
+	private static Map<String, String[]> trueNames = new HashMap<String, String[]>();
 	
-	private static Map<String, String[]> falseNames = new HashMap<>();
+	private static Map<String, String[]> falseNames = new HashMap<String, String[]>();
 	
 	// how to say True and Yes in OpenMRS core languages
 	static {
@@ -152,7 +152,6 @@ public class BooleanConceptChangeSet implements CustomTaskChange {
 					updateStatement.setString(4, name);
 					updateStatement.setString(5, UUID.randomUUID().toString());
 					updateStatement.executeUpdate();
-					updateStatement.close();
 					
 					// Tag the first english name as preferred. This is ugly, but it's not feasible to
 					// fix this before refactoring concept_name_tags.
@@ -161,7 +160,6 @@ public class BooleanConceptChangeSet implements CustomTaskChange {
 						        .prepareStatement("INSERT INTO concept_name_tag_map (concept_name_id, concept_name_tag_id) VALUES (?, 4)");
 						updateStatement.setInt(1, conceptNameId);
 						updateStatement.executeUpdate();
-						updateStatement.close();
 						preferredDoneAlready = true;
 					}
 					
@@ -178,7 +176,10 @@ public class BooleanConceptChangeSet implements CustomTaskChange {
 			
 			return conceptId;
 		}
-		catch (DatabaseException | SQLException e) {
+		catch (DatabaseException e) {
+			throw new CustomChangeException("Unable to create concept with names " + names, e);
+		}
+		catch (SQLException e) {
 			throw new CustomChangeException("Unable to create concept with names " + names, e);
 		}
 		finally {
@@ -210,14 +211,16 @@ public class BooleanConceptChangeSet implements CustomTaskChange {
 			        .prepareStatement("UPDATE obs SET value_coded = ?, value_numeric = NULL WHERE value_numeric != 0 AND concept_id IN (SELECT concept_id FROM concept WHERE datatype_id = 10)");
 			updateStatement.setInt(1, trueConceptId);
 			updateStatement.executeUpdate();
-			updateStatement.close();
 			
 			updateStatement = connection
 			        .prepareStatement("UPDATE obs SET value_coded = ?, value_numeric = NULL WHERE value_numeric = 0 AND concept_id IN (SELECT concept_id FROM concept WHERE datatype_id = 10)");
 			updateStatement.setInt(1, falseConceptId);
 			updateStatement.executeUpdate();
 		}
-		catch (DatabaseException | SQLException e) {
+		catch (DatabaseException e) {
+			throw new CustomChangeException("Unable to change obs", e);
+		}
+		catch (SQLException e) {
 			throw new CustomChangeException("Unable to change obs", e);
 		}
 		finally {
@@ -260,7 +263,11 @@ public class BooleanConceptChangeSet implements CustomTaskChange {
 			updateStatement.setString(4, UUID.randomUUID().toString());
 			updateStatement.executeUpdate();
 		}
-		catch (DatabaseException | SQLException e) {
+		catch (DatabaseException e) {
+			throw new CustomChangeException("Unable to create global properties for concept ids defining boolean concepts",
+			        e);
+		}
+		catch (SQLException e) {
 			throw new CustomChangeException("Unable to create global properties for concept ids defining boolean concepts",
 			        e);
 		}
@@ -302,7 +309,10 @@ public class BooleanConceptChangeSet implements CustomTaskChange {
 			
 			return result;
 		}
-		catch (DatabaseException | SQLException e) {
+		catch (DatabaseException e) {
+			throw new CustomChangeException("Unable to get int", e);
+		}
+		catch (SQLException e) {
 			throw new CustomChangeException("Unable to get int", e);
 		}
 		finally {

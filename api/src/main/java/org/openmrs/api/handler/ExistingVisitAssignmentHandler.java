@@ -41,9 +41,9 @@ public class ExistingVisitAssignmentHandler extends BaseEncounterVisitHandler {
 	
 	/**
 	 * @see org.openmrs.api.handler.EncounterVisitHandler#beforeCreateEncounter(org.openmrs.Encounter)
-	 * <strong>Should</strong> assign existing visit if match found
-	 * <strong>Should</strong> not assign visit if no match found
-	 * <strong>Should</strong> not assign visit which stopped before encounter date
+	 * @should assign existing visit if match found
+	 * @should not assign visit if no match found
+	 * @should not assign visit which stopped before encounter date
 	 */
 	@Override
 	public void beforeCreateEncounter(Encounter encounter) {
@@ -53,7 +53,7 @@ public class ExistingVisitAssignmentHandler extends BaseEncounterVisitHandler {
 			return;
 		}
 		
-		List<Patient> patients = new ArrayList<>();
+		List<Patient> patients = new ArrayList<Patient>();
 		patients.add(encounter.getPatient());
 		
 		//Fetch visits for this patient that haven't ended by the encounter date.

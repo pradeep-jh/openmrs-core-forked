@@ -9,33 +9,13 @@
  */
 package org.openmrs;
 
-import org.apache.commons.lang3.StringUtils;
-import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.envers.Audited;
-import org.hibernate.search.annotations.DocumentId;
+import org.apache.commons.lang.StringUtils;
 import org.hibernate.search.annotations.Field;
-
-import javax.persistence.AttributeOverride;
-import javax.persistence.AttributeOverrides;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Table;
 
 /**
  * PatientIdentifierType
  */
-@Entity
-@Table(name = "patient_identifier_type")
-@Audited
-@AttributeOverrides({
-	@AttributeOverride(name = "name", column = @Column(name = "name", nullable = false, length = 50)),
-	@AttributeOverride(name = "description", column = @Column(name = "description", length = 65535, columnDefinition = "text"))
-})
-public class PatientIdentifierType extends BaseChangeableOpenmrsMetadata {
+public class PatientIdentifierType extends BaseOpenmrsMetadata {
 	
 	public static final long serialVersionUID = 211231L;
 	
@@ -76,33 +56,22 @@ public class PatientIdentifierType extends BaseChangeableOpenmrsMetadata {
 		LOCATION
 	}
 	
-	// Fields
-	@DocumentId
-	@Id
-	@GeneratedValue(generator = "native")
-	@GenericGenerator(name = "native", strategy = "native")
-	@Column(name = "patient_identifier_type_id")
+	// Fields	
 	private Integer patientIdentifierTypeId;
-
-	@Column(name = "format")
+	
 	private String format;
 
 	@Field
-	@Column(name = "required", nullable = false)
 	private Boolean required = Boolean.FALSE;
-
-	@Column(name = "format_description", length = 250)
+	
 	private String formatDescription;
-
-	@Column(name = "validator", length = 200)
+	
+	private Boolean checkDigit = Boolean.FALSE;
+	
 	private String validator;
-
-	@Enumerated(EnumType.STRING)
-	@Column(name = "location_behavior", length = 50)
+	
 	private LocationBehavior locationBehavior;
-
-	@Enumerated(EnumType.STRING)
-	@Column(name = "uniqueness_behavior", length = 50)
+	
 	private UniquenessBehavior uniquenessBehavior;
 	
 	/** default constructor */
@@ -220,7 +189,6 @@ public class PatientIdentifierType extends BaseChangeableOpenmrsMetadata {
 	/** 
 	 * @see java.lang.Object#toString()
 	 */
-	@Override
 	public String toString() {
 		return getName();
 	}
@@ -229,7 +197,6 @@ public class PatientIdentifierType extends BaseChangeableOpenmrsMetadata {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		return getPatientIdentifierTypeId();
 	}
@@ -238,7 +205,6 @@ public class PatientIdentifierType extends BaseChangeableOpenmrsMetadata {
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setPatientIdentifierTypeId(id);
 		

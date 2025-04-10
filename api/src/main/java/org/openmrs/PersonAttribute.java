@@ -9,27 +9,25 @@
  */
 package org.openmrs;
 
-import java.io.Serializable;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Comparator;
-import java.util.Date;
-
-import org.apache.commons.lang3.StringUtils;
-import org.hibernate.envers.Audited;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.hibernate.search.annotations.Analyzer;
 import org.hibernate.search.annotations.Boost;
 import org.hibernate.search.annotations.DocumentId;
-import org.hibernate.search.annotations.Field;
 import org.hibernate.search.annotations.Fields;
 import org.hibernate.search.annotations.Indexed;
+import org.hibernate.search.annotations.Field;
 import org.hibernate.search.annotations.IndexedEmbedded;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.db.hibernate.search.LuceneAnalyzers;
 import org.openmrs.util.OpenmrsClassLoader;
 import org.openmrs.util.OpenmrsUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Comparator;
+import java.util.Date;
 
 /**
  * A PersonAttribute is meant as way for implementations to add arbitrary information about a
@@ -43,12 +41,11 @@ import org.slf4j.LoggerFactory;
  * @see org.openmrs.Attributable
  */
 @Indexed
-@Audited
-public class PersonAttribute extends BaseChangeableOpenmrsData implements java.io.Serializable, Comparable<PersonAttribute> {
+public class PersonAttribute extends BaseOpenmrsData implements java.io.Serializable, Comparable<PersonAttribute> {
 	
 	public static final long serialVersionUID = 11231211232111L;
 	
-	private static final Logger log = LoggerFactory.getLogger(PersonAttribute.class);
+	private static final Log log = LogFactory.getLog(PersonAttribute.class);
 	
 	// Fields
 	@DocumentId
@@ -112,7 +109,7 @@ public class PersonAttribute extends BaseChangeableOpenmrsData implements java.i
 		target.setChangedBy(getChangedBy());
 		target.setDateChanged(getDateChanged());
 		target.setVoidedBy(getVoidedBy());
-		target.setVoided(getVoided());
+		target.setVoided(isVoided());
 		target.setDateVoided(getDateVoided());
 		target.setVoidReason(getVoidReason());
 		return target;
@@ -126,7 +123,7 @@ public class PersonAttribute extends BaseChangeableOpenmrsData implements java.i
 	 * 
 	 * @param otherAttribute PersonAttribute with which to compare
 	 * @return boolean true/false whether or not they are the same attributes
-	 * <strong>Should</strong> return true if attributeType value and void status are the same
+	 * @should return true if attributeType value and void status are the same
 	 */
 	@SuppressWarnings("unchecked")
 	public boolean equalsContent(PersonAttribute otherAttribute) {
@@ -140,7 +137,7 @@ public class PersonAttribute extends BaseChangeableOpenmrsData implements java.i
 		// loop over all of the selected methods and compare this and other
 		for (String methodAttribute : methods) {
 			try {
-				Method method = attributeClass.getMethod(methodAttribute);
+				Method method = attributeClass.getMethod(methodAttribute, new Class[] {});
 				
 				Object thisValue = method.invoke(this);
 				Object otherValue = method.invoke(otherAttribute);
@@ -153,10 +150,13 @@ public class PersonAttribute extends BaseChangeableOpenmrsData implements java.i
 			catch (NoSuchMethodException e) {
 				log.warn("No such method for comparison " + methodAttribute, e);
 			}
-			catch (IllegalAccessException | InvocationTargetException e) {
+			catch (IllegalAccessException e) {
 				log.error("Error while comparing attributes", e);
 			}
-
+			catch (InvocationTargetException e) {
+				log.error("Error while comparing attributes", e);
+			}
+			
 		}
 		
 		return returnValue;
@@ -208,9 +208,9 @@ public class PersonAttribute extends BaseChangeableOpenmrsData implements java.i
 	
 	/**
 	 * @see java.lang.Object#toString()
-	 * <strong>Should</strong> return toString of hydrated value
+	 * @should return toString of hydrated value
 	 */
-	@Override
+	@SuppressWarnings("unchecked")
 	public String toString() {
 		Object o = getHydratedObject();
 		if (o instanceof Attributable) {
@@ -241,8 +241,8 @@ public class PersonAttribute extends BaseChangeableOpenmrsData implements java.i
 	 * <code>Attributable</code>, hydrate(value) is called. Defaults to just returning getValue()
 	 * 
 	 * @return hydrated object or getValue()
-	 * <strong>Should</strong> load class in format property
-	 * <strong>Should</strong> still load class in format property if not Attributable
+	 * @should load class in format property
+	 * @should still load class in format property if not Attributable
 	 */
 	@SuppressWarnings("unchecked")
 	public Object getHydratedObject() {
@@ -263,7 +263,8 @@ public class PersonAttribute extends BaseChangeableOpenmrsData implements java.i
 			catch (InstantiationException e) {
 				// try to hydrate the object with the String constructor
 				log.trace("Unable to call no-arg constructor for class: " + c.getName());
-				return c.getConstructor(String.class).newInstance(getValue());
+				Object o = c.getConstructor(String.class).newInstance(getValue());
+				return o;
 			}
 		}
 		catch (Exception e) {
@@ -284,7 +285,7 @@ public class PersonAttribute extends BaseChangeableOpenmrsData implements java.i
 	 * Convenience method for voiding this attribute
 	 * 
 	 * @param reason
-	 * <strong>Should</strong> set voided bit to true
+	 * @should set voided bit to true
 	 */
 	public void voidAttribute(String reason) {
 		setVoided(true);
@@ -295,15 +296,14 @@ public class PersonAttribute extends BaseChangeableOpenmrsData implements java.i
 	
 	/**
 	 * @see java.lang.Comparable#compareTo(java.lang.Object)
-	 * <strong>Should</strong> return negative if other attribute is voided
-	 * <strong>Should</strong> return negative if other attribute has earlier date created
-	 * <strong>Should</strong> return negative if this attribute has lower attribute type than argument
-	 * <strong>Should</strong> return negative if other attribute has lower value
-	 * <strong>Should</strong> return negative if this attribute has lower attribute id than argument
-	 * <strong>Should</strong> not throw exception if attribute type is null
+	 * @should return negative if other attribute is voided
+	 * @should return negative if other attribute has earlier date created
+	 * @should return negative if this attribute has lower attribute type than argument
+	 * @should return negative if other attribute has lower value
+	 * @should return negative if this attribute has lower attribute id than argument
+	 * @should not throw exception if attribute type is null
 	 * Note: this comparator imposes orderings that are inconsistent with equals
 	 */
-	@Override
 	public int compareTo(PersonAttribute other) {
 		DefaultComparator paDComparator = new DefaultComparator();
 		return paDComparator.compare(this, other);
@@ -313,7 +313,6 @@ public class PersonAttribute extends BaseChangeableOpenmrsData implements java.i
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#getId()
 	 */
-	@Override
 	public Integer getId() {
 		
 		return getPersonAttributeId();
@@ -323,7 +322,6 @@ public class PersonAttribute extends BaseChangeableOpenmrsData implements java.i
 	 * @since 1.5
 	 * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
 	 */
-	@Override
 	public void setId(Integer id) {
 		setPersonAttributeId(id);
 		
@@ -333,9 +331,7 @@ public class PersonAttribute extends BaseChangeableOpenmrsData implements java.i
 	 Provides a default comparator.
 	 @since 1.12
 	 **/
-	public static class DefaultComparator implements Comparator<PersonAttribute>, Serializable {
-
-		private static final long serialVersionUID = 1L;
+	public static class DefaultComparator implements Comparator<PersonAttribute> {
 		
 		@Override
 		public int compare(PersonAttribute pa1, PersonAttribute pa2) {
@@ -344,7 +340,7 @@ public class PersonAttribute extends BaseChangeableOpenmrsData implements java.i
 				return retValue;
 			}
 			
-			if ((retValue = pa1.getVoided().compareTo(pa2.getVoided())) != 0) {
+			if ((retValue = pa1.isVoided().compareTo(pa2.isVoided())) != 0) {
 				return retValue;
 			}
 			

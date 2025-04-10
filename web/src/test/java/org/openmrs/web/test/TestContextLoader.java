@@ -48,6 +48,6 @@ public class TestContextLoader extends AbstractContextLoader {
 	 */
 	@Override
 	public ApplicationContext loadContext(MergedContextConfiguration mergedConfig) throws Exception {
-		return loadContext(mergedConfig.getLocations());
+		return null;
 	}
 }

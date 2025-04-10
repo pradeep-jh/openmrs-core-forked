@@ -9,29 +9,60 @@
  */
 package org.openmrs.propertyeditor;
 
+import java.beans.PropertyEditorSupport;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.ConceptNumeric;
+import org.openmrs.api.ConceptService;
 import org.openmrs.api.context.Context;
+import org.springframework.util.StringUtils;
 
 /**
- * Allows for serializing/deserializing an object to a string so that Spring knows how to pass an
- * object back and forth through an html form or other medium. <br>
+ * Allows for serializing/deserializing an object to a string so that Spring knows how to pass
+ * an object back and forth through an html form or other medium. <br>
  * <br>
  * In version 1.9, added ability for this to also retrieve objects by uuid
  * 
  * @see ConceptNumeric
  */
-public class ConceptNumericEditor extends OpenmrsPropertyEditor<ConceptNumeric> {
+public class ConceptNumericEditor extends PropertyEditorSupport {
+	
+	private Log log = LogFactory.getLog(this.getClass());
 	
 	public ConceptNumericEditor() {
 	}
 	
-	@Override
-	protected ConceptNumeric getObjectById(Integer id) {
-		return Context.getConceptService().getConceptNumeric(id);
+	/**
+	 * @should set using id
+	 * @should set using uuid
+	 */
+	public void setAsText(String text) throws IllegalArgumentException {
+		ConceptService cs = Context.getConceptService();
+		if (StringUtils.hasText(text)) {
+			try {
+				setValue(cs.getConceptNumeric(Integer.valueOf(text)));
+			}
+			catch (Exception ex) {
+				ConceptNumeric conceptNumeric = cs.getConceptNumericByUuid(text);
+				setValue(conceptNumeric);
+				if (conceptNumeric == null) {
+					log.error("Error setting text" + text, ex);
+					throw new IllegalArgumentException("Concept not found: " + ex.getMessage());
+				}
+			}
+		} else {
+			setValue(null);
+		}
 	}
 	
-	@Override
-	protected ConceptNumeric getObjectByUuid(String uuid) {
-		return Context.getConceptService().getConceptNumericByUuid(uuid);
+	public String getAsText() {
+		ConceptNumeric c = (ConceptNumeric) getValue();
+		if (c == null) {
+			return "";
+		} else {
+			return c.getConceptId().toString();
+		}
 	}
+	
 }

@@ -9,25 +9,11 @@
  */
 package org.openmrs.util;
 
-import liquibase.exception.LockException;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.junit.jupiter.api.Test;
-import org.openmrs.liquibase.ChangeSetExecutorCallback;
-import org.openmrs.liquibase.LiquibaseProvider;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.InputStream;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.junit.Test;
+import org.openmrs.test.BaseContextSensitiveTest;
+import org.openmrs.test.Verifies;
 
 /**
  * Tests methods on the {@link DatabaseUpdater} class. This class expects /metadata/model to be on
@@ -35,76 +21,22 @@ import static org.mockito.Mockito.verify;
  */
 public class DatabaseUpdaterTest extends BaseContextSensitiveTest {
 	
-	private static final Logger log = LoggerFactory.getLogger(DatabaseUpdaterTest.class);
+	private static Log log = LogFactory.getLog(DatabaseUpdaterTest.class);
 	
 	/**
-	 * @throws LockException
 	 * @see DatabaseUpdater#updatesRequired()
 	 */
 	@Test
+	@Verifies(value = "should always have a valid update to latest file", method = "updatesRequired()")
 	public void updatesRequired_shouldAlwaysHaveAValidUpdateToLatestFile() throws Exception {
 		// expects /metadata/model to be on the classpath so that
 		// the liquibase-update-to-latest.xml can be found.
 		try {
 			DatabaseUpdater.updatesRequired();
 		}
-		catch (Exception ex) {
-			log.error("Exception in test for Validation Errors");
+		catch (RuntimeException rex) {
+			log.error("Runtime Exception in test for Validation Errors");
 		}
 		// does not run DatabaseUpdater.update() because hsqldb doesn't like single quotes in strings
-	}
-	
-	@Test
-	public void shouldRejectNullAsChangelog() throws DatabaseUpdateException, InputRequiredException {
-		assertThrows(IllegalArgumentException.class, () -> DatabaseUpdater.executeChangelog(null, (ChangeSetExecutorCallback) null));
-	}
-	
-	@Test
-	public void shouldRejectNullAsChangelogFilenames() {
-		try {
-			DatabaseUpdater.getUnrunDatabaseChanges((String[]) null);
-			fail();
-		}
-		catch (RuntimeException re) {
-			assertTrue(re.getCause() instanceof IllegalArgumentException);
-		}
-	}
-	
-	@Test
-	public void shouldRejectEmptyArrayAsChangelogFilenames() {
-		try {
-			DatabaseUpdater.getUnrunDatabaseChanges(new String[0]);
-			fail();
-		}
-		catch (RuntimeException re) {
-			assertTrue(re.getCause() instanceof IllegalArgumentException);
-		}
-	}
-	
-	@Test
-	public void shouldReturnInjectedLiquibaseProvider() throws Exception {
-		LiquibaseProvider liquibaseProvider = mock(LiquibaseProvider.class);
-		DatabaseUpdater.setLiquibaseProvider(liquibaseProvider);
-		DatabaseUpdater.getLiquibase( "filename" );
-		verify(liquibaseProvider, times(1)).getLiquibase("filename");
-		DatabaseUpdater.unsetLiquibaseProvider();
-	}
-	
-	@Test
-	public void shouldExecuteLiquibaseFileRelativeToApplicationDataDirectory() throws Exception {
-		copyResourcesToApplicationDataDirectory();
-		DatabaseUpdater.executeChangelog("testLiquibase.xml", (ChangeSetExecutorCallback) null);
-	}
-	
-	private void copyResourcesToApplicationDataDirectory() throws Exception {
-		File appDataDir = OpenmrsUtil.getApplicationDataDirectoryAsFile();
-		String[] files = {"testLiquibase.xml", "sql/testSqlFile.sql"};
-		for (String fileName : files) {
-			String inputResource = "org/openmrs/util/" + fileName;
-			InputStream in = getClass().getClassLoader().getResourceAsStream(inputResource);
-			String contents = IOUtils.toString(in, "UTF-8");
-			File outputFile = new File(appDataDir, fileName);
-			FileUtils.write(outputFile, contents, "UTF-8");
-		}
 	}
 }

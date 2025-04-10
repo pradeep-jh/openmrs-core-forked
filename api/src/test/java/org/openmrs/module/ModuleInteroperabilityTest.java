@@ -9,11 +9,11 @@
  */
 package org.openmrs.module;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
-import org.junit.jupiter.api.Test;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.junit.Test;
+import org.openmrs.test.BaseContextSensitiveTest;
 import org.openmrs.test.SkipBaseSetup;
 import org.openmrs.test.StartModule;
 import org.openmrs.util.OpenmrsClassLoader;
@@ -29,11 +29,10 @@ public class ModuleInteroperabilityTest extends BaseContextSensitiveTest {
 	/**
 	 * Test that module A that requires module B can call a service method on module B
 	 * 
-	 * @throws ClassNotFoundException
 	 * @throws Exception
 	 */
 	@Test
-	public void shouldAllowModuleAToLoadModuleBIfARequiresB() throws ClassNotFoundException {
+	public void shouldAllowModuleAToLoadModuleBIfARequiresB() throws Exception {
 		OpenmrsClassLoader loader = OpenmrsClassLoader.getInstance();
 		Class<?> module1ServiceClass = loader.loadClass("org.openmrs.module.test1.api.Test1Service");
 		Class<?> module2ServiceClass = loader.loadClass("org.openmrs.module.test2.api.Test2Service");

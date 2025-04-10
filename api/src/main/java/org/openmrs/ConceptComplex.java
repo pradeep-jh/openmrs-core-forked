@@ -9,7 +9,6 @@
  */
 package org.openmrs;
 
-import org.hibernate.envers.Audited;
 import org.hibernate.search.annotations.Indexed;
 import org.openmrs.obs.ComplexObsHandler;
 
@@ -19,7 +18,6 @@ import org.openmrs.obs.ComplexObsHandler;
  * @since 1.5
  */
 @Indexed
-@Audited
 public class ConceptComplex extends Concept {
 	
 	public static final long serialVersionUID = 473231233L;
@@ -65,11 +63,11 @@ public class ConceptComplex extends Concept {
 		this.setDatatype(c.getDatatype());
 		this.setDateChanged(c.getDateChanged());
 		this.setDateCreated(c.getDateCreated());
-		this.setSet(c.getSet());
+		this.setSet(c.isSet());
 		this.setNames(c.getNames());
 		this.setDescriptions(c.getDescriptions());
 		this.setConceptMappings(c.getConceptMappings());
-		this.setRetired(c.getRetired());
+		this.setRetired(c.isRetired());
 		this.setVersion(c.getVersion());
 		this.setUuid(c.getUuid());
 		

@@ -9,18 +9,16 @@
  */
 package org.openmrs.module;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.Test;
+import org.junit.Before;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 /**
  * Tests Module Methods
@@ -30,28 +28,31 @@ public class ModuleTest {
 
 	private Module testModule;
 
-	@BeforeEach
-	public void before() {
+	@Before
+	public void before() throws Exception {
 		testModule = new Module("test");
 	}
 
 	/*
+	 * @verifies throw exception when message is null
 	 * @see Module#setStartupErrorMessage(String)
 	 */
-	@Test
-	public void setStartupErrorMessage_shouldThrowExceptionWhenMessageIsNull() {
-		assertThrows(ModuleException.class, () -> testModule.setStartupErrorMessage(null));
+	@Test(expected = ModuleException.class)
+	public void setStartupErrorMessage_shouldThrowExceptionWhenMessageIsNull() throws Exception {
+		testModule.setStartupErrorMessage(null);
 	}
 
 	/*
+	 * @verifies throw exception when throwable is null
 	 * @see Module#setStartupErrorMessage(String, Throwable)
 	 */
-	@Test
-	public void setStartupErrorMessage_shouldThrowExceptionWhenThrowableIsNull() {
-		assertThrows(ModuleException.class, () -> testModule.setStartupErrorMessage("error", null));
+	@Test(expected = ModuleException.class)
+	public void setStartupErrorMessage_shouldThrowExceptionWhenThrowableIsNull() throws Exception {
+		testModule.setStartupErrorMessage("error", null);
 	}
 
 	/*
+	 * @verifies set startupErrorMessage when exceptionMessage is null
 	 * @see Module#setStartupErrorMessage(String, Throwable)
 	 */
 	@Test
@@ -66,6 +67,7 @@ public class ModuleTest {
 	}
 
 	/*
+	 * @verifies append the throwable's message to exceptionMessage
  	 * @see Module#setStartupErrorMessage(String, Throwable)
 	 */
 	@Test
@@ -79,6 +81,7 @@ public class ModuleTest {
 	}
 
 	/*
+	 * @verifies set modules when there is a null required modules map
 	 * @see Module#setRequiredModules(List<String>)
 	 */
 	@Test
@@ -86,8 +89,8 @@ public class ModuleTest {
 		testModule.setRequiredModulesMap(null);
 		assertNull(testModule.getRequiredModulesMap());
 
-		ArrayList<String> first = new ArrayList<>();
-		ArrayList<String> second = new ArrayList<>();
+		ArrayList<String> first = new ArrayList<String>();
+		ArrayList<String> second = new ArrayList<String>();
 
 		first.add("mod1");
 		first.add("mod2");
@@ -97,7 +100,7 @@ public class ModuleTest {
 		testModule.setRequiredModules(first);
 		testModule.setRequiredModules(second);
 
-		ArrayList<String> ret = new ArrayList<>(testModule.getRequiredModules());
+		ArrayList<String> ret = new ArrayList<String>(testModule.getRequiredModules());
 		assertTrue(ret.contains("mod1"));
 		assertTrue(ret.contains("mod2"));
 		assertTrue(ret.contains("mod3"));
@@ -105,6 +108,7 @@ public class ModuleTest {
 	}
 
 	/*
+	 * @verifies return null if no required modules exist
 	 * @see Module#getRequiredModuleVersion(String)
 	 */
 	@Test
@@ -117,11 +121,12 @@ public class ModuleTest {
 	}
 
 	/*
+	 * @verifies return null if no required module by given name exists
 	 * @see Module#getRequiredModuleVersion(String)
 	 */
 	@Test
 	public void getRequiredModuleVersion_shouldReturnNullIfNoRequiredModuleByGivenNameExists () {
-		IdentityHashMap<String, String> requiredModules = new IdentityHashMap<>();
+		IdentityHashMap<String, String> requiredModules = new IdentityHashMap<String, String>();
 		
 		requiredModules.put("mod1", "1.0");
 		testModule.setRequiredModulesMap(requiredModules);
@@ -131,24 +136,26 @@ public class ModuleTest {
 	}
 
 	/*
+	 * @verifies should add module to required modules map
 	 * @see Module#addRequiredModule(String, String)
 	 */
 	@Test
 	public void addRequiredModule_shouldAddModuleToRequiredModulesMap () {
-		testModule.setRequiredModulesMap(new IdentityHashMap<>());
+		testModule.setRequiredModulesMap(new IdentityHashMap<String, String>());		
 		testModule.addRequiredModule("mod1", "1.0");
 		
 		assertEquals("1.0", testModule.getRequiredModuleVersion("mod1"));
 	}
 
 	/*
+	 * @verifies dispose all classInstances, not AdvicePoints
 	 * @see Module#disposeAdvicePointsClassInstance()
 	 */
 	@Test
 	public void disposeAdvicePointsClassInstance_shouldDisposeAllClassInstancesNotAdvicePoints() {
-		ArrayList<AdvicePoint> points = new ArrayList<>();
+		ArrayList<AdvicePoint> points = new ArrayList<AdvicePoint>();
 		String obj1 = "string";
-		ArrayList<String> obj2 = new ArrayList<>();
+		ArrayList<String> obj2 = new ArrayList<String>();
 		AdvicePoint point1 = new AdvicePoint("point1", obj1.getClass());
 		AdvicePoint point2 = new AdvicePoint("point2", obj2.getClass());
 

@@ -9,19 +9,18 @@
  */
 package org.openmrs.aop;
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openmrs.User;
 import org.openmrs.annotation.Logging;
 import org.openmrs.api.context.Context;
-import org.openmrs.util.OpenmrsConstants;
 import org.openmrs.util.OpenmrsUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This class provides the log4j aop around advice for our service layer. This advice is placed on
@@ -31,26 +30,25 @@ import org.slf4j.LoggerFactory;
 public class LoggingAdvice implements MethodInterceptor {
 	
 	/**
-	 * List of all method name prefixes that result in DEBUG-level log messages
+	 * Logger for this class. Uses the name "org.openmrs.api" so that it seems to fit into the
+	 * log4j.xml configuration
+	 */
+	protected static final Log log = LogFactory.getLog("org.openmrs.api");
+	
+	/**
+	 * List of all method name prefixes that result in INFO-level log messages
 	 */
 	private static final String[] SETTER_METHOD_PREFIXES = { "save", "create", "update", "void", "unvoid", "retire",
 	        "unretire", "delete", "purge" };
-
-	/**
-	 * Logger for this class. Uses the name "org.openmrs.api" so that it seems to fit into the
-	 * log4j2.xml configuration
-	 */
-	private final Logger log = LoggerFactory.getLogger(OpenmrsConstants.LOG_CLASS_DEFAULT);
 	
 	/**
-	 * This method prints out trace statements for getters and debug statements for everything else
+	 * This method prints out debug statements for getters and info statements for everything else
 	 * ("setters"). If debugging is turned on, execution time for each method is printed as well.
 	 * This method is called for every method in the Class/Service that it is wrapped around. This
 	 * method should be fairly quick and light.
 	 *
 	 * @see org.aopalliance.intercept.MethodInterceptor#invoke(org.aopalliance.intercept.MethodInvocation)
 	 */
-	@Override
 	public Object invoke(MethodInvocation invocation) throws Throwable {
 		
 		Method method = invocation.getMethod();
@@ -58,8 +56,8 @@ public class LoggingAdvice implements MethodInterceptor {
 		
 		// decide what type of logging we're doing with the current method and the loglevel
 		boolean isSetterTypeOfMethod = OpenmrsUtil.stringStartsWith(name, SETTER_METHOD_PREFIXES);
-		boolean logGetter = !isSetterTypeOfMethod && log.isTraceEnabled();
-		boolean logSetter = isSetterTypeOfMethod && log.isDebugEnabled();
+		boolean logGetter = !isSetterTypeOfMethod && log.isDebugEnabled();
+		boolean logSetter = isSetterTypeOfMethod && log.isInfoEnabled();
 		
 		// used for the execution time calculations
 		long startTime = System.currentTimeMillis();
@@ -86,7 +84,7 @@ public class LoggingAdvice implements MethodInterceptor {
 				Object[] values = invocation.getArguments();
 				
 				// change the annotation array of indexes to a list of indexes to ignore
-				List<Integer> argsToIgnore = new ArrayList<>();
+				List<Integer> argsToIgnore = new ArrayList<Integer>();
 				if (loggingAnnotation != null && loggingAnnotation.ignoredArgumentIndexes().length > 0) {
 					for (int argIndexToIgnore : loggingAnnotation.ignoredArgumentIndexes()) {
 						argsToIgnore.add(argIndexToIgnore);
@@ -110,11 +108,11 @@ public class LoggingAdvice implements MethodInterceptor {
 				
 			}
 			
-			// print the string as either trace or debug
+			// print the string as either debug or info
 			if (logGetter) {
-				log.trace(output.toString());
-			} else if (logSetter) {
 				log.debug(output.toString());
+			} else if (logSetter) {
+				log.info(output.toString());
 			}
 		}
 		
@@ -147,14 +145,14 @@ public class LoggingAdvice implements MethodInterceptor {
 				
 				// only append execution time info if we're in debug mode
 				if (log.isDebugEnabled()) {
-					output.append(". execution time: ").append(System.currentTimeMillis() - startTime).append(" ms");
+					output.append(". execution time: " + (System.currentTimeMillis() - startTime)).append(" ms");
 				}
 				
-				// print the string as either trace or debug
+				// print the string as either debug or info
 				if (logGetter) {
-					log.trace(output.toString());
-				} else if (logSetter) {
 					log.debug(output.toString());
+				} else if (logSetter) {
+					log.info(output.toString());
 				}
 			}
 		}

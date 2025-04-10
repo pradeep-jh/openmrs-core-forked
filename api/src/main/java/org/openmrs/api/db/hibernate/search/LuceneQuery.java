@@ -27,12 +27,10 @@ import org.apache.lucene.search.Query;
 import org.hibernate.Session;
 import org.hibernate.search.FullTextQuery;
 import org.hibernate.search.FullTextSession;
+import org.hibernate.search.Search;
 import org.hibernate.search.query.dsl.QueryBuilder;
-import org.openmrs.api.db.FullTextSessionFactory;
-import org.openmrs.PatientIdentifier;
 import org.openmrs.PersonAttribute;
 import org.openmrs.PersonName;
-import org.openmrs.api.context.Context;
 import org.openmrs.collection.ListPart;
 
 /**
@@ -53,29 +51,19 @@ public abstract class LuceneQuery<T> extends SearchQuery<T> {
 	private Set<Object> skipSameValues;
 
 	boolean useOrQueryParser = false;
-	
-	/**
-	 * Normal uses a textual match algorithm for the search
-	 * Soundex indicates to use a Phonetic search strategy
-	 */
-	public enum MatchType
-	{
-		NORMAL, SOUNDEX
-	}
-	
+
 	public static <T> LuceneQuery<T> newQuery(final Class<T> type, final Session session, final String query, final Collection<String> fields) {
-		return newQuery(type, session, query, fields, MatchType.NORMAL);
-	}
-	
-	public static <T> LuceneQuery<T> newQuery(final Class<T> type, final Session session, final String query, final Collection<String> fields, MatchType matchType) {
-		return new LuceneQuery<T>(type, session) {
+		return new LuceneQuery<T>(
+				type, session) {
+
 			@Override
 			protected Query prepareQuery() throws ParseException {
 				if (query.isEmpty()) {
 					return new MatchAllDocsQuery();
 				}
-				return newMultipleFieldQueryParser(fields, matchType).parse(query);
+				return newMultipleFieldQueryParser(fields).parse(query);
 			}
+
 		};
 	}
 
@@ -88,7 +76,8 @@ public abstract class LuceneQuery<T> extends SearchQuery<T> {
 	 * @return the Lucene query
 	 */
 	public static <T> LuceneQuery<T> newQuery(final Class<T> type, final Session session, final String query) {
-		return new LuceneQuery<T>(type, session) {
+		return new LuceneQuery<T>(
+		                          type, session) {
 			
 			@Override
 			protected Query prepareQuery() throws ParseException {
@@ -157,7 +146,7 @@ public abstract class LuceneQuery<T> extends SearchQuery<T> {
 	 */
 	public LuceneQuery<T> include(String field, Object[] values) {
 		if (values != null && values.length != 0) {
-			Set<Term> terms = new HashSet<>();
+			Set<Term> terms = new HashSet<Term>();
 			for (Object value : values) {
 				terms.add(new Term(field, value.toString()));
 			}
@@ -240,19 +229,16 @@ public abstract class LuceneQuery<T> extends SearchQuery<T> {
 	 */
 	protected QueryParser newQueryParser() {
 		Analyzer analyzer = getFullTextSession().getSearchFactory().getAnalyzer(getType());
-		QueryParser queryParser = new QueryParser(null, analyzer); 
+		QueryParser queryParser = new QueryParser(null, analyzer);
+
 		setDefaultOperator(queryParser);
 		return queryParser;
 	}
 
 
-	protected MultiFieldQueryParser newMultipleFieldQueryParser(Collection<String> fields, MatchType matchType) {
+	protected MultiFieldQueryParser newMultipleFieldQueryParser(Collection<String> fields) {
 		Analyzer analyzer;
-		
-		if(matchType == MatchType.SOUNDEX) {
-			analyzer = getFullTextSession().getSearchFactory().getAnalyzer(getType());
-		}
-		else if (getType().isAssignableFrom(PatientIdentifier.class) || getType().isAssignableFrom(PersonName.class) || getType().isAssignableFrom(PersonAttribute.class)) {
+		if (getType().isAssignableFrom(PersonName.class) || getType().isAssignableFrom(PersonAttribute.class)) {
 			analyzer = getFullTextSession().getSearchFactory().getAnalyzer(LuceneAnalyzers.EXACT_ANALYZER);
 		} else {
 			analyzer = getFullTextSession().getSearchFactory().getAnalyzer(getType());
@@ -278,7 +264,7 @@ public abstract class LuceneQuery<T> extends SearchQuery<T> {
 	 * @return the full text session
 	 */
 	protected FullTextSession getFullTextSession() {
-		return Context.getRegisteredComponent("fullTextSessionFactory", FullTextSessionFactory.class).getFullTextSession();
+		return Search.getFullTextSession(getSession());
 	}
 	
 	/**
@@ -355,6 +341,14 @@ public abstract class LuceneQuery<T> extends SearchQuery<T> {
 	
 	@Override
 	public List<T> list() {
+		//debug
+		/*FullTextQuery fullTextQuery = buildQuery();
+		fullTextQuery.setProjection(
+				FullTextQuery.DOCUMENT_ID,
+				FullTextQuery.EXPLANATION,
+				FullTextQuery.THIS );
+		@SuppressWarnings("unchecked") List<Object[]> results = fullTextQuery.list();*/
+
 		if (noUniqueTerms) {
 			return Collections.emptyList();
 		}
@@ -377,7 +371,7 @@ public abstract class LuceneQuery<T> extends SearchQuery<T> {
 		@SuppressWarnings("unchecked")
 		List<T> list = fullTextQuery.list();
 
-		return ListPart.newListPart(list, firstResult, maxResults, (long) fullTextQuery.getResultSize(),
+		return ListPart.newListPart(list, firstResult, maxResults, Long.valueOf(fullTextQuery.getResultSize()),
 		    !fullTextQuery.hasPartialResults());
 	}
 	
@@ -420,7 +414,7 @@ public abstract class LuceneQuery<T> extends SearchQuery<T> {
 		@SuppressWarnings("unchecked")
 		List<Object[]> list = fullTextQuery.list();
 		
-		return ListPart.newListPart(list, firstResult, maxResults, (long) fullTextQuery.getResultSize(),
+		return ListPart.newListPart(list, firstResult, maxResults, Long.valueOf(fullTextQuery.getResultSize()),
 		    !fullTextQuery.hasPartialResults());
 		
 	}

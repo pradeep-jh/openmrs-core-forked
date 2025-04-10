@@ -9,23 +9,23 @@
  */
 package org.openmrs.customdatatype.datatype;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmrs.Location;
 import org.openmrs.OpenmrsObject;
 
 public class BaseOpenmrsDatatypeTest {
 	
 	/**
+	 * @verifies return the uuid of the object
 	 * @see BaseOpenmrsDatatype#serialize(org.openmrs.OpenmrsObject)
 	 */
 	@Test
-	public void serialize_shouldReturnTheUuidOfTheObject() {
+	public void serialize_shouldReturnTheUuidOfTheObject() throws Exception {
 		OpenmrsObject location = new Location();
 		String expectedUuid = "some uuid";
 		location.setUuid(expectedUuid);
 		BaseOpenmrsDatatype datatype = new MockLocationDatatype();
-		assertEquals(expectedUuid, datatype.serialize(location));
+		Assert.assertEquals(expectedUuid, datatype.serialize(location));
 	}
 }

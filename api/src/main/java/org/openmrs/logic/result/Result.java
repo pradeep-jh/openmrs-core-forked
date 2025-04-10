@@ -93,7 +93,7 @@ public class Result extends ArrayList<Result> {
 	 * list of other results.
 	 * 
 	 * @param result the result that will be the sole member of the new result
-	 * <strong>Should</strong> not fail with null result
+	 * @should not fail with null result
 	 */
 	public Result(Result result) {
 		if (result != null) {
@@ -105,8 +105,8 @@ public class Result extends ArrayList<Result> {
 	 * Builds a result from a list of results
 	 * 
 	 * @param list a list of results
-	 * <strong>Should</strong> not fail with null list
-	 * <strong>Should</strong> not fail with empty list
+	 * @should not fail with null list
+	 * @should not fail with empty list
 	 */
 	public Result(List<Result> list) {
 		if (!(list == null || list.isEmpty())) {
@@ -162,7 +162,7 @@ public class Result extends ArrayList<Result> {
 		        .getValueNumeric(), obs.getValueText(), obs);
 		
 		Concept concept = obs.getConcept();
-		ConceptDatatype conceptDatatype;
+		ConceptDatatype conceptDatatype = null;
 		
 		if (concept != null) {
 			conceptDatatype = concept.getDatatype();
@@ -469,15 +469,15 @@ public class Result extends ArrayList<Result> {
 				case BOOLEAN:
 					return (valueBoolean == null ? false : valueBoolean);
 				case CODED:
-					return (valueCoded != null); // TODO: return
+					return (valueCoded == null ? false : true); // TODO: return
 					// false for "FALSE"
 					// concept
 				case DATETIME:
-					return (valueDatetime != null);
+					return (valueDatetime == null ? false : true);
 				case NUMERIC:
-					return (valueNumeric != null && valueNumeric != 0);
+					return (valueNumeric == null || valueNumeric == 0 ? false : true);
 				case TEXT:
-					return (valueText != null && valueText.length() >= 1);
+					return (valueText == null || valueText.length() < 1 ? false : true);
 				default:
 					return valueBoolean;
 			}
@@ -613,7 +613,6 @@ public class Result extends ArrayList<Result> {
 	 *         default datatype value. If the result is a list, then the string representation of
 	 *         all members a joined with commas.
 	 */
-	@Override
 	public String toString() {
 		if (isSingleResult()) {
 			if (datatype == null) {
@@ -648,8 +647,8 @@ public class Result extends ArrayList<Result> {
 	/**
 	 * @return the object associated with the result (generally, this is used internally or for
 	 *         advanced rule design)
-	 * <strong>Should</strong> return resultObject for single results
-	 * <strong>Should</strong> return all results for result list
+	 * @should return resultObject for single results
+	 * @should return all results for result list
 	 */
 	public Object toObject() {
 		if (isSingleResult()) {
@@ -699,7 +698,7 @@ public class Result extends ArrayList<Result> {
 			}
 			return this;
 		}
-		List<Result> matches = new ArrayList<>();
+		List<Result> matches = new ArrayList<Result>();
 		for (Result r : this) {
 			if (!r.gt(value).isEmpty()) {
 				matches.add(r);
@@ -750,12 +749,12 @@ public class Result extends ArrayList<Result> {
 		if (isSingleResult()) {
 			return this;
 		}
-		Integer something = 1;
-		Map<Result, Integer> map = new HashMap<>();
+		Integer something = Integer.valueOf(1);
+		Map<Result, Integer> map = new HashMap<Result, Integer>();
 		for (Result r : this) {
 			map.put(r, something);
 		}
-		List<Result> uniqueList = new ArrayList<>(map.keySet());
+		List<Result> uniqueList = new ArrayList<Result>(map.keySet());
 		return new Result(uniqueList);
 	}
 	
@@ -831,7 +830,7 @@ public class Result extends ArrayList<Result> {
 	 *         return the result only if <em>index</em> is equal to zero (0); otherwise, returns an
 	 *         empty result
 	 * @see java.util.List#get(int)
-	 * <strong>Should</strong> get empty result for indexes out of range
+	 * @should get empty result for indexes out of range
 	 */
 	@Override
 	public Result get(int index) {
@@ -847,11 +846,11 @@ public class Result extends ArrayList<Result> {
 	
 	/**
 	 * @return the chronologically (based on result date) first result
-	 * <strong>Should</strong> get the first result given multiple results
-	 * <strong>Should</strong> get the result given a single result
-	 * <strong>Should</strong> get an empty result given an empty result
-	 * <strong>Should</strong> not get the result with null result date given other results
-	 * <strong>Should</strong> get one result with null result dates for all results
+	 * @should get the first result given multiple results
+	 * @should get the result given a single result
+	 * @should get an empty result given an empty result
+	 * @should not get the result with null result date given other results
+	 * @should get one result with null result dates for all results
 	 */
 	public Result earliest() {
 		if (isSingleResult()) {
@@ -877,10 +876,10 @@ public class Result extends ArrayList<Result> {
 	
 	/**
 	 * @return the chronologically (based on result date) last result
-	 * <strong>Should</strong> get the most recent result given multiple results
-	 * <strong>Should</strong> get the result given a single result
-	 * <strong>Should</strong> get an empty result given an empty result
-	 * <strong>Should</strong> get the result with null result date
+	 * @should get the most recent result given multiple results
+	 * @should get the result given a single result
+	 * @should get an empty result given an empty result
+	 * @should get the result with null result date
 	 */
 	public Result latest() {
 		if (isSingleResult()) {

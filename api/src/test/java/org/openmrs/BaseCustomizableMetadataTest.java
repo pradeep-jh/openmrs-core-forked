@@ -9,15 +9,15 @@
  */
 package org.openmrs;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import org.openmrs.api.ProviderService;
 import org.openmrs.api.context.Context;
-import org.openmrs.test.jupiter.BaseContextSensitiveTest;
+import org.openmrs.test.BaseContextSensitiveTest;
+
+import java.util.Set;
+import java.util.TreeSet;
 
 public class BaseCustomizableMetadataTest extends BaseContextSensitiveTest {
 	
@@ -29,8 +29,8 @@ public class BaseCustomizableMetadataTest extends BaseContextSensitiveTest {
 	
 	private ProviderService service;
 	
-	@BeforeEach
-	public void before() {
+	@Before
+	public void before() throws Exception {
 		service = Context.getProviderService();
 		executeDataSet(PROVIDERS_INITIAL_XML);
 		executeDataSet(PROVIDER_ATTRIBUTE_TYPES_XML);
@@ -38,61 +38,74 @@ public class BaseCustomizableMetadataTest extends BaseContextSensitiveTest {
 	}
 	
 	/**
+	 * @verifies void the attribute if an attribute with same attribute type already exists and the
+	 *           maxOccurs is set to 1
 	 * @see org.openmrs.BaseCustomizableMetadata#setAttribute(org.openmrs.attribute.Attribute)
 	 */
 	@Test
 	public void setAttribute_shouldVoidTheAttributeIfAnAttributeWithSameAttributeTypeAlreadyExistsAndTheMaxOccursIsSetTo1()
-	{
+	        throws Exception {
 		Provider provider = new Provider();
 		provider.setIdentifier("test");
 		
-		provider.setPerson(new Person(2));
+		provider.setPerson(newPerson("name"));
 		
 		ProviderAttributeType place = service.getProviderAttributeType(3);
 		provider.setAttribute(buildProviderAttribute(place, "bangalore"));
 		provider.setAttribute(buildProviderAttribute(place, "chennai"));
 		
-		assertEquals(1, provider.getAttributes().size());
+		Assert.assertEquals(1, provider.getAttributes().size());
 		
 		service.saveProvider(provider);
-		assertNotNull(provider.getId());
+		Assert.assertNotNull(provider.getId());
 		
 		provider.setAttribute(buildProviderAttribute(place, "seattle"));
-		assertEquals(2, provider.getAttributes().size());
+		Assert.assertEquals(2, provider.getAttributes().size());
 		ProviderAttribute lastAttribute = (ProviderAttribute) provider.getAttributes().toArray()[0];
-		assertTrue(lastAttribute.getVoided());
+		Assert.assertTrue(lastAttribute.getVoided());
 	}
 	
 	/**
+	 * @verifies work for attributes with datatypes whose values are stored in other tables
 	 * @see org.openmrs.BaseCustomizableMetadata#setAttribute(org.openmrs.attribute.Attribute)
 	 */
 	@Test
-	public void setAttribute_shouldWorkForAttriubutesWithDatatypesWhoseValuesAreStoredInOtherTables() {
+	public void setAttribute_shouldWorkForAttriubutesWithDatatypesWhoseValuesAreStoredInOtherTables() throws Exception {
 		Provider provider = new Provider();
 		provider.setIdentifier("test");
 		
-		provider.setPerson(new Person(2));
+		provider.setPerson(newPerson("name"));
 		
 		ProviderAttributeType cv = service.getProviderAttributeType(4);
 		provider.setAttribute(buildProviderAttribute(cv, "Worked lots of places..."));
 		
 		service.saveProvider(provider);
 		Context.flushSession();
-		assertNotNull(provider.getId());
-		assertEquals(1, provider.getAttributes().size());
+		Assert.assertNotNull(provider.getId());
+		Assert.assertEquals(1, provider.getAttributes().size());
 		
 		provider.setAttribute(buildProviderAttribute(cv, "Worked even more places..."));
 		service.saveProvider(provider);
-		assertEquals(2, provider.getAttributes().size());
+		Assert.assertEquals(2, provider.getAttributes().size());
 		ProviderAttribute lastAttribute = (ProviderAttribute) provider.getAttributes().toArray()[0];
-		assertTrue(lastAttribute.getVoided());
+		Assert.assertTrue(lastAttribute.getVoided());
 	}
 	
 	private ProviderAttribute buildProviderAttribute(ProviderAttributeType providerAttributeType, Object value)
-	{
+	        throws Exception {
 		ProviderAttribute providerAttribute = new ProviderAttribute();
 		providerAttribute.setAttributeType(providerAttributeType);
 		providerAttribute.setValue(value.toString());
 		return providerAttribute;
+	}
+	
+	private Person newPerson(String name) {
+		Person person = new Person();
+		Set<PersonName> personNames = new TreeSet<>();
+		PersonName personName = new PersonName();
+		personName.setFamilyName(name);
+		personNames.add(personName);
+		person.setNames(personNames);
+		return person;
 	}
 }

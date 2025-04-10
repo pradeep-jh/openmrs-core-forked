@@ -9,7 +9,6 @@
  */
 package org.openmrs.util;
 
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -17,8 +16,13 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
+import org.azeckoski.reflectutils.ClassData;
+import org.azeckoski.reflectutils.ClassDataCacher;
+import org.azeckoski.reflectutils.ClassFields;
+import org.azeckoski.reflectutils.exceptions.FieldnameNotFoundException;
 
 /**
  * This class has convenience methods to find the fields on a class and superclass as well as
@@ -26,13 +30,14 @@ import java.util.List;
  */
 public class Reflect {
 	
-	
+	@SuppressWarnings("unchecked")
 	private Class parametrizedClass;
 	
 	/**
 	 * @param parametrizedClass Class
-	 * <strong>Should</strong> throw exception when null is passed
+	 * @should throw exception when null is passed
 	 */
+	@SuppressWarnings("unchecked")
 	public Reflect(Class parametrizedClass) {
 		
 		if (parametrizedClass == null) {
@@ -44,8 +49,8 @@ public class Reflect {
 	/**
 	 * @param fieldClass
 	 * @return true if, given fieldClass is Collection otherwise returns false
-	 * <strong>Should</strong> return true if given fieldClass is Collection class
-	 * <strong>Should</strong> return false if given fieldClass is not a Collection class
+	 * @should return true if given fieldClass is Collection class
+	 * @should return false if given fieldClass is not a Collection class
 	 */
 	public static boolean isCollection(Class<?> fieldClass) {
 		return Collection.class.isAssignableFrom(fieldClass);
@@ -54,8 +59,8 @@ public class Reflect {
 	/**
 	 * @param object Object
 	 * @return true if, given object is Collection otherwise returns false
-	 * <strong>Should</strong> return true if given object is Collection class
-	 * <strong>Should</strong> return false if given object is not a Collection
+	 * @should return true if given object is Collection class
+	 * @should return false if given object is not a Collection
 	 */
 	public static boolean isCollection(Object object) {
 		return isCollection(object.getClass());
@@ -67,19 +72,11 @@ public class Reflect {
 	 * 
 	 * @param fieldClass Class
 	 * @return List&lt;Field&gt;
-	 * <strong>Should</strong> return all fields include private and super classes
+	 * @should return all fields include private and super classes
 	 */
 	public static List<Field> getAllFields(Class<?> fieldClass) {
-		List<Field> fields = new ArrayList<>();
-		while (fieldClass != null) {
-			Field[] declaredFields = fieldClass.getDeclaredFields();
-			for (Field field : declaredFields) {
-				field.setAccessible(true);
-				fields.add(field);
-			}
-			fieldClass = fieldClass.getSuperclass();
-		}
-		return fields;
+		List<Field> fields = ClassDataCacher.getInstance().getClassData(fieldClass).getFields();
+		return new ArrayList<Field>(fields);
 	}
 	
 	/**
@@ -91,19 +88,19 @@ public class Reflect {
 	 * @return true if the given annotation is present
 	 */
 	public static boolean isAnnotationPresent(Class<?> fieldClass, String fieldName, Class<? extends Annotation> annotation) {
+		ClassFields<?> classFields = ClassDataCacher.getInstance().getClassFields(fieldClass);
 		try {
-			Field field = fieldClass.getDeclaredField(fieldName);
-			return field.isAnnotationPresent(annotation);
-		} catch (NoSuchFieldException e) {
-			return false; 
+			return classFields.getFieldAnnotation(annotation, fieldName) != null;
+		} catch (FieldnameNotFoundException e) {
+			return false;
 		}
 	}
 	
 	/**
 	 * @param subClass Class
 	 * @return true if, given subClass is accessible from the parameterized class
-	 * <strong>Should</strong> return true if given subClass is accessible from given parameterized class
-	 * <strong>Should</strong> return false if given subClass is not accessible from given parameterized class
+	 * @should return true if given subClass is accessible from given parameterized class
+	 * @should return false if given subClass is not accessible from given parameterized class
 	 */
 	@SuppressWarnings("unchecked")
 	public boolean isSuperClass(Class subClass) {
@@ -114,8 +111,8 @@ public class Reflect {
 	 * @param t
 	 * @return true if given type is a subclass, or a generic type bounded by a subclass of the
 	 *         parameterized class
-	 * <strong>Should</strong> return true for a generic whose bound is a subclass
-	 * <strong>Should</strong> return false for a generic whose bound is not a subclass
+	 * @should return true for a generic whose bound is a subclass
+	 * @should return false for a generic whose bound is not a subclass
 	 */
 	public boolean isSuperClass(Type t) {
 		if (t instanceof TypeVariable<?>) {
@@ -139,8 +136,8 @@ public class Reflect {
 	/**
 	 * @param object Object
 	 * @return true if, given object is accessible from the parameterized class
-	 * <strong>Should</strong> return true if given object is accessible from given parameterized class
-	 * <strong>Should</strong> return false if given object is not accessible from given parameterized class
+	 * @should return true if given object is accessible from given parameterized class
+	 * @should return false if given object is not accessible from given parameterized class
 	 */
 	public boolean isSuperClass(Object object) {
 		return isSuperClass(object.getClass());
@@ -152,10 +149,10 @@ public class Reflect {
 	 * 
 	 * @param field Field
 	 * @return boolean
-	 * <strong>Should</strong> return true if given field is Collection and its element type is given parameterized
+	 * @should return true if given field is Collection and its element type is given parameterized
 	 *         class type
-	 * <strong>Should</strong> return false if given field is not a Collection
-	 * <strong>Should</strong> return false if given field is Collection and element type is other than given
+	 * @should return false if given field is not a Collection
+	 * @should return false if given field is Collection and element type is other than given
 	 *         parameterized class type
 	 */
 	@SuppressWarnings("unchecked")
@@ -166,8 +163,8 @@ public class Reflect {
 				if (type.getActualTypeArguments()[0] instanceof Class) {
 					return (parametrizedClass.isAssignableFrom((Class) type.getActualTypeArguments()[0]));
 				} else if (type.getActualTypeArguments()[0] instanceof TypeVariable) {
-					return isSuperClass(type.getActualTypeArguments()[0]);
-				}
+					return isSuperClass((TypeVariable<?>) type.getActualTypeArguments()[0]);
+				} else {}
 			}
 			catch (ClassCastException e) {
 				// Do nothing.  If this exception is thrown, then field is not a Collection of OpenmrsObjects
@@ -181,12 +178,17 @@ public class Reflect {
 	 * 
 	 * @param subClass Class
 	 * @return List&lt;Field&gt;
-	 * <strong>Should</strong> return only the sub class fields of given parameterized class
+	 * @should return only the sub class fields of given parameterized class
 	 */
 	public List<Field> getInheritedFields(Class<?> subClass) {
 		
 		List<Field> allFields = getAllFields(subClass);
-		allFields.removeIf(field -> !hasField(field));
+		for (Iterator<Field> iterator = allFields.iterator(); iterator.hasNext();) {
+			Field field = (Field) iterator.next();
+			if (!hasField(field)) {
+				iterator.remove();
+			}
+		}
 		
 		return allFields;
 	}

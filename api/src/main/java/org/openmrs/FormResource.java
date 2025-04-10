@@ -9,14 +9,14 @@
  */
 package org.openmrs;
 
-import java.util.Date;
-
 import org.codehaus.jackson.annotate.JsonIgnore;
-import org.hibernate.envers.Audited;
 import org.openmrs.customdatatype.CustomDatatypeUtil;
 import org.openmrs.customdatatype.CustomValueDescriptor;
+import org.openmrs.customdatatype.InvalidCustomValueException;
 import org.openmrs.customdatatype.NotYetPersistedException;
 import org.openmrs.customdatatype.SingleCustomValue;
+
+import java.util.Date;
 
 /**
  * A FormResource is meant as a way for modules to add arbitrary information to
@@ -30,11 +30,8 @@ import org.openmrs.customdatatype.SingleCustomValue;
  *
  * @since 1.9
  */
-@Audited
 public class FormResource extends BaseOpenmrsObject implements CustomValueDescriptor, SingleCustomValue<FormResource> {
-
-	private static final long serialVersionUID = 1L;
-
+	
 	private Integer formResourceId;
 	
 	private Form form;
@@ -232,7 +229,7 @@ public class FormResource extends BaseOpenmrsObject implements CustomValueDescri
 	 * @see org.openmrs.customdatatype.SingleCustomValue#getValue()
 	 */
 	@Override
-	public Object getValue(){
+	public Object getValue() throws InvalidCustomValueException {
 		if (typedValue == null) {
 			typedValue = CustomDatatypeUtil.getDatatype(this).fromReferenceString(getValueReference());
 		}
@@ -243,7 +240,7 @@ public class FormResource extends BaseOpenmrsObject implements CustomValueDescri
 	 * @see org.openmrs.customdatatype.SingleCustomValue#setValue(java.lang.Object)
 	 */
 	@Override
-	public <T> void setValue(T typedValue)  {
+	public <T> void setValue(T typedValue) throws InvalidCustomValueException {
 		this.typedValue = typedValue;
 		dirty = true;
 	}
@@ -252,7 +249,7 @@ public class FormResource extends BaseOpenmrsObject implements CustomValueDescri
 	 * @see org.openmrs.customdatatype.SingleCustomValue#setValueReferenceInternal(java.lang.String)
 	 */
 	@Override
-	public void setValueReferenceInternal(String valueToPersist)  {
+	public void setValueReferenceInternal(String valueToPersist) throws InvalidCustomValueException {
 		this.valueReference = valueToPersist;
 	}
 	
